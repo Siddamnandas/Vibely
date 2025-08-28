@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { track as trackEvent } from '@/lib/analytics';
-import { songs as baseSongs } from '@/lib/data';
-import { audioEngine, AudioEngineTrack, AudioEngineState } from '@/lib/audio-engine';
-import { useAuth } from '@/hooks/use-auth';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { track as trackEvent } from "@/lib/analytics";
+import { songs as baseSongs } from "@/lib/data";
+import { audioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
+import { useAuth } from "@/hooks/use-auth";
 
 export type Track = {
   id: string;
@@ -12,13 +12,13 @@ export type Track = {
   artist: string;
   coverUrl: string;
   available?: boolean;
-  provider?: 'spotify' | 'apple-music' | 'preview';
+  provider?: "spotify" | "apple-music" | "preview";
   uri?: string;
   preview_url?: string;
   duration?: number;
 };
 
-type RepeatMode = 'off' | 'all' | 'one';
+type RepeatMode = "off" | "all" | "one";
 
 type PlaybackContextType = {
   queue: Track[];
@@ -50,16 +50,16 @@ const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined
 
 export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueueState] = useState<Track[]>(
-    baseSongs.map((s) => ({ 
-      id: s.id, 
-      title: s.title, 
-      artist: s.artist, 
-      coverUrl: s.originalCoverUrl, 
+    baseSongs.map((s) => ({
+      id: s.id,
+      title: s.title,
+      artist: s.artist,
+      coverUrl: s.originalCoverUrl,
       available: true,
-      provider: 'preview' as const,
+      provider: "preview" as const,
       preview_url: s.spotifyData?.preview_url || undefined,
-      duration: s.duration || 180
-    }))
+      duration: s.duration || 180,
+    })),
   );
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null);
@@ -67,10 +67,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<number>(0);
   const [duration, setDuration] = useState<number>(180);
   const [shuffle, setShuffle] = useState<boolean>(false);
-  const [repeat, setRepeat] = useState<RepeatMode>('off');
+  const [repeat, setRepeat] = useState<RepeatMode>("off");
   const [volume, setVolumeState] = useState<number>(0.8);
   const [isReady, setIsReady] = useState<boolean>(false);
-  
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
 
@@ -94,15 +94,15 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     };
 
     const handleError = (error: Error) => {
-      console.error('Audio engine error:', error);
+      console.error("Audio engine error:", error);
       // Fallback to next track on error
       handleNextInternal();
     };
 
-    audioEngine.addEventListener('stateChange', handleStateChange);
-    audioEngine.addEventListener('trackEnd', handleTrackEnd);
-    audioEngine.addEventListener('ready', handleReady);
-    audioEngine.addEventListener('error', handleError);
+    audioEngine.addEventListener("stateChange", handleStateChange);
+    audioEngine.addEventListener("trackEnd", handleTrackEnd);
+    audioEngine.addEventListener("ready", handleReady);
+    audioEngine.addEventListener("error", handleError);
 
     // Check if already ready
     if (audioEngine.isReady()) {
@@ -110,10 +110,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
-      audioEngine.removeEventListener('stateChange');
-      audioEngine.removeEventListener('trackEnd');
-      audioEngine.removeEventListener('ready');
-      audioEngine.removeEventListener('error');
+      audioEngine.removeEventListener("stateChange");
+      audioEngine.removeEventListener("trackEnd");
+      audioEngine.removeEventListener("ready");
+      audioEngine.removeEventListener("error");
     };
   }, []);
 
@@ -127,7 +127,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       artist: current.artist,
       uri: current.uri || `preview:${current.id}`,
       duration: duration,
-      provider: current.provider || 'preview',
+      provider: current.provider || "preview",
       preview_url: current.preview_url,
     };
 
@@ -156,7 +156,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
   const play = async () => {
     if (!isReady) return;
-    
+
     if (current) {
       const engineTrack: AudioEngineTrack = {
         id: current.id,
@@ -164,10 +164,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         artist: current.artist,
         uri: current.uri || `preview:${current.id}`,
         duration: current.duration || 180,
-        provider: current.provider || 'preview',
+        provider: current.provider || "preview",
         preview_url: current.preview_url,
       };
-      
+
       const success = await audioEngine.playTrack(engineTrack);
       if (success) {
         setIsPlaying(true);
@@ -177,31 +177,33 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(true);
     }
   };
-  
+
   const pause = async () => {
     if (!isReady) return;
     await audioEngine.pause();
     setIsPlaying(false);
   };
-  
+
   const togglePlay = async () => {
     if (!isReady) return;
-    
+
     const nextState = !isPlaying;
-    
+
     if (nextState) {
       await play();
     } else {
       await pause();
     }
-    
+
     // Haptics: medium on play, light on pause
-    try { navigator?.vibrate?.(nextState ? 15 : 8); } catch {}
-    
-    trackEvent('track_play_pressed', { 
-      track_id: current?.id, 
-      playlist_id: currentPlaylistId, 
-      position: currentIndex 
+    try {
+      navigator?.vibrate?.(nextState ? 15 : 8);
+    } catch {}
+
+    trackEvent("track_play_pressed", {
+      track_id: current?.id,
+      playlist_id: currentPlaylistId,
+      position: currentIndex,
     });
   };
 
@@ -209,16 +211,20 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     setProgress(0);
     setCurrentIndex((idx) => {
       const fromId = queue[idx]?.id;
-      if (repeat === 'one') return idx; // loop current
+      if (repeat === "one") return idx; // loop current
       const lastIndex = queue.length - 1;
       if (idx >= lastIndex) {
-        if (repeat === 'all') return 0;
+        if (repeat === "all") return 0;
         setIsPlaying(false);
         return idx; // stop at end
       }
       const toIndex = idx + 1;
       const toId = queue[toIndex]?.id;
-      trackEvent('track_next', { from_track_id: fromId, to_track_id: toId, playlist_id: currentPlaylistId });
+      trackEvent("track_next", {
+        from_track_id: fromId,
+        to_track_id: toId,
+        playlist_id: currentPlaylistId,
+      });
       return toIndex;
     });
   };
@@ -231,28 +237,32 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       const fromId = queue[idx]?.id;
       const toIndex = idx > 0 ? idx - 1 : queue.length - 1;
       const toId = queue[toIndex]?.id;
-      trackEvent('track_prev', { from_track_id: fromId, to_track_id: toId, playlist_id: currentPlaylistId });
+      trackEvent("track_prev", {
+        from_track_id: fromId,
+        to_track_id: toId,
+        playlist_id: currentPlaylistId,
+      });
       return toIndex;
     });
   };
 
   const seek = async (to: number) => {
     if (!isReady) return;
-    
+
     const clamped = Math.max(0, Math.min(duration, to));
     await audioEngine.seek(clamped);
     setProgress(clamped);
-    
-    trackEvent('seek', { 
-      track_id: current?.id, 
-      from_ms: progress * 1000, 
-      to_ms: clamped * 1000 
+
+    trackEvent("seek", {
+      track_id: current?.id,
+      from_ms: progress * 1000,
+      to_ms: clamped * 1000,
     });
   };
 
   const setVolume = async (newVolume: number) => {
     if (!isReady) return;
-    
+
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
     await audioEngine.setVolume(clampedVolume);
     setVolumeState(clampedVolume);
@@ -262,7 +272,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (tracks) setQueueState(tracks);
     setCurrentIndex(index);
     setProgress(0);
-    
+
     const targetTrack = (tracks ?? queue)[index];
     if (targetTrack && isReady) {
       const engineTrack: AudioEngineTrack = {
@@ -271,20 +281,20 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         artist: targetTrack.artist,
         uri: targetTrack.uri || `preview:${targetTrack.id}`,
         duration: targetTrack.duration || 180,
-        provider: targetTrack.provider || 'preview',
+        provider: targetTrack.provider || "preview",
         preview_url: targetTrack.preview_url,
       };
-      
+
       const success = await audioEngine.playTrack(engineTrack);
       if (success) {
         setIsPlaying(true);
       }
     }
-    
-    trackEvent('track_play_pressed', { 
-      position: index, 
-      track_id: targetTrack?.id, 
-      playlist_id: currentPlaylistId 
+
+    trackEvent("track_play_pressed", {
+      position: index,
+      track_id: targetTrack?.id,
+      playlist_id: currentPlaylistId,
     });
   };
 
@@ -319,6 +329,6 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
 export function usePlayback() {
   const ctx = useContext(PlaybackContext);
-  if (!ctx) throw new Error('usePlayback must be used within PlaybackProvider');
+  if (!ctx) throw new Error("usePlayback must be used within PlaybackProvider");
   return ctx;
 }

@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { serviceWorkerManager, useServiceWorker } from '@/lib/service-worker';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Wifi, 
-  WifiOff, 
-  Download, 
-  RefreshCw, 
-  Trash2, 
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { serviceWorkerManager, useServiceWorker } from "@/lib/service-worker";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Wifi,
+  WifiOff,
+  Download,
+  RefreshCw,
+  Trash2,
   CheckCircle,
   AlertCircle,
-  Loader2
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+  Loader2,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ServiceWorkerContextValue {
   isOffline: boolean;
   isUpdateAvailable: boolean;
   cacheSize: number;
-  networkStatus: 'online' | 'offline' | 'slow';
+  networkStatus: "online" | "offline" | "slow";
   updateApp: () => void;
   clearCache: () => Promise<boolean>;
 }
@@ -54,34 +54,34 @@ export function ServiceWorkerProvider({ children }: { children: React.ReactNode 
     setIsClearing(true);
     const success = await swHook.clearCache();
     setIsClearing(false);
-    
+
     if (success) {
       // Show success message
-      console.log('Cache cleared successfully');
+      console.log("Cache cleared successfully");
     }
-    
+
     return success;
   };
 
   const contextValue: ServiceWorkerContextValue = {
     ...swHook,
-    clearCache: handleClearCache
+    clearCache: handleClearCache,
   };
 
   return (
     <ServiceWorkerContext.Provider value={contextValue}>
       {children}
-      
+
       {/* Offline Indicator */}
-      <OfflineIndicator 
-        isOffline={swHook.isOffline} 
+      <OfflineIndicator
+        isOffline={swHook.isOffline}
         networkStatus={swHook.networkStatus}
         show={showOfflineMessage}
         onClose={() => setShowOfflineMessage(false)}
       />
-      
+
       {/* Update Prompt */}
-      <UpdatePrompt 
+      <UpdatePrompt
         show={showUpdatePrompt}
         onUpdate={() => {
           swHook.updateApp();
@@ -89,10 +89,10 @@ export function ServiceWorkerProvider({ children }: { children: React.ReactNode 
         }}
         onLater={() => setShowUpdatePrompt(false)}
       />
-      
+
       {/* Cache Management (Development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <CacheDebugPanel 
+      {process.env.NODE_ENV === "development" && (
+        <CacheDebugPanel
           cacheSize={swHook.cacheSize}
           onClear={handleClearCache}
           isClearing={isClearing}
@@ -103,14 +103,14 @@ export function ServiceWorkerProvider({ children }: { children: React.ReactNode 
 }
 
 // Offline indicator component
-function OfflineIndicator({ 
-  isOffline, 
-  networkStatus, 
-  show, 
-  onClose 
+function OfflineIndicator({
+  isOffline,
+  networkStatus,
+  show,
+  onClose,
 }: {
   isOffline: boolean;
-  networkStatus: 'online' | 'offline' | 'slow';
+  networkStatus: "online" | "offline" | "slow";
   show: boolean;
   onClose: () => void;
 }) {
@@ -118,26 +118,26 @@ function OfflineIndicator({
 
   const getStatusInfo = () => {
     switch (networkStatus) {
-      case 'offline':
+      case "offline":
         return {
           icon: WifiOff,
-          text: 'You\'re offline',
-          description: 'Some features may be limited',
-          color: 'bg-red-500/90'
+          text: "You're offline",
+          description: "Some features may be limited",
+          color: "bg-red-500/90",
         };
-      case 'slow':
+      case "slow":
         return {
           icon: Wifi,
-          text: 'Slow connection',
-          description: 'Loading may take longer',
-          color: 'bg-yellow-500/90'
+          text: "Slow connection",
+          description: "Loading may take longer",
+          color: "bg-yellow-500/90",
         };
       default:
         return {
           icon: Wifi,
-          text: 'Back online',
-          description: 'All features available',
-          color: 'bg-green-500/90'
+          text: "Back online",
+          description: "All features available",
+          color: "bg-green-500/90",
         };
     }
   };
@@ -178,10 +178,10 @@ function OfflineIndicator({
 }
 
 // Update prompt component
-function UpdatePrompt({ 
-  show, 
-  onUpdate, 
-  onLater 
+function UpdatePrompt({
+  show,
+  onUpdate,
+  onLater,
 }: {
   show: boolean;
   onUpdate: () => void;
@@ -202,21 +202,16 @@ function UpdatePrompt({
             <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Download className="w-8 h-8 text-primary" />
             </div>
-            
-            <h3 className="text-lg font-semibold text-white mb-2">
-              New Version Available
-            </h3>
-            
+
+            <h3 className="text-lg font-semibold text-white mb-2">New Version Available</h3>
+
             <p className="text-muted-foreground mb-6">
-              A new version of Vibely is ready with improvements and new features. Update now to get the best experience.
+              A new version of Vibely is ready with improvements and new features. Update now to get
+              the best experience.
             </p>
-            
+
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={onLater}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={onLater} className="flex-1">
                 Later
               </Button>
               <Button
@@ -234,10 +229,10 @@ function UpdatePrompt({
 }
 
 // Cache debug panel (development only)
-function CacheDebugPanel({ 
-  cacheSize, 
-  onClear, 
-  isClearing 
+function CacheDebugPanel({
+  cacheSize,
+  onClear,
+  isClearing,
 }: {
   cacheSize: number;
   onClear: () => void;
@@ -246,11 +241,11 @@ function CacheDebugPanel({
   const [isVisible, setIsVisible] = useState(false);
 
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -267,22 +262,24 @@ function CacheDebugPanel({
       {isVisible && (
         <div className="fixed bottom-16 right-4 z-[9999] bg-black/90 text-white p-4 rounded-lg text-xs font-mono backdrop-blur-sm border border-white/20 max-w-xs">
           <div className="mb-3 font-bold text-blue-400">Service Worker</div>
-          
+
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-3 h-3 text-green-400" />
               <span>SW Active</span>
             </div>
-            
-            <div>Cache Size: <span className="text-yellow-400">{formatSize(cacheSize)}</span></div>
-            
+
+            <div>
+              Cache Size: <span className="text-yellow-400">{formatSize(cacheSize)}</span>
+            </div>
+
             <div className="flex items-center gap-2">
               {navigator.onLine ? (
                 <Wifi className="w-3 h-3 text-green-400" />
               ) : (
                 <WifiOff className="w-3 h-3 text-red-400" />
               )}
-              <span>{navigator.onLine ? 'Online' : 'Offline'}</span>
+              <span>{navigator.onLine ? "Online" : "Offline"}</span>
             </div>
           </div>
 
@@ -319,7 +316,7 @@ function CacheDebugPanel({
 export function useServiceWorkerContext() {
   const context = useContext(ServiceWorkerContext);
   if (!context) {
-    throw new Error('useServiceWorkerContext must be used within ServiceWorkerProvider');
+    throw new Error("useServiceWorkerContext must be used within ServiceWorkerProvider");
   }
   return context;
 }
@@ -335,13 +332,13 @@ export function useOfflineAware() {
     }
   }, [isOffline]);
 
-  const isSlowConnection = networkStatus === 'slow';
+  const isSlowConnection = networkStatus === "slow";
   const justCameOnline = wasOffline && !isOffline;
 
   return {
     isOffline,
     isSlowConnection,
     justCameOnline,
-    networkStatus
+    networkStatus,
   };
 }

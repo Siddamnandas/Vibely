@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { savedStories } from "@/lib/data";
 import StoryViewer from "@/components/story-viewer";
@@ -19,30 +15,31 @@ export default function StoriesPage() {
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState<'all' | 'recent' | 'favorites'>('all');
+  const [filterMode, setFilterMode] = useState<"all" | "recent" | "favorites">("all");
 
-  const filteredStories = savedStories.filter(story => {
-    const matchesSearch = story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         story.artist.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredStories = savedStories.filter((story) => {
+    const matchesSearch =
+      story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      story.artist.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   useEffect(() => {
     setMounted(true);
-    console.log('StoriesPage mounted with', savedStories.length, 'stories');
-    
+    console.log("StoriesPage mounted with", savedStories.length, "stories");
+
     // Pre-load images to detect errors early
-    savedStories.forEach(story => {
-      setImageLoading(prev => ({ ...prev, [story.id]: true }));
-      
+    savedStories.forEach((story) => {
+      setImageLoading((prev) => ({ ...prev, [story.id]: true }));
+
       const img = new window.Image();
       img.onload = () => {
-        setImageLoading(prev => ({ ...prev, [story.id]: false }));
+        setImageLoading((prev) => ({ ...prev, [story.id]: false }));
       };
       img.onerror = () => {
         console.warn(`Failed to load image for story ${story.id}:`, story.generatedCoverUrl);
-        setImageErrors(prev => ({ ...prev, [story.id]: true }));
-        setImageLoading(prev => ({ ...prev, [story.id]: false }));
+        setImageErrors((prev) => ({ ...prev, [story.id]: true }));
+        setImageLoading((prev) => ({ ...prev, [story.id]: false }));
       };
       img.src = story.generatedCoverUrl;
     });
@@ -50,12 +47,12 @@ export default function StoriesPage() {
 
   const handleImageError = (storyId: string) => {
     console.error(`Image load error for story ${storyId}`);
-    setImageErrors(prev => ({ ...prev, [storyId]: true }));
-    setImageLoading(prev => ({ ...prev, [storyId]: false }));
+    setImageErrors((prev) => ({ ...prev, [storyId]: true }));
+    setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   const handleImageLoad = (storyId: string) => {
-    setImageLoading(prev => ({ ...prev, [storyId]: false }));
+    setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   // Show loading until mounted to prevent hydration issues
@@ -74,16 +71,14 @@ export default function StoriesPage() {
         <header className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-black text-white mb-2">
-                Stories Archive
-              </h1>
-              <p className="text-white/70 text-lg">
-                Your collection of AI-generated album covers
-              </p>
+              <h1 className="text-4xl font-black text-white mb-2">Stories Archive</h1>
+              <p className="text-white/70 text-lg">Your collection of AI-generated album covers</p>
             </div>
-            <Button 
+            <Button
               className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full"
-              onClick={() => {/* TODO: Navigate to generator */}}
+              onClick={() => {
+                /* TODO: Navigate to generator */
+              }}
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New
@@ -105,7 +100,9 @@ export default function StoriesPage() {
             <Button
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10 rounded-2xl px-6"
-              onClick={() => {/* TODO: Open filter modal */}}
+              onClick={() => {
+                /* TODO: Open filter modal */
+              }}
             >
               <Filter className="w-4 h-4 mr-2" />
               Filter
@@ -130,7 +127,7 @@ export default function StoriesPage() {
             </div>
           </div>
         </header>
-        
+
         {/* Stories Grid */}
         {filteredStories.length === 0 ? (
           <div className="text-center py-20">
@@ -143,16 +140,18 @@ export default function StoriesPage() {
                 <div className="text-4xl">🎨</div>
               </div>
               <h3 className="text-2xl font-bold text-white mb-3">
-                {searchQuery ? 'No matching stories' : 'No stories yet!'}
+                {searchQuery ? "No matching stories" : "No stories yet!"}
               </h3>
               <p className="text-white/60 mb-8 max-w-md mx-auto">
-                {searchQuery 
-                  ? 'Try adjusting your search terms to find more covers.'
-                  : 'Start generating AI album covers to build your personal collection.'}
+                {searchQuery
+                  ? "Try adjusting your search terms to find more covers."
+                  : "Start generating AI album covers to build your personal collection."}
               </p>
-              <Button 
+              <Button
                 className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full px-8 py-3"
-                onClick={() => {/* TODO: Navigate to generator */}}
+                onClick={() => {
+                  /* TODO: Navigate to generator */
+                }}
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Cover
@@ -161,7 +160,7 @@ export default function StoriesPage() {
           </div>
         ) : (
           <Dialog>
-            <motion.div 
+            <motion.div
               className="grid grid-cols-2 gap-4 md:gap-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -174,12 +173,14 @@ export default function StoriesPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                 >
-                  <DialogTrigger 
-                    asChild 
-                    onClick={() => setSelectedStoryIndex(savedStories.findIndex(s => s.id === story.id))}
+                  <DialogTrigger
+                    asChild
+                    onClick={() =>
+                      setSelectedStoryIndex(savedStories.findIndex((s) => s.id === story.id))
+                    }
                   >
                     <div className="relative overflow-hidden aspect-[9/16] cursor-pointer group">
-                      <motion.div 
+                      <motion.div
                         className="w-full h-full bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-[32px] border border-white/10 shadow-2xl overflow-hidden"
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
@@ -223,7 +224,7 @@ export default function StoriesPage() {
                                 </p>
                               </div>
                             </div>
-                            
+
                             {/* Glassmorphic Overlay for Hover Effect */}
                             <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </>

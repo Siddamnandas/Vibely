@@ -24,7 +24,7 @@ export default function BottomNav() {
     const root = document.documentElement;
     const update = () => {
       const h = el.getBoundingClientRect().height;
-      root.style.setProperty('--nav-height', `${Math.round(h)}px`);
+      root.style.setProperty("--nav-height", `${Math.round(h)}px`);
     };
     update();
     const ro = new ResizeObserver(update);
@@ -33,24 +33,27 @@ export default function BottomNav() {
   }, []);
 
   return (
-    <nav ref={ref} className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 h-20 w-[95%] max-w-md rounded-full border border-white/10 bg-black/30 backdrop-blur-xl">
+    <nav
+      ref={ref}
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 h-20 w-[95%] max-w-md rounded-full border border-white/10 bg-black/30 backdrop-blur-xl"
+    >
       <div className="mx-auto flex h-full max-w-md items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          
-          if (item.href === '/') {
-             return (
-                <Link
+
+          if (item.href === "/") {
+            return (
+              <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                    "flex h-16 w-16 flex-col items-center justify-center rounded-full transition-all duration-300 -mt-8 bg-gradient-to-r from-primary to-green-400 font-bold text-primary-foreground hover:opacity-90 shadow-lg",
+                  "flex h-16 w-16 flex-col items-center justify-center rounded-full transition-all duration-300 -mt-8 bg-gradient-to-r from-primary to-green-400 font-bold text-primary-foreground hover:opacity-90 shadow-lg",
                 )}
                 aria-label={item.label}
-                >
+              >
                 <item.icon className="h-7 w-7" />
-                </Link>
-             )
+              </Link>
+            );
           }
 
           return (
@@ -59,9 +62,9 @@ export default function BottomNav() {
               href={item.href}
               className={cn(
                 "flex h-14 w-14 flex-col items-center justify-center rounded-full transition-all duration-300",
-                isActive 
-                  ? "bg-primary/20 text-primary" 
-                  : "text-muted-foreground hover:bg-white/10 hover:text-white"
+                isActive
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:bg-white/10 hover:text-white",
               )}
               aria-label={item.label}
             >

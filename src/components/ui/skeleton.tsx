@@ -1,19 +1,11 @@
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
 function Skeleton({ className, ...props }: SkeletonProps) {
-  return (
-    <div
-      className={cn(
-        "animate-pulse rounded-md bg-white/10",
-        className
-      )}
-      {...props}
-    />
-  );
+  return <div className={cn("animate-pulse rounded-md bg-white/10", className)} {...props} />;
 }
 
 // Card skeleton for music tracks
@@ -24,7 +16,7 @@ export function TrackCardSkeleton() {
         <div className="flex flex-col sm:flex-row gap-6 items-center">
           {/* Album art skeleton */}
           <Skeleton className="w-32 h-32 flex-shrink-0 rounded-2xl" />
-          
+
           {/* Content skeleton */}
           <div className="flex-grow text-center sm:text-left w-full">
             <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
@@ -108,7 +100,10 @@ export function GeneratedCoverSkeleton() {
   return (
     <div className="space-y-6">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 rounded-2xl p-6">
+        <div
+          key={i}
+          className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 rounded-2xl p-6"
+        >
           <div className="flex items-center justify-between mb-4">
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-8 w-20 rounded-full" />
@@ -131,7 +126,10 @@ export function NavigationSkeleton() {
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 h-20 w-[95%] max-w-md rounded-full border border-white/10 bg-black/30 backdrop-blur-xl">
       <div className="mx-auto flex h-full max-w-md items-center justify-around px-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className={`rounded-full ${i === 0 ? 'h-16 w-16 -mt-8' : 'h-14 w-14'}`} />
+          <Skeleton
+            key={i}
+            className={`rounded-full ${i === 0 ? "h-16 w-16 -mt-8" : "h-14 w-14"}`}
+          />
         ))}
       </div>
     </nav>
@@ -145,7 +143,7 @@ export function SwipeableCardsSkeleton() {
       {/* Background cards */}
       <div className="absolute inset-0 flex items-center justify-center">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton 
+          <Skeleton
             key={i}
             className="absolute w-80 h-96 rounded-3xl"
             style={{

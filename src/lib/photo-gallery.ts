@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface PhotoFile {
   id: string;
@@ -18,7 +18,7 @@ interface PhotoGalleryConfig {
 
 const DEFAULT_CONFIG: PhotoGalleryConfig = {
   maxFileSize: 10 * 1024 * 1024, // 10MB
-  allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'],
+  allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"],
   maxPhotos: 50,
 };
 
@@ -36,7 +36,7 @@ class PhotoGalleryService {
   async requestPermission(): Promise<boolean> {
     // Check if File API is supported
     if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
-      console.warn('File APIs are not fully supported in this browser');
+      console.warn("File APIs are not fully supported in this browser");
       return false;
     }
 
@@ -49,9 +49,7 @@ class PhotoGalleryService {
    * Check if photo gallery access is available
    */
   isAvailable(): boolean {
-    return typeof window !== 'undefined' && 
-           'File' in window && 
-           'FileReader' in window;
+    return typeof window !== "undefined" && "File" in window && "FileReader" in window;
   }
 
   /**
@@ -60,18 +58,18 @@ class PhotoGalleryService {
   async selectPhotosFromDevice(): Promise<PhotoFile[]> {
     return new Promise((resolve, reject) => {
       if (!this.isAvailable()) {
-        reject(new Error('Photo gallery access not available'));
+        reject(new Error("Photo gallery access not available"));
         return;
       }
 
       // Create hidden file input
-      const input = document.createElement('input');
-      input.type = 'file';
+      const input = document.createElement("input");
+      input.type = "file";
       input.multiple = true;
-      input.accept = this.config.allowedTypes.join(',');
-      input.style.display = 'none';
+      input.accept = this.config.allowedTypes.join(",");
+      input.style.display = "none";
 
-      input.addEventListener('change', async (event) => {
+      input.addEventListener("change", async (event) => {
         try {
           const files = (event.target as HTMLInputElement).files;
           if (!files) {
@@ -89,7 +87,7 @@ class PhotoGalleryService {
         }
       });
 
-      input.addEventListener('cancel', () => {
+      input.addEventListener("cancel", () => {
         document.body.removeChild(input);
         resolve([]);
       });
@@ -105,7 +103,7 @@ class PhotoGalleryService {
    */
   private async processSelectedFiles(files: FileList): Promise<PhotoFile[]> {
     const photoFiles: PhotoFile[] = [];
-    const validFiles = Array.from(files).filter(file => this.validateFile(file));
+    const validFiles = Array.from(files).filter((file) => this.validateFile(file));
 
     for (const file of validFiles.slice(0, this.config.maxPhotos)) {
       try {
@@ -123,7 +121,7 @@ class PhotoGalleryService {
         photoFiles.push(photoFile);
         this.selectedPhotos.set(photoFile.id, photoFile);
       } catch (error) {
-        console.error('Failed to process file:', file.name, error);
+        console.error("Failed to process file:", file.name, error);
       }
     }
 
@@ -190,21 +188,26 @@ class PhotoGalleryService {
   /**
    * Resize image for better performance
    */
-  async resizeImage(file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.8): Promise<Blob> {
+  async resizeImage(
+    file: File,
+    maxWidth: number = 800,
+    maxHeight: number = 800,
+    quality: number = 0.8,
+  ): Promise<Blob> {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
       const img = new Image();
 
       if (!ctx) {
-        reject(new Error('Canvas context not available'));
+        reject(new Error("Canvas context not available"));
         return;
       }
 
       img.onload = () => {
         // Calculate new dimensions
         let { width, height } = img;
-        
+
         if (width > height) {
           if (width > maxWidth) {
             height = height * (maxWidth / width);
@@ -223,17 +226,17 @@ class PhotoGalleryService {
 
         // Draw and compress
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         canvas.toBlob(
           (blob) => {
             if (blob) {
               resolve(blob);
             } else {
-              reject(new Error('Failed to create blob'));
+              reject(new Error("Failed to create blob"));
             }
           },
           file.type,
-          quality
+          quality,
         );
       };
 
@@ -253,7 +256,7 @@ class PhotoGalleryService {
   }> {
     return new Promise((resolve) => {
       const img = new Image();
-      
+
       img.onload = () => {
         resolve({
           width: img.naturalWidth,
@@ -282,8 +285,8 @@ class PhotoGalleryService {
    * Clear selected photos and cleanup URLs
    */
   clearSelectedPhotos(): void {
-    this.selectedPhotos.forEach(photo => {
-      if (photo.url.startsWith('blob:')) {
+    this.selectedPhotos.forEach((photo) => {
+      if (photo.url.startsWith("blob:")) {
         URL.revokeObjectURL(photo.url);
       }
     });
@@ -296,7 +299,7 @@ class PhotoGalleryService {
   removePhoto(id: string): boolean {
     const photo = this.selectedPhotos.get(id);
     if (photo) {
-      if (photo.url.startsWith('blob:')) {
+      if (photo.url.startsWith("blob:")) {
         URL.revokeObjectURL(photo.url);
       }
       this.selectedPhotos.delete(id);
@@ -316,13 +319,13 @@ class PhotoGalleryService {
    * Format file size for display
    */
   formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    
+    if (bytes === 0) return "0 Bytes";
+
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
   /**
@@ -345,26 +348,26 @@ class PhotoGalleryService {
 
     // Basic file-based checks
     if (file.size > this.config.maxFileSize) {
-      warnings.push('File size exceeds recommended limit');
+      warnings.push("File size exceeds recommended limit");
       suggestions.push(`Resize image to under ${this.formatFileSize(this.config.maxFileSize)}`);
     }
 
     // Check filename for potential sensitive content
-    const sensitiveKeywords = ['private', 'personal', 'id', 'passport', 'license'];
+    const sensitiveKeywords = ["private", "personal", "id", "passport", "license"];
     const fileName = file.name.toLowerCase();
-    
-    if (sensitiveKeywords.some(keyword => fileName.includes(keyword))) {
-      warnings.push('Filename may indicate sensitive content');
-      suggestions.push('Ensure image does not contain personal identification');
+
+    if (sensitiveKeywords.some((keyword) => fileName.includes(keyword))) {
+      warnings.push("Filename may indicate sensitive content");
+      suggestions.push("Ensure image does not contain personal identification");
     }
 
     return {
       isCompliant: warnings.length === 0,
       warnings,
       suggestions: [
-        'Only upload photos you own or have permission to use',
-        'Avoid photos with personal information visible',
-        'Consider the privacy of others in the photo',
+        "Only upload photos you own or have permission to use",
+        "Avoid photos with personal information visible",
+        "Consider the privacy of others in the photo",
         ...suggestions,
       ],
     };

@@ -1,11 +1,11 @@
 // Simple in-memory regen job store for development
 // NOTE: In production, replace with a persistent queue + DB
 
-export type RegenStatus = 'idle' | 'running' | 'paused' | 'canceled' | 'completed' | 'queued';
+export type RegenStatus = "idle" | "running" | "paused" | "canceled" | "completed" | "queued";
 
 export type RegenRowState = {
   trackId: string;
-  status: 'pending' | 'updating' | 'updated' | 'restored';
+  status: "pending" | "updating" | "updated" | "restored";
   prevCoverUrl?: string;
   newCoverUrl?: string;
   updatedAt?: number;
@@ -28,8 +28,8 @@ type Store = {
   timers: Record<string, NodeJS.Timeout | null>;
 };
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 const g = globalThis as any;
 if (!g.__REGEN_STORE__) {
@@ -37,8 +37,8 @@ if (!g.__REGEN_STORE__) {
 }
 const store: Store = g.__REGEN_STORE__ as Store;
 
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'regen-store.json');
+const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_FILE = path.join(DATA_DIR, "regen-store.json");
 
 function ensureDir() {
   try {
@@ -50,7 +50,7 @@ function loadFromDisk() {
   try {
     ensureDir();
     if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      const raw = fs.readFileSync(DATA_FILE, "utf8");
       const parsed = JSON.parse(raw);
       store.jobs = parsed.jobs || {};
       store.queue = parsed.queue || [];
@@ -69,7 +69,7 @@ function persistSoon() {
         fs.writeFileSync(
           DATA_FILE,
           JSON.stringify({ jobs: store.jobs, queue: store.queue, active: store.active }, null, 2),
-          'utf8'
+          "utf8",
         );
       } catch {}
     }, 150);
@@ -81,7 +81,8 @@ loadFromDisk();
 
 const MAX_CONCURRENT = 1;
 
-const randomCover = (seed: string) => `https://picsum.photos/seed/cover-${seed}-${Math.floor(Math.random() * 10000)}/500/500`;
+const randomCover = (seed: string) =>
+  `https://picsum.photos/seed/cover-${seed}-${Math.floor(Math.random() * 10000)}/500/500`;
 
 export function getJob(playlistId: string): RegenJob | undefined {
   return store.jobs[playlistId];
@@ -91,27 +92,34 @@ export function getAllJobs(): Store {
   return store;
 }
 
-export function startJob(playlistId: string, trackIds: string[], currentCovers: Record<string, string>): RegenJob {
+export function startJob(
+  playlistId: string,
+  trackIds: string[],
+  currentCovers: Record<string, string>,
+): RegenJob {
   // If already exists and running/queued, return current job
   const existing = store.jobs[playlistId];
-  if (existing && (existing.status === 'running' || existing.status === 'queued' || existing.status === 'paused')) {
+  if (
+    existing &&
+    (existing.status === "running" || existing.status === "queued" || existing.status === "paused")
+  ) {
     return existing;
   }
   const rows: Record<string, RegenRowState> = Object.fromEntries(
-    trackIds.map((id) => [id, { trackId: id, status: 'pending', prevCoverUrl: currentCovers[id] }])
+    trackIds.map((id) => [id, { trackId: id, status: "pending", prevCoverUrl: currentCovers[id] }]),
   );
-  const hasActive = store.active && store.jobs[store.active]?.status === 'running';
-  const status: RegenStatus = hasActive && MAX_CONCURRENT === 1 ? 'queued' : 'running';
+  const hasActive = store.active && store.jobs[store.active]?.status === "running";
+  const status: RegenStatus = hasActive && MAX_CONCURRENT === 1 ? "queued" : "running";
   const job: RegenJob = {
     playlistId,
     total: trackIds.length,
     completed: 0,
     status,
-    startedAt: status === 'running' ? Date.now() : undefined,
+    startedAt: status === "running" ? Date.now() : undefined,
     rows,
   };
   store.jobs[playlistId] = job;
-  if (status === 'queued') {
+  if (status === "queued") {
     store.queue.push(playlistId);
   } else {
     store.active = playlistId;
@@ -124,7 +132,7 @@ export function startJob(playlistId: string, trackIds: string[], currentCovers: 
 export function pauseJob(playlistId: string) {
   const job = store.jobs[playlistId];
   if (!job) return;
-  job.status = 'paused';
+  job.status = "paused";
   persistSoon();
 }
 
@@ -133,15 +141,15 @@ export function resumeJob(playlistId: string) {
   if (!job) return;
   if (store.active && store.active !== playlistId && MAX_CONCURRENT === 1) {
     // cannot resume now, queue it
-    job.status = 'queued';
+    job.status = "queued";
     if (!store.queue.includes(playlistId)) store.queue.push(playlistId);
     return;
   }
-  job.status = 'running';
+  job.status = "running";
   if (!store.active) store.active = playlistId;
   if (!store.timers[playlistId]) {
     const trackIds = Object.keys(job.rows);
-    const covers = Object.fromEntries(trackIds.map((id) => [id, job.rows[id]?.prevCoverUrl || '']));
+    const covers = Object.fromEntries(trackIds.map((id) => [id, job.rows[id]?.prevCoverUrl || ""]));
     runTimer(playlistId, trackIds, covers);
   }
   persistSoon();
@@ -150,7 +158,7 @@ export function resumeJob(playlistId: string) {
 export function cancelJob(playlistId: string) {
   const job = store.jobs[playlistId];
   if (!job) return;
-  job.status = 'canceled';
+  job.status = "canceled";
   if (store.timers[playlistId]) {
     clearInterval(store.timers[playlistId] as any);
     store.timers[playlistId] = null;
@@ -170,7 +178,7 @@ export function restoreAll(playlistId: string) {
   if (!job) return;
   Object.keys(job.rows).forEach((id) => {
     const r = job.rows[id];
-    job.rows[id] = { ...r, status: 'restored', newCoverUrl: r.prevCoverUrl };
+    job.rows[id] = { ...r, status: "restored", newCoverUrl: r.prevCoverUrl };
   });
   persistSoon();
 }
@@ -180,7 +188,7 @@ export function restoreTrack(playlistId: string, trackId: string) {
   if (!job) return;
   const r = job.rows[trackId];
   if (!r) return;
-  job.rows[trackId] = { ...r, status: 'restored', newCoverUrl: r.prevCoverUrl };
+  job.rows[trackId] = { ...r, status: "restored", newCoverUrl: r.prevCoverUrl };
   persistSoon();
 }
 
@@ -198,11 +206,11 @@ function runTimer(playlistId: string, trackIds: string[], currentCovers: Record<
       store.timers[playlistId] = null;
       return;
     }
-    if (j.status !== 'running') return; // paused or queued
+    if (j.status !== "running") return; // paused or queued
     if (j.completed >= j.total) {
       clearInterval(interval);
       store.timers[playlistId] = null;
-      j.status = 'completed';
+      j.status = "completed";
       if (store.active === playlistId) {
         store.active = null;
         startNextFromQueue();
@@ -213,7 +221,7 @@ function runTimer(playlistId: string, trackIds: string[], currentCovers: Record<
     const nextTrackId = trackIds[j.completed];
     const updatedRow: RegenRowState = {
       trackId: nextTrackId,
-      status: 'updated',
+      status: "updated",
       prevCoverUrl: currentCovers[nextTrackId],
       newCoverUrl: randomCover(nextTrackId),
       updatedAt: Date.now(),
@@ -230,11 +238,11 @@ function startNextFromQueue() {
   if (!nextId) return;
   const job = store.jobs[nextId];
   if (!job) return startNextFromQueue();
-  job.status = 'running';
+  job.status = "running";
   job.startedAt = Date.now();
   store.active = nextId;
   const trackIds = Object.keys(job.rows);
-  const covers = Object.fromEntries(trackIds.map((id) => [id, job.rows[id]?.prevCoverUrl || '']));
+  const covers = Object.fromEntries(trackIds.map((id) => [id, job.rows[id]?.prevCoverUrl || ""]));
   runTimer(nextId, trackIds, covers);
   persistSoon();
 }

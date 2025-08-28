@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag name (e.g., v1.0.0)'
+        description: "Tag name (e.g., v1.0.0)"
         required: true
       title:
-        description: 'Release title'
+        description: "Release title"
         required: false
       notes:
-        description: 'Release notes (optional)'
+        description: "Release notes (optional)"
         required: false
 
 jobs:
@@ -28,4 +28,3 @@ jobs:
           body: ${{ github.event.inputs.notes || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Loader2, 
-  Shuffle, 
-  Sparkles, 
-  Image as ImageIcon, 
-  Save, 
-  Check, 
-  Share2, 
-  Download, 
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Loader2,
+  Shuffle,
+  Sparkles,
+  Image as ImageIcon,
+  Save,
+  Check,
+  Share2,
+  Download,
   Wand2,
-  Palette
-} from 'lucide-react';
+  Palette,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { useMusicData } from '@/hooks/use-music-data';
-import { coverGenerator, GenerationOptions, GeneratedCover } from '@/lib/cover-generator';
-import { photoAI, PhotoMatchScore, getMoodColor, getMoodIcon } from '@/lib/photo-ai';
-import { userPhotos } from '@/lib/data';
-import PhotoGallery from '@/components/photo-gallery';
-import { usePerformance, useComponentPerformance } from '@/components/performance-provider';
-import { useOfflineAware } from '@/components/service-worker-provider';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useMusicData } from "@/hooks/use-music-data";
+import { coverGenerator, GenerationOptions, GeneratedCover } from "@/lib/cover-generator";
+import { photoAI, PhotoMatchScore, getMoodColor, getMoodIcon } from "@/lib/photo-ai";
+import { userPhotos } from "@/lib/data";
+import PhotoGallery from "@/components/photo-gallery";
+import { usePerformance, useComponentPerformance } from "@/components/performance-provider";
+import { useOfflineAware } from "@/components/service-worker-provider";
 
 interface GeneratorState {
   currentTrackIndex: number;
@@ -35,7 +35,7 @@ interface GeneratorState {
   selectedUserPhoto: string | null; // From photo gallery
   generatedCovers: GeneratedCover[];
   isGenerating: boolean;
-  selectedStyle: 'auto' | 'classic' | 'modern' | 'neon' | 'vintage';
+  selectedStyle: "auto" | "classic" | "modern" | "neon" | "vintage";
   photoMatches: PhotoMatchScore[];
   isAnalyzingPhotos: boolean;
 }
@@ -43,7 +43,7 @@ interface GeneratorState {
 export default function GeneratorPage() {
   const { tracks, isLoading: tracksLoading } = useMusicData();
   const { toast } = useToast();
-  const { trackInteraction } = useComponentPerformance('GeneratorPage');
+  const { trackInteraction } = useComponentPerformance("GeneratorPage");
   const { isOffline, isSlowConnection } = useOfflineAware();
 
   const [state, setState] = useState<GeneratorState>({
@@ -52,72 +52,74 @@ export default function GeneratorPage() {
     selectedUserPhoto: null,
     generatedCovers: [],
     isGenerating: false,
-    selectedStyle: 'auto',
+    selectedStyle: "auto",
     photoMatches: [],
-    isAnalyzingPhotos: false
+    isAnalyzingPhotos: false,
   });
 
   const currentTrack = tracks[state.currentTrackIndex];
 
   const handleShuffle = async () => {
     const startTime = performance.now();
-    
+
     const newIndex = (state.currentTrackIndex + 1) % tracks.length;
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       currentTrackIndex: newIndex,
       generatedCovers: [],
-      isAnalyzingPhotos: true
+      isAnalyzingPhotos: true,
     }));
 
     // Analyze photos for the new track
     try {
       const newTrack = tracks[newIndex];
-      const audioFeatures = newTrack.audioFeatures ? {
-        valence: newTrack.audioFeatures.valence,
-        energy: newTrack.audioFeatures.energy,
-        tempo: newTrack.audioFeatures.tempo
-      } : undefined;
+      const audioFeatures = newTrack.audioFeatures
+        ? {
+            valence: newTrack.audioFeatures.valence,
+            energy: newTrack.audioFeatures.energy,
+            tempo: newTrack.audioFeatures.tempo,
+          }
+        : undefined;
 
       const matches = await photoAI.matchPhotosToSong(
         userPhotos,
         newTrack.mood.toLowerCase() as any,
-        audioFeatures
+        audioFeatures,
       );
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         photoMatches: matches,
-        isAnalyzingPhotos: false
+        isAnalyzingPhotos: false,
       }));
-      
+
       // Track performance
-      trackInteraction('shuffle-track', startTime);
+      trackInteraction("shuffle-track", startTime);
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isAnalyzingPhotos: false,
-        photoMatches: []
+        photoMatches: [],
       }));
     }
   };
 
   const handlePhotoSelect = (photoId: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      selectedPhotoId: prev.selectedPhotoId === photoId ? null : photoId
+      selectedPhotoId: prev.selectedPhotoId === photoId ? null : photoId,
     }));
   };
 
   const handleUserPhotoSelect = (photoUrl: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      selectedUserPhoto: photoUrl || null
+      selectedUserPhoto: photoUrl || null,
     }));
   };
 
-  const handleStyleSelect = (style: 'auto' | 'classic' | 'modern' | 'neon' | 'vintage') => {
-    setState(prev => ({ ...prev, selectedStyle: style }));
+  const handleStyleSelect = (style: "auto" | "classic" | "modern" | "neon" | "vintage") => {
+    setState((prev) => ({ ...prev, selectedStyle: style }));
   };
 
   const handleGenerate = async () => {
@@ -129,7 +131,7 @@ export default function GeneratorPage() {
       });
       return;
     }
-    
+
     // Check offline status
     if (isOffline) {
       toast({
@@ -139,7 +141,7 @@ export default function GeneratorPage() {
       });
       return;
     }
-    
+
     // Warn about slow connection
     if (isSlowConnection) {
       toast({
@@ -149,43 +151,42 @@ export default function GeneratorPage() {
     }
 
     const startTime = performance.now();
-    setState(prev => ({ ...prev, isGenerating: true }));
+    setState((prev) => ({ ...prev, isGenerating: true }));
 
     try {
       // Prioritize user-selected photo from gallery, then fallback to demo photos
       let userPhoto: string | undefined;
-      
+
       if (state.selectedUserPhoto) {
         userPhoto = state.selectedUserPhoto;
       } else if (state.selectedPhotoId) {
-        const selectedPhoto = userPhotos.find(p => p.id === state.selectedPhotoId);
+        const selectedPhoto = userPhotos.find((p) => p.id === state.selectedPhotoId);
         userPhoto = selectedPhoto?.url;
       }
 
       const options: GenerationOptions = {
         userPhoto,
-        style: state.selectedStyle === 'auto' ? undefined : state.selectedStyle,
-        colorPalette: 'vibrant'
+        style: state.selectedStyle === "auto" ? undefined : state.selectedStyle,
+        colorPalette: "vibrant",
       };
 
       const variants = await coverGenerator.generateVariants(currentTrack, options);
-      
-      setState(prev => ({ 
-        ...prev, 
+
+      setState((prev) => ({
+        ...prev,
         generatedCovers: variants,
-        isGenerating: false 
+        isGenerating: false,
       }));
 
       toast({
         title: "Covers Generated!",
         description: `Created ${variants.length} unique variants for ${currentTrack.title}.`,
       });
-      
-      // Track performance
-      trackInteraction('generate-covers', startTime);
 
+      // Track performance
+      trackInteraction("generate-covers", startTime);
     } catch (error) {
-      setState(prev => ({ ...prev, isGenerating: false }));
+      setState((prev) => ({ ...prev, isGenerating: false }));
       toast({
         variant: "destructive",
         title: "Generation Failed",
@@ -215,9 +216,7 @@ export default function GeneratorPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl font-black text-white mb-2">
-              AI Album Art
-            </h1>
+            <h1 className="text-4xl font-black text-white mb-2">AI Album Art</h1>
             <h2 className="text-3xl font-black bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] bg-clip-text text-transparent mb-4">
               Generator
             </h2>
@@ -245,7 +244,7 @@ export default function GeneratorPage() {
                     className="rounded-2xl object-cover"
                   />
                 </div>
-                
+
                 <div className="flex-grow text-center sm:text-left">
                   <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
                     <Badge className="bg-[#9FFFA2]/20 text-[#9FFFA2] border-[#9FFFA2]/30">
@@ -255,11 +254,15 @@ export default function GeneratorPage() {
                       {currentTrack.tempo} BPM
                     </Badge>
                   </div>
-                  
+
                   <h2 className="text-2xl font-black mb-1">{currentTrack.title}</h2>
                   <p className="text-white/80 text-lg font-semibold mb-4">{currentTrack.artist}</p>
-                  
-                  <Button onClick={handleShuffle} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+
+                  <Button
+                    onClick={handleShuffle}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
                     <Shuffle className="mr-2 h-4 w-4" />
                     Shuffle Track
                   </Button>
@@ -280,7 +283,7 @@ export default function GeneratorPage() {
             <Palette className="text-[#FF6F91]" /> Style Selection
           </h3>
           <div className="flex gap-3 flex-wrap">
-            {(['auto', 'classic', 'modern', 'neon', 'vintage'] as const).map((style) => (
+            {(["auto", "classic", "modern", "neon", "vintage"] as const).map((style) => (
               <Button
                 key={style}
                 onClick={() => handleStyleSelect(style)}
@@ -289,7 +292,7 @@ export default function GeneratorPage() {
                   "rounded-full capitalize",
                   state.selectedStyle === style
                     ? "bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold"
-                    : "border-white/20 text-white hover:bg-white/10"
+                    : "border-white/20 text-white hover:bg-white/10",
                 )}
               >
                 {style}
@@ -307,7 +310,7 @@ export default function GeneratorPage() {
         >
           <PhotoGallery
             onPhotoSelect={handleUserPhotoSelect}
-            selectedPhotoUrl={state.selectedUserPhoto || ''}
+            selectedPhotoUrl={state.selectedUserPhoto || ""}
             maxPhotos={5}
           />
         </motion.div>
@@ -320,32 +323,39 @@ export default function GeneratorPage() {
           className="mb-8"
         >
           <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
-            <ImageIcon className="text-[#8FD3FF]" /> 
+            <ImageIcon className="text-[#8FD3FF]" />
             Demo Photos
-            {state.isAnalyzingPhotos && (
-              <Loader2 className="w-5 h-5 animate-spin text-[#9FFFA2]" />
-            )}
+            {state.isAnalyzingPhotos && <Loader2 className="w-5 h-5 animate-spin text-[#9FFFA2]" />}
           </h3>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {(state.photoMatches.length > 0 ? state.photoMatches : userPhotos.map(p => ({ photoId: p.id, photoUrl: p.url, matchScore: 0, analysis: null, reasons: [] }))).map((match) => {
+            {(state.photoMatches.length > 0
+              ? state.photoMatches
+              : userPhotos.map((p) => ({
+                  photoId: p.id,
+                  photoUrl: p.url,
+                  matchScore: 0,
+                  analysis: null,
+                  reasons: [],
+                }))
+            ).map((match) => {
               const isSelected = state.selectedPhotoId === match.photoId;
               const hasAnalysis = state.photoMatches.length > 0;
-              
+
               return (
                 <motion.div
                   key={match.photoId}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Card 
+                  <Card
                     className={cn(
                       "overflow-hidden aspect-square cursor-pointer transition-all duration-300 border-2 relative",
                       isSelected
-                        ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20 scale-105" 
+                        ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20 scale-105"
                         : hasAnalysis && match.matchScore > 70
-                        ? "border-[#FFD36E] shadow-md shadow-[#FFD36E]/20"
-                        : "border-white/20 hover:border-white/40"
+                          ? "border-[#FFD36E] shadow-md shadow-[#FFD36E]/20"
+                          : "border-white/20 hover:border-white/40",
                     )}
                     onClick={() => handlePhotoSelect(match.photoId)}
                   >
@@ -356,38 +366,43 @@ export default function GeneratorPage() {
                       height={200}
                       className="h-full w-full object-cover"
                     />
-                    
+
                     {/* Match Score Badge */}
                     {hasAnalysis && (
                       <div className="absolute top-2 right-2 z-10">
-                        <Badge 
+                        <Badge
                           className={cn(
                             "text-xs font-bold",
-                            match.matchScore > 80 ? "bg-[#9FFFA2]/90 text-black" :
-                            match.matchScore > 60 ? "bg-[#FFD36E]/90 text-black" :
-                            "bg-white/20 text-white backdrop-blur-sm"
+                            match.matchScore > 80
+                              ? "bg-[#9FFFA2]/90 text-black"
+                              : match.matchScore > 60
+                                ? "bg-[#FFD36E]/90 text-black"
+                                : "bg-white/20 text-white backdrop-blur-sm",
                           )}
                         >
                           {Math.round(match.matchScore)}%
                         </Badge>
                       </div>
                     )}
-                    
+
                     {/* Best Match Indicator */}
-                    {hasAnalysis && match.matchScore === Math.max(...state.photoMatches.map(m => m.matchScore)) && match.matchScore > 70 && (
-                      <div className="absolute top-2 left-2 z-10">
-                        <Badge className="bg-[#9FFFA2] text-black font-bold text-xs">
-                          ✨ BEST
-                        </Badge>
-                      </div>
-                    )}
-                    
+                    {hasAnalysis &&
+                      match.matchScore ===
+                        Math.max(...state.photoMatches.map((m) => m.matchScore)) &&
+                      match.matchScore > 70 && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Badge className="bg-[#9FFFA2] text-black font-bold text-xs">
+                            ✨ BEST
+                          </Badge>
+                        </div>
+                      )}
+
                     {/* Mood Indicator */}
                     {hasAnalysis && match.analysis && (
                       <div className="absolute bottom-2 left-2 z-10">
-                        <div 
+                        <div
                           className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
-                          style={{ backgroundColor: getMoodColor(match.analysis.mood) + '90' }}
+                          style={{ backgroundColor: getMoodColor(match.analysis.mood) + "90" }}
                           title={`${match.analysis.mood} mood`}
                         >
                           {getMoodIcon(match.analysis.mood)}
@@ -399,7 +414,7 @@ export default function GeneratorPage() {
               );
             })}
           </div>
-          
+
           <div className="mt-4 text-sm">
             {state.isAnalyzingPhotos ? (
               <p className="text-white/60 flex items-center gap-2">
@@ -409,22 +424,21 @@ export default function GeneratorPage() {
             ) : state.photoMatches.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-white/70">
-                  {state.selectedPhotoId ? (
-                    `Selected photo will be integrated into the cover`
-                  ) : (
-                    `AI recommends: ${state.photoMatches.find(m => m.matchScore === Math.max(...state.photoMatches.map(p => p.matchScore)))?.reasons?.[0] || 'Best match available'}`
-                  )}
+                  {state.selectedPhotoId
+                    ? `Selected photo will be integrated into the cover`
+                    : `AI recommends: ${state.photoMatches.find((m) => m.matchScore === Math.max(...state.photoMatches.map((p) => p.matchScore)))?.reasons?.[0] || "Best match available"}`}
                 </p>
                 {state.selectedPhotoId && (
                   <div className="text-xs text-[#9FFFA2]">
-                    {state.photoMatches.find(m => m.photoId === state.selectedPhotoId)?.reasons?.slice(0, 2).join(' • ')}
+                    {state.photoMatches
+                      .find((m) => m.photoId === state.selectedPhotoId)
+                      ?.reasons?.slice(0, 2)
+                      .join(" • ")}
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-white/50">
-                Select a photo or let AI choose the best match
-              </p>
+              <p className="text-white/50">Select a photo or let AI choose the best match</p>
             )}
           </div>
         </motion.div>
@@ -444,7 +458,7 @@ export default function GeneratorPage() {
             {state.isGenerating ? (
               <>
                 <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                {isSlowConnection ? 'Generating (Slow Connection)...' : 'Generating Magic...'}
+                {isSlowConnection ? "Generating (Slow Connection)..." : "Generating Magic..."}
               </>
             ) : isOffline ? (
               <>
@@ -475,7 +489,7 @@ export default function GeneratorPage() {
                   Your Generated Covers
                 </span>
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {state.generatedCovers.map((cover, index) => (
                   <motion.div
@@ -499,21 +513,36 @@ export default function GeneratorPage() {
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div className="flex gap-2">
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Save className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Share2 className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Download className="w-4 h-4" />
                             </Button>
                           </div>
-                          <Badge variant="outline" className="border-[#9FFFA2]/30 text-[#9FFFA2] text-xs">
+                          <Badge
+                            variant="outline"
+                            className="border-[#9FFFA2]/30 text-[#9FFFA2] text-xs"
+                          >
                             Variant {index + 1}
                           </Badge>
                         </div>

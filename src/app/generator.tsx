@@ -1,16 +1,25 @@
-'use client';
+"use client";
 
-import { useActionState, useState, useTransition, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { Loader2, Shuffle, Sparkles, Image as ImageIcon, Save, Check, Share2, Download } from 'lucide-react';
+import { useActionState, useState, useTransition, useEffect, useRef } from "react";
+import Image from "next/image";
+import {
+  Loader2,
+  Shuffle,
+  Sparkles,
+  Image as ImageIcon,
+  Save,
+  Check,
+  Share2,
+  Download,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { generateCoverAction, saveStoryAction } from './actions';
-import { songs, userPhotos } from '@/lib/data';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { generateCoverAction, saveStoryAction } from "./actions";
+import { songs, userPhotos } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 const initialState = {
   generatedCoverUri: null,
@@ -85,17 +94,16 @@ function SaveButton({ songId, generatedCoverUri }: { songId: string; generatedCo
   );
 }
 
-
 export default function Generator() {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const { toast } = useToast();
 
   const [state, formAction] = useActionState(generateCoverAction, initialState);
-  
+
   const handleShuffle = () => {
     setCurrentSongIndex((prevIndex) => (prevIndex + 1) % songs.length);
   };
-  
+
   const currentSong = songs[currentSongIndex];
 
   useEffect(() => {
@@ -112,9 +120,7 @@ export default function Generator() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <header className="text-center mb-12">
-        <h1 className="text-5xl font-black tracking-tighter text-white">
-          Aesthetic Album Art
-        </h1>
+        <h1 className="text-5xl font-black tracking-tighter text-white">Aesthetic Album Art</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Remix your favorite tracks with your own photos.
         </p>
@@ -122,7 +128,9 @@ export default function Generator() {
 
       <form action={formAction}>
         <input type="hidden" name="songId" value={currentSong.id} />
-        {userPhotos.map(p => <input type="hidden" key={p.id} name="photoIds" value={p.id} />)}
+        {userPhotos.map((p) => (
+          <input type="hidden" key={p.id} name="photoIds" value={p.id} />
+        ))}
 
         <div className="space-y-10">
           <Card className="overflow-hidden border-none bg-card shadow-xl">
@@ -138,11 +146,22 @@ export default function Generator() {
                   />
                 </div>
                 <div className="flex-grow text-center sm:text-left">
-                  <Badge variant="secondary" className="mb-2 uppercase tracking-widest bg-secondary/80 text-secondary-foreground">{currentSong.mood}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="mb-2 uppercase tracking-widest bg-secondary/80 text-secondary-foreground"
+                  >
+                    {currentSong.mood}
+                  </Badge>
                   <h2 className="text-3xl font-bold">{currentSong.title}</h2>
                   <p className="text-muted-foreground text-xl">{currentSong.artist}</p>
-                  
-                  <Button type="button" variant="ghost" size="sm" onClick={handleShuffle} className="mt-4 text-muted-foreground hover:text-white">
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShuffle}
+                    className="mt-4 text-muted-foreground hover:text-white"
+                  >
                     <Shuffle className="mr-2 h-4 w-4" />
                     Shuffle Song
                   </Button>
@@ -150,15 +169,21 @@ export default function Generator() {
               </div>
             </CardContent>
           </Card>
-          
+
           <section>
-            <h3 className="text-2xl font-bold mb-4 flex items-center gap-3"><ImageIcon className="text-primary" /> Your Photos</h3>
+            <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+              <ImageIcon className="text-primary" /> Your Photos
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {userPhotos.map((photo) => (
-                <Card key={photo.id} className={cn(
-                  "overflow-hidden aspect-square transition-all duration-300 border-2 border-transparent",
-                  state.matchedPhotoId === photo.id && "border-primary shadow-lg shadow-primary/20 scale-105"
-                )}>
+                <Card
+                  key={photo.id}
+                  className={cn(
+                    "overflow-hidden aspect-square transition-all duration-300 border-2 border-transparent",
+                    state.matchedPhotoId === photo.id &&
+                      "border-primary shadow-lg shadow-primary/20 scale-105",
+                  )}
+                >
                   <Image
                     src={photo.url}
                     alt="User photo"
@@ -170,7 +195,9 @@ export default function Generator() {
                 </Card>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">AI will pick the best photo to match the song's mood.</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              AI will pick the best photo to match the song's mood.
+            </p>
           </section>
 
           <div className="pt-6">
@@ -194,13 +221,19 @@ export default function Generator() {
                 />
               </Card>
               <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4">
-                 <SaveButton songId={currentSong.id} generatedCoverUri={state.generatedCoverUri} />
-                 <Button size="icon" className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30">
-                    <Share2 />
-                 </Button>
-                 <Button size="icon" className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30">
-                    <Download />
-                 </Button>
+                <SaveButton songId={currentSong.id} generatedCoverUri={state.generatedCoverUri} />
+                <Button
+                  size="icon"
+                  className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30"
+                >
+                  <Share2 />
+                </Button>
+                <Button
+                  size="icon"
+                  className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30"
+                >
+                  <Download />
+                </Button>
               </div>
             </div>
           </div>

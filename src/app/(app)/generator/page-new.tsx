@@ -1,36 +1,36 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Loader2, 
-  Shuffle, 
-  Sparkles, 
-  Image as ImageIcon, 
-  Save, 
-  Check, 
-  Share2, 
-  Download, 
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Loader2,
+  Shuffle,
+  Sparkles,
+  Image as ImageIcon,
+  Save,
+  Check,
+  Share2,
+  Download,
   Wand2,
-  Palette
-} from 'lucide-react';
+  Palette,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { useMusicData } from '@/hooks/use-music-data';
-import { coverGenerator, GenerationOptions, GeneratedCover } from '@/lib/cover-generator';
-import { userPhotos } from '@/lib/data';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useMusicData } from "@/hooks/use-music-data";
+import { coverGenerator, GenerationOptions, GeneratedCover } from "@/lib/cover-generator";
+import { userPhotos } from "@/lib/data";
 
 interface GeneratorState {
   currentTrackIndex: number;
   selectedPhotoId: string | null;
   generatedCovers: GeneratedCover[];
   isGenerating: boolean;
-  selectedStyle: 'auto' | 'classic' | 'modern' | 'neon' | 'vintage';
+  selectedStyle: "auto" | "classic" | "modern" | "neon" | "vintage";
 }
 
 export default function GeneratorPage() {
@@ -42,28 +42,28 @@ export default function GeneratorPage() {
     selectedPhotoId: null,
     generatedCovers: [],
     isGenerating: false,
-    selectedStyle: 'auto'
+    selectedStyle: "auto",
   });
 
   const currentTrack = tracks[state.currentTrackIndex];
 
   const handleShuffle = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       currentTrackIndex: (prev.currentTrackIndex + 1) % tracks.length,
-      generatedCovers: []
+      generatedCovers: [],
     }));
   };
 
   const handlePhotoSelect = (photoId: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      selectedPhotoId: prev.selectedPhotoId === photoId ? null : photoId
+      selectedPhotoId: prev.selectedPhotoId === photoId ? null : photoId,
     }));
   };
 
-  const handleStyleSelect = (style: 'auto' | 'classic' | 'modern' | 'neon' | 'vintage') => {
-    setState(prev => ({ ...prev, selectedStyle: style }));
+  const handleStyleSelect = (style: "auto" | "classic" | "modern" | "neon" | "vintage") => {
+    setState((prev) => ({ ...prev, selectedStyle: style }));
   };
 
   const handleGenerate = async () => {
@@ -76,34 +76,33 @@ export default function GeneratorPage() {
       return;
     }
 
-    setState(prev => ({ ...prev, isGenerating: true }));
+    setState((prev) => ({ ...prev, isGenerating: true }));
 
     try {
-      const selectedPhoto = state.selectedPhotoId 
-        ? userPhotos.find(p => p.id === state.selectedPhotoId)
+      const selectedPhoto = state.selectedPhotoId
+        ? userPhotos.find((p) => p.id === state.selectedPhotoId)
         : null;
 
       const options: GenerationOptions = {
         userPhoto: selectedPhoto?.url,
-        style: state.selectedStyle === 'auto' ? undefined : state.selectedStyle,
-        colorPalette: 'vibrant'
+        style: state.selectedStyle === "auto" ? undefined : state.selectedStyle,
+        colorPalette: "vibrant",
       };
 
       const variants = await coverGenerator.generateVariants(currentTrack, options);
-      
-      setState(prev => ({ 
-        ...prev, 
+
+      setState((prev) => ({
+        ...prev,
         generatedCovers: variants,
-        isGenerating: false 
+        isGenerating: false,
       }));
 
       toast({
         title: "Covers Generated!",
         description: `Created ${variants.length} unique variants for ${currentTrack.title}.`,
       });
-
     } catch (error) {
-      setState(prev => ({ ...prev, isGenerating: false }));
+      setState((prev) => ({ ...prev, isGenerating: false }));
       toast({
         variant: "destructive",
         title: "Generation Failed",
@@ -133,9 +132,7 @@ export default function GeneratorPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl font-black text-white mb-2">
-              AI Album Art
-            </h1>
+            <h1 className="text-4xl font-black text-white mb-2">AI Album Art</h1>
             <h2 className="text-3xl font-black bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] bg-clip-text text-transparent mb-4">
               Generator
             </h2>
@@ -163,7 +160,7 @@ export default function GeneratorPage() {
                     className="rounded-2xl object-cover"
                   />
                 </div>
-                
+
                 <div className="flex-grow text-center sm:text-left">
                   <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
                     <Badge className="bg-[#9FFFA2]/20 text-[#9FFFA2] border-[#9FFFA2]/30">
@@ -173,11 +170,15 @@ export default function GeneratorPage() {
                       {currentTrack.tempo} BPM
                     </Badge>
                   </div>
-                  
+
                   <h2 className="text-2xl font-black mb-1">{currentTrack.title}</h2>
                   <p className="text-white/80 text-lg font-semibold mb-4">{currentTrack.artist}</p>
-                  
-                  <Button onClick={handleShuffle} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+
+                  <Button
+                    onClick={handleShuffle}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
                     <Shuffle className="mr-2 h-4 w-4" />
                     Shuffle Track
                   </Button>
@@ -198,7 +199,7 @@ export default function GeneratorPage() {
             <Palette className="text-[#FF6F91]" /> Style Selection
           </h3>
           <div className="flex gap-3 flex-wrap">
-            {(['auto', 'classic', 'modern', 'neon', 'vintage'] as const).map((style) => (
+            {(["auto", "classic", "modern", "neon", "vintage"] as const).map((style) => (
               <Button
                 key={style}
                 onClick={() => handleStyleSelect(style)}
@@ -207,7 +208,7 @@ export default function GeneratorPage() {
                   "rounded-full capitalize",
                   state.selectedStyle === style
                     ? "bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold"
-                    : "border-white/20 text-white hover:bg-white/10"
+                    : "border-white/20 text-white hover:bg-white/10",
                 )}
               >
                 {style}
@@ -228,17 +229,13 @@ export default function GeneratorPage() {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {userPhotos.map((photo) => (
-              <motion.div
-                key={photo.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Card 
+              <motion.div key={photo.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Card
                   className={cn(
                     "overflow-hidden aspect-square cursor-pointer transition-all duration-300 border-2",
-                    state.selectedPhotoId === photo.id 
-                      ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20 scale-105" 
-                      : "border-white/20 hover:border-white/40"
+                    state.selectedPhotoId === photo.id
+                      ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20 scale-105"
+                      : "border-white/20 hover:border-white/40",
                   )}
                   onClick={() => handlePhotoSelect(photo.id)}
                 >
@@ -254,7 +251,9 @@ export default function GeneratorPage() {
             ))}
           </div>
           <p className="text-xs text-white/50 mt-3">
-            {state.selectedPhotoId ? "Selected photo will be integrated into the cover" : "Select a photo or let AI choose the best match"}
+            {state.selectedPhotoId
+              ? "Selected photo will be integrated into the cover"
+              : "Select a photo or let AI choose the best match"}
           </p>
         </motion.div>
 
@@ -299,7 +298,7 @@ export default function GeneratorPage() {
                   Your Generated Covers
                 </span>
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {state.generatedCovers.map((cover, index) => (
                   <motion.div
@@ -323,21 +322,36 @@ export default function GeneratorPage() {
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div className="flex gap-2">
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Save className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Share2 className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/10"
+                            >
                               <Download className="w-4 h-4" />
                             </Button>
                           </div>
-                          <Badge variant="outline" className="border-[#9FFFA2]/30 text-[#9FFFA2] text-xs">
+                          <Badge
+                            variant="outline"
+                            className="border-[#9FFFA2]/30 text-[#9FFFA2] text-xs"
+                          >
                             Variant {index + 1}
                           </Badge>
                         </div>

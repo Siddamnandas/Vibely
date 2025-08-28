@@ -1,5 +1,5 @@
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
-import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
+import { initializeApp } from "firebase/app";
 
 interface NotificationPayload {
   title: string;
@@ -27,7 +27,7 @@ class PushNotificationService {
   private messaging: Messaging | null = null;
   private isSupported = false;
   private currentToken: string | null = null;
-  private permissionStatus: NotificationPermission = 'default';
+  private permissionStatus: NotificationPermission = "default";
 
   constructor() {
     this.initialize();
@@ -35,8 +35,12 @@ class PushNotificationService {
 
   private async initialize() {
     // Check if push notifications are supported
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Push notifications are not supported in this environment');
+    if (
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
+    ) {
+      console.warn("Push notifications are not supported in this environment");
       return;
     }
 
@@ -57,11 +61,11 @@ class PushNotificationService {
 
         const app = initializeApp(firebaseConfig);
         this.messaging = getMessaging(app);
-        
+
         // Set up message handling
         this.setupMessageHandling();
       } catch (error) {
-        console.error('Failed to initialize Firebase messaging:', error);
+        console.error("Failed to initialize Firebase messaging:", error);
       }
     }
   }
@@ -71,24 +75,24 @@ class PushNotificationService {
    */
   async requestPermission(): Promise<boolean> {
     if (!this.isSupported) {
-      console.warn('Push notifications not supported');
+      console.warn("Push notifications not supported");
       return false;
     }
 
     try {
       const permission = await Notification.requestPermission();
       this.permissionStatus = permission;
-      
-      if (permission === 'granted') {
-        console.log('Push notification permission granted');
+
+      if (permission === "granted") {
+        console.log("Push notification permission granted");
         await this.getRegistrationToken();
         return true;
       } else {
-        console.log('Push notification permission denied');
+        console.log("Push notification permission denied");
         return false;
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error("Error requesting notification permission:", error);
       return false;
     }
   }
@@ -97,7 +101,7 @@ class PushNotificationService {
    * Get FCM registration token
    */
   async getRegistrationToken(): Promise<string | null> {
-    if (!this.messaging || this.permissionStatus !== 'granted') {
+    if (!this.messaging || this.permissionStatus !== "granted") {
       return null;
     }
 
@@ -105,16 +109,16 @@ class PushNotificationService {
       const token = await getToken(this.messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       });
-      
+
       this.currentToken = token;
-      console.log('FCM Registration Token:', token);
-      
+      console.log("FCM Registration Token:", token);
+
       // Send token to server for storage
       await this.sendTokenToServer(token);
-      
+
       return token;
     } catch (error) {
-      console.error('Error getting registration token:', error);
+      console.error("Error getting registration token:", error);
       return null;
     }
   }
@@ -124,23 +128,23 @@ class PushNotificationService {
    */
   async showNotification(
     payload: NotificationPayload,
-    options: PushNotificationOptions = {}
+    options: PushNotificationOptions = {},
   ): Promise<boolean> {
-    if (!this.isSupported || this.permissionStatus !== 'granted') {
-      console.warn('Cannot show notification: not supported or permission denied');
+    if (!this.isSupported || this.permissionStatus !== "granted") {
+      console.warn("Cannot show notification: not supported or permission denied");
       return false;
     }
 
     try {
       // Check if service worker is available for more advanced notifications
-      if ('serviceWorker' in navigator) {
+      if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.ready;
-        
+
         await registration.showNotification(payload.title, {
           body: payload.body,
-          icon: payload.icon || '/icon-192x192.png',
+          icon: payload.icon || "/icon-192x192.png",
           image: payload.image,
-          badge: payload.badge || '/badge-72x72.png',
+          badge: payload.badge || "/badge-72x72.png",
           data: payload.data,
           actions: payload.actions,
           requireInteraction: options.requireInteraction,
@@ -153,7 +157,7 @@ class PushNotificationService {
         // Fallback to basic notification
         new Notification(payload.title, {
           body: payload.body,
-          icon: payload.icon || '/icon-192x192.png',
+          icon: payload.icon || "/icon-192x192.png",
           image: payload.image,
           data: payload.data,
           requireInteraction: options.requireInteraction,
@@ -163,10 +167,10 @@ class PushNotificationService {
           timestamp: options.timestamp || Date.now(),
         });
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Error showing notification:', error);
+      console.error("Error showing notification:", error);
       return false;
     }
   }
@@ -178,19 +182,19 @@ class PushNotificationService {
     if (!this.messaging) return;
 
     onMessage(this.messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-      
+      console.log("Foreground message received:", payload);
+
       // Show notification when app is in foreground
       if (payload.notification) {
         this.showNotification({
-          title: payload.notification.title || 'Vibely',
-          body: payload.notification.body || '',
+          title: payload.notification.title || "Vibely",
+          body: payload.notification.body || "",
           icon: payload.notification.icon,
           image: payload.notification.image,
           data: payload.data,
         });
       }
-      
+
       // Handle custom data
       if (payload.data) {
         this.handleNotificationData(payload.data);
@@ -204,29 +208,35 @@ class PushNotificationService {
   private handleNotificationData(data: Record<string, any>) {
     // Handle different notification types
     switch (data.type) {
-      case 'regen_complete':
+      case "regen_complete":
         // Navigate to playlist or show regen complete UI
-        window.dispatchEvent(new CustomEvent('notification-regen-complete', {
-          detail: { playlistId: data.playlistId }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-complete", {
+            detail: { playlistId: data.playlistId },
+          }),
+        );
         break;
-      
-      case 'new_feature':
+
+      case "new_feature":
         // Show new feature announcement
-        window.dispatchEvent(new CustomEvent('notification-new-feature', {
-          detail: { feature: data.feature }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("notification-new-feature", {
+            detail: { feature: data.feature },
+          }),
+        );
         break;
-      
-      case 'share_response':
+
+      case "share_response":
         // Handle share responses
-        window.dispatchEvent(new CustomEvent('notification-share-response', {
-          detail: { shareId: data.shareId, type: data.responseType }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("notification-share-response", {
+            detail: { shareId: data.shareId, type: data.responseType },
+          }),
+        );
         break;
-        
+
       default:
-        console.log('Unknown notification type:', data.type);
+        console.log("Unknown notification type:", data.type);
     }
   }
 
@@ -235,15 +245,15 @@ class PushNotificationService {
    */
   private async sendTokenToServer(token: string) {
     try {
-      await fetch('/api/notifications/register', {
-        method: 'POST',
+      await fetch("/api/notifications/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ token }),
       });
     } catch (error) {
-      console.error('Error sending token to server:', error);
+      console.error("Error sending token to server:", error);
     }
   }
 
@@ -257,18 +267,18 @@ class PushNotificationService {
 
     try {
       // Inform server about unsubscription
-      await fetch('/api/notifications/unregister', {
-        method: 'POST',
+      await fetch("/api/notifications/unregister", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ token: this.currentToken }),
       });
-      
+
       this.currentToken = null;
       return true;
     } catch (error) {
-      console.error('Error unsubscribing:', error);
+      console.error("Error unsubscribing:", error);
       return false;
     }
   }
@@ -277,7 +287,7 @@ class PushNotificationService {
    * Check if notifications are supported and granted
    */
   isEnabled(): boolean {
-    return this.isSupported && this.permissionStatus === 'granted';
+    return this.isSupported && this.permissionStatus === "granted";
   }
 
   /**
@@ -300,58 +310,64 @@ export const pushNotificationService = new PushNotificationService();
 
 // Convenience functions for common notification types
 export async function notifyRegenComplete(playlistName: string, playlistId: string) {
-  return pushNotificationService.showNotification({
-    title: 'Cover Generation Complete! ✨',
-    body: `New AI covers are ready for \"${playlistName}\"`,
-    icon: '/icon-192x192.png',
-    data: {
-      type: 'regen_complete',
-      playlistId,
-      action: 'view_playlist'
-    },
-    actions: [
-      {
-        action: 'view',
-        title: 'View Playlist'
+  return pushNotificationService.showNotification(
+    {
+      title: "Cover Generation Complete! ✨",
+      body: `New AI covers are ready for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_complete",
+        playlistId,
+        action: "view_playlist",
       },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
-    ]
-  }, {
-    requireInteraction: true,
-    tag: `regen-${playlistId}`
-  });
+      actions: [
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ],
+    },
+    {
+      requireInteraction: true,
+      tag: `regen-${playlistId}`,
+    },
+  );
 }
 
 export async function notifyNewFeature(featureName: string, description: string) {
   return pushNotificationService.showNotification({
     title: `New Feature: ${featureName} 🎉`,
     body: description,
-    icon: '/icon-192x192.png',
+    icon: "/icon-192x192.png",
     data: {
-      type: 'new_feature',
-      feature: featureName
-    }
+      type: "new_feature",
+      feature: featureName,
+    },
   });
 }
 
-export async function notifyShareResponse(trackTitle: string, responseType: 'like' | 'comment' | 'share') {
+export async function notifyShareResponse(
+  trackTitle: string,
+  responseType: "like" | "comment" | "share",
+) {
   const actionText = {
-    like: 'liked',
-    comment: 'commented on',
-    share: 'shared'
+    like: "liked",
+    comment: "commented on",
+    share: "shared",
   }[responseType];
-  
+
   return pushNotificationService.showNotification({
-    title: 'Someone interacted with your track! 🎵',
+    title: "Someone interacted with your track! 🎵",
     body: `Someone ${actionText} \"${trackTitle}\"`,
-    icon: '/icon-192x192.png',
+    icon: "/icon-192x192.png",
     data: {
-      type: 'share_response',
+      type: "share_response",
       trackTitle,
-      responseType
-    }
+      responseType,
+    },
   });
-}"
+}

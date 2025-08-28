@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -39,17 +39,17 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+
     this.setState({
       error,
       errorInfo,
     });
 
     // Log error to monitoring service
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // In production, you would send this to your error monitoring service
-      console.error('Error Details:', {
+      console.error("Error Details:", {
         message: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack,
@@ -71,7 +71,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       const { fallback: Fallback } = this.props;
-      
+
       if (Fallback && this.state.error) {
         return <Fallback error={this.state.error} resetError={this.resetError} />;
       }
@@ -90,7 +90,7 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
   };
 
   const handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   return (
@@ -102,14 +102,15 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
           </div>
           <CardTitle className="text-2xl font-bold text-white">Something went wrong</CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <div className="text-center">
             <p className="text-white/70 mb-4">
-              We encountered an unexpected error. This has been logged and our team will investigate.
+              We encountered an unexpected error. This has been logged and our team will
+              investigate.
             </p>
-            
-            {process.env.NODE_ENV === 'development' && (
+
+            {process.env.NODE_ENV === "development" && (
               <details className="text-left">
                 <summary className="text-white/50 text-sm cursor-pointer mb-2">
                   Error Details (Development Only)
@@ -137,7 +138,7 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
-            
+
             <Button
               onClick={handleReload}
               variant="outline"
@@ -145,7 +146,7 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
             >
               Reload Page
             </Button>
-            
+
             <Button
               onClick={handleGoHome}
               variant="ghost"
@@ -168,12 +169,12 @@ export function MusicErrorFallback({ error, resetError }: ErrorFallbackProps) {
       <div className="w-16 h-16 mb-4 bg-[#FF6F91]/20 rounded-full flex items-center justify-center">
         <AlertTriangle className="w-8 h-8 text-[#FF6F91]" />
       </div>
-      
+
       <h3 className="text-xl font-bold text-white mb-2">Music Service Error</h3>
       <p className="text-white/70 mb-6 max-w-sm">
         Unable to connect to your music service. Please check your connection and try again.
       </p>
-      
+
       <div className="space-y-3">
         <Button
           onClick={resetError}
@@ -193,12 +194,12 @@ export function PhotoErrorFallback({ error, resetError }: ErrorFallbackProps) {
       <div className="w-16 h-16 mb-4 bg-[#FF6F91]/20 rounded-full flex items-center justify-center">
         <AlertTriangle className="w-8 h-8 text-[#FF6F91]" />
       </div>
-      
+
       <h3 className="text-xl font-bold text-white mb-2">Photo Processing Error</h3>
       <p className="text-white/70 mb-6 max-w-sm">
         Unable to process your photos. This might be due to file format or permission issues.
       </p>
-      
+
       <Button
         onClick={resetError}
         className="bg-gradient-to-r from-[#9FFFA2] to-[#8FD3FF] text-black font-bold hover:opacity-90"

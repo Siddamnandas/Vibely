@@ -6,7 +6,7 @@ interface ShareData {
 }
 
 interface ShareOptions {
-  platform?: 'instagram' | 'instagram-stories' | 'twitter' | 'facebook' | 'tiktok' | 'generic';
+  platform?: "instagram" | "instagram-stories" | "twitter" | "facebook" | "tiktok" | "generic";
   imageUrl?: string;
   imageBlob?: Blob;
   trackId?: string;
@@ -27,35 +27,35 @@ export class SharingService {
    * Share content using the most appropriate method for the platform/device
    */
   async share(data: ShareData, options: ShareOptions = {}): Promise<boolean> {
-    const { platform = 'generic' } = options;
+    const { platform = "generic" } = options;
 
     try {
       // Track sharing intent
-      this.trackShareEvent('share_initiated', {
+      this.trackShareEvent("share_initiated", {
         platform,
-        content_type: 'album_cover',
+        content_type: "album_cover",
         track_id: options.trackId,
       });
 
       // Handle platform-specific sharing
       switch (platform) {
-        case 'instagram':
-        case 'instagram-stories':
+        case "instagram":
+        case "instagram-stories":
           return await this.shareToInstagram(data, options);
-        case 'twitter':
+        case "twitter":
           return await this.shareToTwitter(data, options);
-        case 'facebook':
+        case "facebook":
           return await this.shareToFacebook(data, options);
-        case 'tiktok':
+        case "tiktok":
           return await this.shareToTikTok(data, options);
         default:
           return await this.shareGeneric(data, options);
       }
     } catch (error) {
-      console.error('Sharing failed:', error);
-      this.trackShareEvent('share_failed', {
+      console.error("Sharing failed:", error);
+      this.trackShareEvent("share_failed", {
         platform,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         track_id: options.trackId,
       });
       return false;
@@ -67,21 +67,21 @@ export class SharingService {
    */
   private async shareToInstagram(data: ShareData, options: ShareOptions): Promise<boolean> {
     if (!options.imageBlob && !options.imageUrl) {
-      throw new Error('Instagram sharing requires an image');
+      throw new Error("Instagram sharing requires an image");
     }
 
     // Try Instagram app scheme first (mobile)
     if (this.isMobile()) {
       try {
-        const image = options.imageBlob || await this.urlToBlob(options.imageUrl!);
-        
-        if (options.platform === 'instagram-stories') {
+        const image = options.imageBlob || (await this.urlToBlob(options.imageUrl!));
+
+        if (options.platform === "instagram-stories") {
           return await this.shareToInstagramStories(image, data);
         } else {
           return await this.shareToInstagramFeed(image, data);
         }
       } catch (error) {
-        console.warn('Native Instagram sharing failed, falling back to web:', error);
+        console.warn("Native Instagram sharing failed, falling back to web:", error);
       }
     }
 
@@ -94,23 +94,23 @@ export class SharingService {
    */
   private async shareToInstagramStories(image: Blob, data: ShareData): Promise<boolean> {
     if (this.canUseWebShare() && navigator.share) {
-      const files = [new File([image], 'story.jpg', { type: 'image/jpeg' })];
-      
+      const files = [new File([image], "story.jpg", { type: "image/jpeg" })];
+
       try {
         await navigator.share({
           title: data.title,
           text: data.text,
           files,
         });
-        
-        this.trackShareEvent('share_completed', {
-          platform: 'instagram-stories',
-          method: 'web_share_api',
+
+        this.trackShareEvent("share_completed", {
+          platform: "instagram-stories",
+          method: "web_share_api",
         });
         return true;
       } catch (error) {
         // User cancelled or API not supported
-        console.warn('Web Share API failed:', error);
+        console.warn("Web Share API failed:", error);
       }
     }
 
@@ -119,27 +119,27 @@ export class SharingService {
       try {
         // Convert blob to data URL for app schemes
         const dataUrl = await this.blobToDataUrl(image);
-        
+
         // Instagram Stories URL scheme
         const instagramUrl = `instagram-stories://share?media=${encodeURIComponent(dataUrl)}&text=${encodeURIComponent(data.text)}`;
-        
+
         // Attempt to open Instagram app
         window.location.href = instagramUrl;
-        
+
         // Track success (we can't really know if it worked)
-        this.trackShareEvent('share_completed', {
-          platform: 'instagram-stories',
-          method: 'url_scheme',
+        this.trackShareEvent("share_completed", {
+          platform: "instagram-stories",
+          method: "url_scheme",
         });
         return true;
       } catch (error) {
-        console.warn('Instagram URL scheme failed:', error);
+        console.warn("Instagram URL scheme failed:", error);
       }
     }
 
     // Final fallback: download image and show instructions
     this.downloadImage(image, `${data.title}.jpg`);
-    this.showShareInstructions('instagram-stories', data);
+    this.showShareInstructions("instagram-stories", data);
     return true;
   }
 
@@ -148,28 +148,28 @@ export class SharingService {
    */
   private async shareToInstagramFeed(image: Blob, data: ShareData): Promise<boolean> {
     if (this.canUseWebShare() && navigator.share) {
-      const files = [new File([image], 'cover.jpg', { type: 'image/jpeg' })];
-      
+      const files = [new File([image], "cover.jpg", { type: "image/jpeg" })];
+
       try {
         await navigator.share({
           title: data.title,
           text: data.text,
           files,
         });
-        
-        this.trackShareEvent('share_completed', {
-          platform: 'instagram',
-          method: 'web_share_api',
+
+        this.trackShareEvent("share_completed", {
+          platform: "instagram",
+          method: "web_share_api",
         });
         return true;
       } catch (error) {
-        console.warn('Web Share API failed:', error);
+        console.warn("Web Share API failed:", error);
       }
     }
 
     // Fallback: download and show instructions
     this.downloadImage(image, `${data.title}.jpg`);
-    this.showShareInstructions('instagram', data);
+    this.showShareInstructions("instagram", data);
     return true;
   }
 
@@ -179,29 +179,29 @@ export class SharingService {
   private async shareToTwitter(data: ShareData, options: ShareOptions): Promise<boolean> {
     const tweetText = `${data.text}`;
     const tweetUrl = data.url;
-    
+
     // Build Twitter intent URL
-    const twitterUrl = new URL('https://twitter.com/intent/tweet');
-    twitterUrl.searchParams.append('text', tweetText);
+    const twitterUrl = new URL("https://twitter.com/intent/tweet");
+    twitterUrl.searchParams.append("text", tweetText);
     if (tweetUrl) {
-      twitterUrl.searchParams.append('url', tweetUrl);
+      twitterUrl.searchParams.append("url", tweetUrl);
     }
-    
+
     // Open Twitter in new window
     const popup = window.open(
       twitterUrl.toString(),
-      'twitter-share',
-      'width=550,height=420,scrollbars=yes,resizable=yes'
+      "twitter-share",
+      "width=550,height=420,scrollbars=yes,resizable=yes",
     );
-    
+
     if (popup) {
-      this.trackShareEvent('share_completed', {
-        platform: 'twitter',
-        method: 'web_intent',
+      this.trackShareEvent("share_completed", {
+        platform: "twitter",
+        method: "web_intent",
       });
       return true;
     }
-    
+
     return false;
   }
 
@@ -210,25 +210,25 @@ export class SharingService {
    */
   private async shareToFacebook(data: ShareData, options: ShareOptions): Promise<boolean> {
     // Build Facebook share URL
-    const facebookUrl = new URL('https://www.facebook.com/sharer/sharer.php');
-    facebookUrl.searchParams.append('u', data.url);
-    facebookUrl.searchParams.append('t', data.title);
-    
+    const facebookUrl = new URL("https://www.facebook.com/sharer/sharer.php");
+    facebookUrl.searchParams.append("u", data.url);
+    facebookUrl.searchParams.append("t", data.title);
+
     // Open Facebook in new window
     const popup = window.open(
       facebookUrl.toString(),
-      'facebook-share',
-      'width=626,height=436,scrollbars=yes,resizable=yes'
+      "facebook-share",
+      "width=626,height=436,scrollbars=yes,resizable=yes",
     );
-    
+
     if (popup) {
-      this.trackShareEvent('share_completed', {
-        platform: 'facebook',
-        method: 'web_intent',
+      this.trackShareEvent("share_completed", {
+        platform: "facebook",
+        method: "web_intent",
       });
       return true;
     }
-    
+
     return false;
   }
 
@@ -238,13 +238,13 @@ export class SharingService {
   private async shareToTikTok(data: ShareData, options: ShareOptions): Promise<boolean> {
     // TikTok doesn't have a direct web share API, so we copy the link
     await this.copyToClipboard(data.url);
-    this.showShareInstructions('tiktok', data);
-    
-    this.trackShareEvent('share_completed', {
-      platform: 'tiktok',
-      method: 'copy_link',
+    this.showShareInstructions("tiktok", data);
+
+    this.trackShareEvent("share_completed", {
+      platform: "tiktok",
+      method: "copy_link",
     });
-    
+
     return true;
   }
 
@@ -267,27 +267,27 @@ export class SharingService {
         }
 
         await navigator.share(shareData);
-        
-        this.trackShareEvent('share_completed', {
-          platform: 'generic',
-          method: 'web_share_api',
+
+        this.trackShareEvent("share_completed", {
+          platform: "generic",
+          method: "web_share_api",
         });
         return true;
       } catch (error) {
         // User cancelled or error occurred
-        console.warn('Web Share API failed:', error);
+        console.warn("Web Share API failed:", error);
       }
     }
 
     // Fallback to copying URL
     await this.copyToClipboard(data.url);
-    this.showNotification('Link copied to clipboard! Share it anywhere you like.');
-    
-    this.trackShareEvent('share_completed', {
-      platform: 'generic',
-      method: 'copy_link',
+    this.showNotification("Link copied to clipboard! Share it anywhere you like.");
+
+    this.trackShareEvent("share_completed", {
+      platform: "generic",
+      method: "copy_link",
     });
-    
+
     return true;
   }
 
@@ -296,7 +296,7 @@ export class SharingService {
    */
   private downloadImage(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -315,14 +315,14 @@ export class SharingService {
 
   private getShareInstructions(platform: string): string {
     switch (platform) {
-      case 'instagram-stories':
-        return '📱 Image downloaded! Open Instagram, create a story, and add the downloaded image.';
-      case 'instagram':
-        return '📱 Image downloaded! Open Instagram, create a post, and add the downloaded image.';
-      case 'tiktok':
-        return '📱 Link copied! Open TikTok, create a video, and paste the link in your bio or description.';
+      case "instagram-stories":
+        return "📱 Image downloaded! Open Instagram, create a story, and add the downloaded image.";
+      case "instagram":
+        return "📱 Image downloaded! Open Instagram, create a post, and add the downloaded image.";
+      case "tiktok":
+        return "📱 Link copied! Open TikTok, create a video, and paste the link in your bio or description.";
       default:
-        return '📋 Link copied to clipboard! Share it on your favorite platform.';
+        return "📋 Link copied to clipboard! Share it on your favorite platform.";
     }
   }
 
@@ -334,14 +334,14 @@ export class SharingService {
       await navigator.clipboard.writeText(text);
     } else {
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textArea);
     }
   }
@@ -370,7 +370,7 @@ export class SharingService {
    * Check if Web Share API is available
    */
   private canUseWebShare(): boolean {
-    return typeof navigator !== 'undefined' && 'share' in navigator;
+    return typeof navigator !== "undefined" && "share" in navigator;
   }
 
   /**
@@ -384,7 +384,10 @@ export class SharingService {
    * Check if device is mobile
    */
   private isMobile(): boolean {
-    return typeof window !== 'undefined' && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return (
+      typeof window !== "undefined" &&
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    );
   }
 
   /**
@@ -392,10 +395,10 @@ export class SharingService {
    */
   private showNotification(message: string, duration: number = 3000): void {
     // Use your app's toast/notification system
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // For now, use a simple alert - replace with your toast system
-      const event = new CustomEvent('show-toast', {
-        detail: { message, duration }
+      const event = new CustomEvent("show-toast", {
+        detail: { message, duration },
       });
       window.dispatchEvent(event);
     }
@@ -406,9 +409,9 @@ export class SharingService {
    */
   private trackShareEvent(event: string, properties: Record<string, any>): void {
     // Use your analytics service
-    if (typeof window !== 'undefined') {
-      const trackingEvent = new CustomEvent('analytics-track', {
-        detail: { event, properties }
+    if (typeof window !== "undefined") {
+      const trackingEvent = new CustomEvent("analytics-track", {
+        detail: { event, properties },
       });
       window.dispatchEvent(trackingEvent);
     }
@@ -423,7 +426,7 @@ export async function shareToInstagramStories(
   title: string,
   imageUrl: string,
   text: string,
-  trackId?: string
+  trackId?: string,
 ): Promise<boolean> {
   return sharingService.share(
     {
@@ -432,18 +435,14 @@ export async function shareToInstagramStories(
       url: window.location.href,
     },
     {
-      platform: 'instagram-stories',
+      platform: "instagram-stories",
       imageUrl,
       trackId,
-    }
+    },
   );
 }
 
-export async function shareGeneric(
-  title: string,
-  text: string,
-  url?: string
-): Promise<boolean> {
+export async function shareGeneric(title: string, text: string, url?: string): Promise<boolean> {
   return sharingService.share({
     title,
     text,
@@ -455,10 +454,10 @@ export async function shareWithImage(
   title: string,
   text: string,
   imageBlob: Blob,
-  platform?: ShareOptions['platform']
+  platform?: ShareOptions["platform"],
 ): Promise<boolean> {
-  const files = [new File([imageBlob], 'cover.jpg', { type: 'image/jpeg' })];
-  
+  const files = [new File([imageBlob], "cover.jpg", { type: "image/jpeg" })];
+
   return sharingService.share(
     {
       title,
@@ -469,6 +468,6 @@ export async function shareWithImage(
     {
       platform,
       imageBlob,
-    }
+    },
   );
 }

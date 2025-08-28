@@ -1,61 +1,61 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { 
-  ShieldCheck, 
-  Crown, 
-  Bell, 
-  Settings, 
-  BarChart, 
-  FileText, 
+import {
+  ShieldCheck,
+  Crown,
+  Bell,
+  Settings,
+  BarChart,
+  FileText,
   Music,
   Camera,
   Download,
   LogOut,
   Edit,
   Trash2,
-  Heart
+  Heart,
 } from "lucide-react";
 import Link from "next/link";
-import { useMusicData } from '@/hooks/use-music-data';
-import { subscriptionService } from '@/lib/subscription';
-import { useToast } from '@/hooks/use-toast';
+import { useMusicData } from "@/hooks/use-music-data";
+import { subscriptionService } from "@/lib/subscription";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const { toast } = useToast();
   const { provider, spotify, appleMusic } = useMusicData();
   const [userData, setUserData] = useState({
-    name: 'Jane Doe',
-    email: 'jane@example.com',
-    joinDate: 'March 2024',
-    avatar: 'https://picsum.photos/200',
+    name: "Jane Doe",
+    email: "jane@example.com",
+    joinDate: "March 2024",
+    avatar: "https://picsum.photos/200",
     coversCreated: 47,
     minutesListened: 10420,
-    topGenre: 'Indie Pop'
+    topGenre: "Indie Pop",
   });
 
   const [settings, setSettings] = useState({
     notifications: true,
     autoSave: false,
     highQuality: true,
-    analytics: true
+    analytics: true,
   });
 
-  const currentSubscription = subscriptionService.getCurrentSubscription('user1');
-  const isPremium = currentSubscription?.plan.tier === 'premium';
+  const currentSubscription = subscriptionService.getCurrentSubscription("user1");
+  const isPremium = currentSubscription?.plan.tier === "premium";
 
   const handleSettingChange = (setting: string, value: boolean) => {
-    setSettings(prev => ({ ...prev, [setting]: value }));
+    setSettings((prev) => ({ ...prev, [setting]: value }));
     toast({
       title: "Settings Updated",
-      description: `${setting} has been ${value ? 'enabled' : 'disabled'}.`,
+      description: `${setting} has been ${value ? "enabled" : "disabled"}.`,
     });
   };
 
@@ -71,7 +71,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#0E0F12] text-white">
       <div className="container mx-auto max-w-2xl px-6 py-8">
         {/* Header */}
-        <motion.header 
+        <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -81,17 +81,20 @@ export default function ProfilePage() {
             <Avatar className="w-24 h-24 border-4 border-[#9FFFA2]/30">
               <AvatarImage src={userData.avatar} alt="Profile picture" />
               <AvatarFallback className="bg-gradient-to-br from-[#9FFFA2] to-[#FF6F91] text-black text-2xl font-black">
-                {userData.name.split(' ').map(n => n[0]).join('')}
+                {userData.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </AvatarFallback>
             </Avatar>
-            <Button 
+            <Button
               size="icon"
               className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#8FD3FF] hover:bg-[#8FD3FF]/80 text-black"
             >
               <Edit className="w-4 h-4" />
             </Button>
           </div>
-          
+
           <h1 className="text-3xl font-black mb-2">{userData.name}</h1>
           <p className="text-white/70">{userData.email}</p>
           <p className="text-white/50 text-sm">Member since {userData.joinDate}</p>
@@ -114,11 +117,15 @@ export default function ProfilePage() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-black text-[#9FFFA2] mb-1">{userData.coversCreated}</div>
+                  <div className="text-2xl font-black text-[#9FFFA2] mb-1">
+                    {userData.coversCreated}
+                  </div>
                   <div className="text-white/60 text-sm">Covers Created</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-black text-[#FF6F91] mb-1">{userData.minutesListened.toLocaleString()}</div>
+                  <div className="text-2xl font-black text-[#FF6F91] mb-1">
+                    {userData.minutesListened.toLocaleString()}
+                  </div>
                   <div className="text-white/60 text-sm">Minutes Listened</div>
                 </div>
                 <div className="text-center">
@@ -154,12 +161,16 @@ export default function ProfilePage() {
                   <div>
                     <h4 className="font-semibold">Spotify</h4>
                     <p className="text-white/60 text-sm">
-                      {spotify.isAuthenticated ? `Connected as ${spotify.user?.display_name || 'User'}` : 'Not connected'}
+                      {spotify.isAuthenticated
+                        ? `Connected as ${spotify.user?.display_name || "User"}`
+                        : "Not connected"}
                     </p>
                   </div>
                 </div>
-                <Badge className={`${spotify.isAuthenticated ? 'bg-[#1DB954]/20 text-[#1DB954]' : 'bg-white/10 text-white/60'}`}>
-                  {spotify.isAuthenticated ? 'Connected' : 'Disconnected'}
+                <Badge
+                  className={`${spotify.isAuthenticated ? "bg-[#1DB954]/20 text-[#1DB954]" : "bg-white/10 text-white/60"}`}
+                >
+                  {spotify.isAuthenticated ? "Connected" : "Disconnected"}
                 </Badge>
               </div>
 
@@ -172,12 +183,16 @@ export default function ProfilePage() {
                   <div>
                     <h4 className="font-semibold">Apple Music</h4>
                     <p className="text-white/60 text-sm">
-                      {appleMusic.isAuthenticated ? `Connected as ${appleMusic.user?.attributes?.name || 'User'}` : 'Not connected'}
+                      {appleMusic.isAuthenticated
+                        ? `Connected as ${appleMusic.user?.attributes?.name || "User"}`
+                        : "Not connected"}
                     </p>
                   </div>
                 </div>
-                <Badge className={`${appleMusic.isAuthenticated ? 'bg-[#FA243C]/20 text-[#FA243C]' : 'bg-white/10 text-white/60'}`}>
-                  {appleMusic.isAuthenticated ? 'Connected' : 'Disconnected'}
+                <Badge
+                  className={`${appleMusic.isAuthenticated ? "bg-[#FA243C]/20 text-[#FA243C]" : "bg-white/10 text-white/60"}`}
+                >
+                  {appleMusic.isAuthenticated ? "Connected" : "Disconnected"}
                 </Badge>
               </div>
             </CardContent>
@@ -196,11 +211,13 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Crown className={`${isPremium ? 'text-[#FFD36E]' : 'text-white/50'}`} />
+                    <Crown className={`${isPremium ? "text-[#FFD36E]" : "text-white/50"}`} />
                     Subscription
                   </div>
-                  <Badge className={`${isPremium ? 'bg-gradient-to-r from-[#9FFFA2] to-[#FFD36E] text-black' : 'bg-[#8FD3FF]/20 text-[#8FD3FF]'}`}>
-                    {isPremium ? 'PREMIUM' : 'FREEMIUM'}
+                  <Badge
+                    className={`${isPremium ? "bg-gradient-to-r from-[#9FFFA2] to-[#FFD36E] text-black" : "bg-[#8FD3FF]/20 text-[#8FD3FF]"}`}
+                  >
+                    {isPremium ? "PREMIUM" : "FREEMIUM"}
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -208,13 +225,15 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white/70 text-sm mb-2">
-                      {isPremium 
-                        ? 'Unlimited covers, no watermarks, HD export'
-                        : `${currentSubscription?.coversUsedThisMonth || 0}/3 covers used this month`
-                      }
+                      {isPremium
+                        ? "Unlimited covers, no watermarks, HD export"
+                        : `${currentSubscription?.coversUsedThisMonth || 0}/3 covers used this month`}
                     </p>
                     {!isPremium && (
-                      <Button size="sm" className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90"
+                      >
                         Upgrade to Premium
                       </Button>
                     )}
@@ -248,10 +267,10 @@ export default function ProfilePage() {
                     <div className="text-white/60 text-sm">Get notified about new features</div>
                   </div>
                 </Label>
-                <Switch 
-                  id="notifications" 
+                <Switch
+                  id="notifications"
                   checked={settings.notifications}
-                  onCheckedChange={(checked) => handleSettingChange('notifications', checked)}
+                  onCheckedChange={(checked) => handleSettingChange("notifications", checked)}
                 />
               </div>
 
@@ -263,10 +282,10 @@ export default function ProfilePage() {
                     <div className="text-white/60 text-sm">Automatically save generated covers</div>
                   </div>
                 </Label>
-                <Switch 
-                  id="auto-save" 
+                <Switch
+                  id="auto-save"
                   checked={settings.autoSave}
-                  onCheckedChange={(checked) => handleSettingChange('autoSave', checked)}
+                  onCheckedChange={(checked) => handleSettingChange("autoSave", checked)}
                 />
               </div>
 
@@ -278,10 +297,10 @@ export default function ProfilePage() {
                     <div className="text-white/60 text-sm">Use maximum resolution for covers</div>
                   </div>
                 </Label>
-                <Switch 
-                  id="high-quality" 
+                <Switch
+                  id="high-quality"
                   checked={settings.highQuality}
-                  onCheckedChange={(checked) => handleSettingChange('highQuality', checked)}
+                  onCheckedChange={(checked) => handleSettingChange("highQuality", checked)}
                 />
               </div>
 
@@ -290,13 +309,15 @@ export default function ProfilePage() {
                   <BarChart className="text-[#8FD3FF]" />
                   <div>
                     <div className="font-medium">Usage Analytics</div>
-                    <div className="text-white/60 text-sm">Help improve the app with usage data</div>
+                    <div className="text-white/60 text-sm">
+                      Help improve the app with usage data
+                    </div>
                   </div>
                 </Label>
-                <Switch 
-                  id="analytics" 
+                <Switch
+                  id="analytics"
                   checked={settings.analytics}
-                  onCheckedChange={(checked) => handleSettingChange('analytics', checked)}
+                  onCheckedChange={(checked) => handleSettingChange("analytics", checked)}
                 />
               </div>
             </CardContent>
@@ -313,7 +334,12 @@ export default function ProfilePage() {
           <Button
             variant="outline"
             className="w-full justify-start text-left p-6 border-white/20 hover:bg-white/5"
-            onClick={() => toast({ title: "Export Data", description: "Your data export will be ready shortly." })}
+            onClick={() =>
+              toast({
+                title: "Export Data",
+                description: "Your data export will be ready shortly.",
+              })
+            }
           >
             <Download className="mr-4 text-[#8FD3FF]" />
             <div>
@@ -325,7 +351,13 @@ export default function ProfilePage() {
           <Button
             variant="outline"
             className="w-full justify-start text-left p-6 border-white/20 hover:bg-white/5"
-            onClick={() => toast({ title: "Account Deleted", description: "Your account deletion request has been processed.", variant: "destructive" })}
+            onClick={() =>
+              toast({
+                title: "Account Deleted",
+                description: "Your account deletion request has been processed.",
+                variant: "destructive",
+              })
+            }
           >
             <Trash2 className="mr-4 text-[#FF6F91]" />
             <div>
@@ -354,9 +386,7 @@ export default function ProfilePage() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="text-center mt-12 pb-8"
         >
-          <p className="text-white/40 text-sm">
-            Vibely v1.0.0 • Built with ❤️ for music lovers
-          </p>
+          <p className="text-white/40 text-sm">Vibely v1.0.0 • Built with ❤️ for music lovers</p>
         </motion.div>
       </div>
     </div>

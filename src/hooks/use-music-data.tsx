@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useMusicService } from './use-music-service';
-import { VibelyTrack, songs as fallbackSongs } from '@/lib/data';
+import { useState, useEffect, useCallback } from "react";
+import { useMusicService } from "./use-music-service";
+import { VibelyTrack, songs as fallbackSongs } from "@/lib/data";
 
 interface MusicDataState {
   tracks: VibelyTrack[];
   isLoading: boolean;
   error: string | null;
-  source: 'spotify' | 'apple-music' | 'fallback';
+  source: "spotify" | "apple-music" | "fallback";
 }
 
 export function useMusicData() {
   const musicService = useMusicService();
-  
+
   const [state, setState] = useState<MusicDataState>({
     tracks: fallbackSongs,
     isLoading: false,
     error: null,
-    source: 'fallback'
+    source: "fallback",
   });
 
   const loadMusicData = useCallback(async () => {
@@ -27,22 +27,22 @@ export function useMusicData() {
         tracks: fallbackSongs,
         isLoading: false,
         error: null,
-        source: 'fallback'
+        source: "fallback",
       });
       return;
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       const tracks = await musicService.loadUserTracks(20);
-      
+
       if (tracks.length > 0) {
         setState({
           tracks: tracks.slice(0, 10), // Limit to top 10 for swipeable cards
           isLoading: false,
           error: null,
-          source: musicService.provider as 'spotify' | 'apple-music'
+          source: musicService.provider as "spotify" | "apple-music",
         });
       } else {
         // Fallback to demo data if no tracks found
@@ -50,15 +50,15 @@ export function useMusicData() {
           tracks: fallbackSongs,
           isLoading: false,
           error: null,
-          source: 'fallback'
+          source: "fallback",
         });
       }
     } catch (error) {
       setState({
         tracks: fallbackSongs, // Fallback on error
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to load music data',
-        source: 'fallback'
+        error: error instanceof Error ? error.message : "Failed to load music data",
+        source: "fallback",
       });
     }
   }, [musicService.provider, musicService.loadUserTracks]);
@@ -70,14 +70,14 @@ export function useMusicData() {
         tracks: musicService.tracks.slice(0, 10),
         isLoading: musicService.isLoading,
         error: musicService.error,
-        source: musicService.provider as 'spotify' | 'apple-music' || 'fallback'
+        source: (musicService.provider as "spotify" | "apple-music") || "fallback",
       });
     } else if (!musicService.provider) {
       setState({
         tracks: fallbackSongs,
         isLoading: false,
         error: null,
-        source: 'fallback'
+        source: "fallback",
       });
     }
   }, [musicService.tracks, musicService.isLoading, musicService.error, musicService.provider]);
@@ -99,14 +99,20 @@ export function useMusicData() {
   }, [musicService.loadUserPlaylists]);
 
   // Get tracks from a specific playlist
-  const getPlaylistTracks = useCallback(async (playlistId: string) => {
-    return await musicService.getPlaylistTracks(playlistId);
-  }, [musicService.getPlaylistTracks]);
+  const getPlaylistTracks = useCallback(
+    async (playlistId: string) => {
+      return await musicService.getPlaylistTracks(playlistId);
+    },
+    [musicService.getPlaylistTracks],
+  );
 
   // Search for tracks
-  const searchTracks = useCallback(async (query: string) => {
-    return await musicService.searchTracks(query);
-  }, [musicService.searchTracks]);
+  const searchTracks = useCallback(
+    async (query: string) => {
+      return await musicService.searchTracks(query);
+    },
+    [musicService.searchTracks],
+  );
 
   return {
     ...state,
@@ -121,6 +127,6 @@ export function useMusicData() {
     searchTracks,
     connectProvider: musicService.connectProvider,
     disconnectProvider: musicService.disconnectProvider,
-    clearError: musicService.clearError
+    clearError: musicService.clearError,
   };
 }

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import appleMusicService, { AppleMusicUserProfile } from '@/lib/apple-music';
+import { useState, useEffect, useCallback } from "react";
+import appleMusicService, { AppleMusicUserProfile } from "@/lib/apple-music";
 
 interface AppleMusicAuthState {
   isAuthenticated: boolean;
@@ -24,11 +24,11 @@ export function useAppleMusicAuth() {
   }, []);
 
   const checkAuthStatus = async () => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
       const isAuth = appleMusicService.isAuthenticated();
-      
+
       if (isAuth) {
         const userProfile = await appleMusicService.getUserProfile();
         setState({
@@ -50,35 +50,34 @@ export function useAppleMusicAuth() {
         isAuthenticated: false,
         isLoading: false,
         user: null,
-        error: error instanceof Error ? error.message : 'Authentication check failed',
+        error: error instanceof Error ? error.message : "Authentication check failed",
       });
     }
   };
 
   const login = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
       const authUrl = await appleMusicService.authorize();
-      
+
       // Redirect to Apple Music auth
       window.location.href = authUrl;
-      
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Login failed',
+        error: error instanceof Error ? error.message : "Login failed",
       }));
     }
   }, []);
 
   const handleAuthCallback = useCallback(async (code: string) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
       const success = await appleMusicService.exchangeCodeForToken(code);
-      
+
       if (success) {
         const userProfile = await appleMusicService.getUserProfile();
         setState({
@@ -93,7 +92,7 @@ export function useAppleMusicAuth() {
           isAuthenticated: false,
           isLoading: false,
           user: null,
-          error: 'Failed to complete authentication',
+          error: "Failed to complete authentication",
         });
         return false;
       }
@@ -102,7 +101,7 @@ export function useAppleMusicAuth() {
         isAuthenticated: false,
         isLoading: false,
         user: null,
-        error: error instanceof Error ? error.message : 'Authentication failed',
+        error: error instanceof Error ? error.message : "Authentication failed",
       });
       return false;
     }
@@ -119,7 +118,7 @@ export function useAppleMusicAuth() {
   }, []);
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   return {

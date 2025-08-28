@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { spotifyAPI, SpotifyTrack, SpotifyPlaylist, SpotifyAudioFeatures } from '@/lib/spotify';
+import { useState, useEffect, useCallback } from "react";
+import { spotifyAPI, SpotifyTrack, SpotifyPlaylist, SpotifyAudioFeatures } from "@/lib/spotify";
 
 interface SpotifyAuthState {
   isAuthenticated: boolean;
@@ -19,11 +19,11 @@ export function useSpotifyAuth() {
   });
 
   const checkAuthStatus = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    
+    setState((prev) => ({ ...prev, isLoading: true }));
+
     try {
       const isAuth = await spotifyAPI.isAuthenticated();
-      
+
       if (isAuth) {
         const profile = await spotifyAPI.getUserProfile();
         setState({
@@ -44,7 +44,7 @@ export function useSpotifyAuth() {
       setState({
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Authentication failed',
+        error: error instanceof Error ? error.message : "Authentication failed",
         userProfile: null,
       });
     }
@@ -69,28 +69,31 @@ export function useSpotifyAuth() {
     });
   }, []);
 
-  const handleAuthCallback = useCallback(async (code: string) => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    
-    try {
-      const success = await spotifyAPI.exchangeCodeForToken(code);
-      if (success) {
-        await checkAuthStatus();
-      } else {
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: 'Failed to authenticate with Spotify' 
+  const handleAuthCallback = useCallback(
+    async (code: string) => {
+      setState((prev) => ({ ...prev, isLoading: true }));
+
+      try {
+        const success = await spotifyAPI.exchangeCodeForToken(code);
+        if (success) {
+          await checkAuthStatus();
+        } else {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: "Failed to authenticate with Spotify",
+          }));
+        }
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : "Authentication failed",
         }));
       }
-    } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Authentication failed' 
-      }));
-    }
-  }, [checkAuthStatus]);
+    },
+    [checkAuthStatus],
+  );
 
   return {
     ...state,
@@ -112,65 +115,74 @@ export function useSpotifyData() {
   const fetchUserPlaylists = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const userPlaylists = await spotifyAPI.getUserPlaylists();
       setPlaylists(userPlaylists);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch playlists');
+      setError(error instanceof Error ? error.message : "Failed to fetch playlists");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const fetchTopTracks = useCallback(async (timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term') => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const tracks = await spotifyAPI.getUserTopTracks(timeRange);
-      setTopTracks(tracks);
+  const fetchTopTracks = useCallback(
+    async (timeRange: "short_term" | "medium_term" | "long_term" = "medium_term") => {
+      setIsLoading(true);
+      setError(null);
 
-      // Fetch audio features for top tracks
-      const trackIds = tracks.map(track => track.id);
-      if (trackIds.length > 0) {
-        const features = await spotifyAPI.getAudioFeatures(trackIds);
-        const featuresMap = features.reduce((acc, feature) => {
-          if (feature) acc[feature.id] = feature;
-          return acc;
-        }, {} as Record<string, SpotifyAudioFeatures>);
-        
-        setAudioFeatures(prev => ({ ...prev, ...featuresMap }));
+      try {
+        const tracks = await spotifyAPI.getUserTopTracks(timeRange);
+        setTopTracks(tracks);
+
+        // Fetch audio features for top tracks
+        const trackIds = tracks.map((track) => track.id);
+        if (trackIds.length > 0) {
+          const features = await spotifyAPI.getAudioFeatures(trackIds);
+          const featuresMap = features.reduce(
+            (acc, feature) => {
+              if (feature) acc[feature.id] = feature;
+              return acc;
+            },
+            {} as Record<string, SpotifyAudioFeatures>,
+          );
+
+          setAudioFeatures((prev) => ({ ...prev, ...featuresMap }));
+        }
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to fetch top tracks");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch top tracks');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const fetchPlaylistTracks = useCallback(async (playlistId: string) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const tracks = await spotifyAPI.getPlaylistTracks(playlistId);
-      
+
       // Fetch audio features for playlist tracks
-      const trackIds = tracks.map(track => track.id);
+      const trackIds = tracks.map((track) => track.id);
       if (trackIds.length > 0) {
         const features = await spotifyAPI.getAudioFeatures(trackIds);
-        const featuresMap = features.reduce((acc, feature) => {
-          if (feature) acc[feature.id] = feature;
-          return acc;
-        }, {} as Record<string, SpotifyAudioFeatures>);
-        
-        setAudioFeatures(prev => ({ ...prev, ...featuresMap }));
+        const featuresMap = features.reduce(
+          (acc, feature) => {
+            if (feature) acc[feature.id] = feature;
+            return acc;
+          },
+          {} as Record<string, SpotifyAudioFeatures>,
+        );
+
+        setAudioFeatures((prev) => ({ ...prev, ...featuresMap }));
       }
 
       return tracks;
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch playlist tracks');
+      setError(error instanceof Error ? error.message : "Failed to fetch playlist tracks");
       return [];
     } finally {
       setIsLoading(false);
@@ -180,12 +192,12 @@ export function useSpotifyData() {
   const searchTracks = useCallback(async (query: string, limit: number = 20) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const tracks = await spotifyAPI.searchTracks(query, limit);
       return tracks;
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to search tracks');
+      setError(error instanceof Error ? error.message : "Failed to search tracks");
       return [];
     } finally {
       setIsLoading(false);

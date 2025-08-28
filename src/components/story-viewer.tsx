@@ -38,7 +38,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   const [isActionsVisible, setIsActionsVisible] = useState(true);
   const { toast } = useToast();
   const { shareTrack, isSharing } = useSharing();
-  
+
   const currentStory = stories[current];
 
   // Hide actions after 3 seconds, show on tap
@@ -50,48 +50,48 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   const toggleActions = () => {
     setIsActionsVisible(!isActionsVisible);
   };
-  
+
   useEffect(() => {
     if (!api) return;
-    
+
     // Set initial slide
     api.scrollTo(initialIndex);
     setCurrent(initialIndex);
-    
+
     const onSelect = () => {
       setCurrent(api.selectedScrollSnap());
     };
-    
+
     api.on("select", onSelect);
-    
+
     return () => {
       api.off("select", onSelect);
     };
   }, [api, initialIndex]);
-  
+
   const handleImageError = (storyId: string) => {
     console.error(`StoryViewer image load error for story ${storyId}`);
-    setImageErrors(prev => ({ ...prev, [storyId]: true }));
-    setImageLoading(prev => ({ ...prev, [storyId]: false }));
+    setImageErrors((prev) => ({ ...prev, [storyId]: true }));
+    setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
-  
+
   const handleImageLoad = (storyId: string) => {
-    setImageLoading(prev => ({ ...prev, [storyId]: false }));
+    setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
-  
+
   const handleDownload = async () => {
     try {
       const response = await fetch(currentStory.generatedCoverUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `${currentStory.title} - ${currentStory.artist}.jpg`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast({
         title: "Downloaded!",
         description: "Cover saved to your device.",
@@ -104,22 +104,22 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
       });
     }
   };
-  
+
   const handleShare = async () => {
     await shareTrack(
       currentStory.title,
       currentStory.artist,
       currentStory.generatedCoverUrl,
-      'generic'
+      "generic",
     );
   };
-  
+
   const handleInstagramShare = async () => {
     await shareTrack(
       currentStory.title,
       currentStory.artist,
       currentStory.generatedCoverUrl,
-      'instagram-stories'
+      "instagram-stories",
     );
   };
 
@@ -156,7 +156,11 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
       </AnimatePresence>
       {/* Main Story Content */}
       <div className="w-full h-full" onClick={toggleActions}>
-        <Carousel setApi={setApi} className="w-full h-full" opts={{ loop: true, startIndex: initialIndex }}>
+        <Carousel
+          setApi={setApi}
+          className="w-full h-full"
+          opts={{ loop: true, startIndex: initialIndex }}
+        >
           <CarouselContent className="h-full">
             {stories.map((story) => (
               <CarouselItem key={story.id} className="h-full">
@@ -165,7 +169,9 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                     <div className="flex items-center justify-center h-full bg-gradient-to-br from-[#9FFFA2]/10 to-[#FF6F91]/10 rounded-3xl">
                       <div className="text-center text-white p-8">
                         <div className="text-6xl mb-6">🎨</div>
-                        <h3 className="font-black text-3xl text-white drop-shadow-lg mb-3">{story.title}</h3>
+                        <h3 className="font-black text-3xl text-white drop-shadow-lg mb-3">
+                          {story.title}
+                        </h3>
                         <p className="text-white/80 text-xl drop-shadow-md mb-4">{story.artist}</p>
                         <p className="text-white/60 text-sm">Image unavailable</p>
                       </div>
@@ -189,7 +195,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                         onError={() => handleImageError(story.id)}
                         onLoad={() => handleImageLoad(story.id)}
                       />
-                      
+
                       {/* Story Info Overlay */}
                       <AnimatePresence>
                         {isActionsVisible && (
@@ -199,8 +205,12 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                             exit={{ opacity: 0, y: 20 }}
                             className="absolute top-0 inset-x-0 p-8 text-center bg-gradient-to-b from-black/80 via-black/50 to-transparent rounded-t-3xl"
                           >
-                            <h3 className="font-black text-3xl text-white drop-shadow-lg mb-2">{story.title}</h3>
-                            <p className="text-white/90 text-xl drop-shadow-md font-semibold">{story.artist}</p>
+                            <h3 className="font-black text-3xl text-white drop-shadow-lg mb-2">
+                              {story.title}
+                            </h3>
+                            <p className="text-white/90 text-xl drop-shadow-md font-semibold">
+                              {story.artist}
+                            </p>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -210,7 +220,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
               </CarouselItem>
             ))}
           </CarouselContent>
-          
+
           {/* Navigation Arrows - Only visible when actions are shown */}
           <AnimatePresence>
             {isActionsVisible && stories.length > 1 && (
@@ -234,7 +244,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
           </AnimatePresence>
         </Carousel>
       </div>
-      
+
       {/* Action Buttons */}
       <AnimatePresence>
         {isActionsVisible && (
@@ -246,38 +256,38 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
           >
             <div className="flex items-center gap-4 px-6 py-4 bg-black/50 backdrop-blur-lg border border-white/20 rounded-full">
               {/* Download */}
-              <Button 
-                size="icon" 
+              <Button
+                size="icon"
                 className="rounded-full w-14 h-14 bg-[#9FFFA2]/20 border border-[#9FFFA2]/30 text-[#9FFFA2] hover:bg-[#9FFFA2]/30 transition-all"
                 onClick={handleDownload}
                 aria-label="Download cover"
               >
                 <Download className="w-6 h-6" />
               </Button>
-              
+
               {/* Share */}
-              <Button 
-                size="icon" 
+              <Button
+                size="icon"
                 className="rounded-full w-14 h-14 bg-[#8FD3FF]/20 border border-[#8FD3FF]/30 text-[#8FD3FF] hover:bg-[#8FD3FF]/30 transition-all"
                 onClick={handleShare}
                 aria-label="Share cover"
               >
                 <Share2 className="w-6 h-6" />
               </Button>
-              
+
               {/* Instagram Share */}
-              <Button 
-                size="icon" 
+              <Button
+                size="icon"
                 className="rounded-full w-14 h-14 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
                 onClick={handleInstagramShare}
                 aria-label="Share to Instagram"
               >
                 <Instagram className="w-6 h-6" />
               </Button>
-              
+
               {/* Delete */}
-              <Button 
-                size="icon" 
+              <Button
+                size="icon"
                 className="rounded-full w-14 h-14 bg-[#FF6F91]/20 border border-[#FF6F91]/30 text-[#FF6F91] hover:bg-[#FF6F91]/30 transition-all"
                 onClick={handleDelete}
                 aria-label="Delete cover"
@@ -288,7 +298,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Progress Indicators */}
       <AnimatePresence>
         {isActionsVisible && stories.length > 1 && (
@@ -304,9 +314,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                   key={index}
                   className={cn(
                     "h-2 rounded-full transition-all duration-300",
-                    index === current 
-                      ? "w-8 bg-[#9FFFA2]" 
-                      : "w-2 bg-white/40 hover:bg-white/60"
+                    index === current ? "w-8 bg-[#9FFFA2]" : "w-2 bg-white/40 hover:bg-white/60",
                   )}
                   onClick={() => api?.scrollTo(index)}
                   whileHover={{ scale: 1.2 }}

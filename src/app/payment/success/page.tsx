@@ -1,80 +1,76 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Check, Loader2, X, Crown, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { inAppPurchase } from '@/lib/in-app-purchase';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Check, Loader2, X, Crown, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { inAppPurchase } from "@/lib/in-app-purchase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
+
+  const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [purchaseDetails, setPurchaseDetails] = useState<any>(null);
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
-      const sessionId = searchParams.get('session_id');
-      const productId = searchParams.get('product_id');
+      const sessionId = searchParams.get("session_id");
+      const productId = searchParams.get("product_id");
 
       if (!sessionId) {
-        setStatus('error');
+        setStatus("error");
         return;
       }
 
       try {
         const purchase = await inAppPurchase.handlePurchaseCompletion(sessionId);
-        
+
         if (purchase) {
           setPurchaseDetails(purchase);
-          setStatus('success');
-          
+          setStatus("success");
+
           toast({
             title: "Payment Successful! 🎉",
             description: "Welcome to Vibely Premium! Your subscription is now active.",
           });
-          
+
           // Redirect to app after delay
           setTimeout(() => {
-            router.push('/subscription?upgraded=true');
+            router.push("/subscription?upgraded=true");
           }, 3000);
         } else {
-          setStatus('error');
+          setStatus("error");
         }
       } catch (error) {
-        console.error('Payment processing failed:', error);
-        setStatus('error');
+        console.error("Payment processing failed:", error);
+        setStatus("error");
       }
     };
 
     handlePaymentSuccess();
   }, [searchParams, router, toast]);
 
-  if (status === 'processing') {
+  if (status === "processing") {
     return (
       <div className="min-h-screen bg-[#0E0F12] flex items-center justify-center px-6">
         <Card className="max-w-md w-full bg-white/5 border-white/20">
           <CardContent className="text-center p-8">
             <Loader2 className="w-16 h-16 mx-auto mb-6 animate-spin text-[#9FFFA2]" />
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Processing Payment
-            </h1>
-            <p className="text-white/70">
-              Please wait while we confirm your purchase...
-            </p>
+            <h1 className="text-2xl font-bold text-white mb-2">Processing Payment</h1>
+            <p className="text-white/70">Please wait while we confirm your purchase...</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
       <div className="min-h-screen bg-[#0E0F12] flex items-center justify-center px-6">
         <Card className="max-w-md w-full bg-white/5 border-white/20">
@@ -82,22 +78,21 @@ export default function PaymentSuccessPage() {
             <div className="w-16 h-16 mx-auto mb-6 bg-[#FF6F91]/20 rounded-full flex items-center justify-center">
               <X className="w-8 h-8 text-[#FF6F91]" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Payment Error
-            </h1>
+            <h1 className="text-2xl font-bold text-white mb-2">Payment Error</h1>
             <p className="text-white/70 mb-6">
-              There was an issue processing your payment. Please contact support if the problem persists.
+              There was an issue processing your payment. Please contact support if the problem
+              persists.
             </p>
             <div className="space-y-3">
-              <Button 
-                onClick={() => router.push('/subscription')}
+              <Button
+                onClick={() => router.push("/subscription")}
                 className="w-full bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90"
               >
                 Try Again
               </Button>
-              <Button 
+              <Button
                 variant="outline"
-                onClick={() => router.push('/support')}
+                onClick={() => router.push("/support")}
                 className="w-full border-white/20 text-white hover:bg-white/10"
               >
                 Contact Support
@@ -127,11 +122,11 @@ export default function PaymentSuccessPage() {
             >
               <Check className="w-10 h-10 text-black" />
             </motion.div>
-            
+
             <CardTitle className="text-3xl font-black text-white mb-2">
               Welcome to Premium!
             </CardTitle>
-            
+
             <div className="flex items-center justify-center gap-2">
               <Crown className="w-5 h-5 text-[#FFD36E]" />
               <Badge className="bg-gradient-to-r from-[#9FFFA2] to-[#FFD36E] text-black font-bold">
@@ -140,7 +135,7 @@ export default function PaymentSuccessPage() {
               <Crown className="w-5 h-5 text-[#FFD36E]" />
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             {/* Purchase Details */}
             {purchaseDetails && (
@@ -155,7 +150,9 @@ export default function PaymentSuccessPage() {
                   <div className="flex justify-between">
                     <span className="text-white/70">Plan:</span>
                     <span className="text-white font-medium">
-                      {purchaseDetails.productId?.includes('yearly') ? 'Premium Yearly' : 'Premium Monthly'}
+                      {purchaseDetails.productId?.includes("yearly")
+                        ? "Premium Yearly"
+                        : "Premium Monthly"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -217,16 +214,16 @@ export default function PaymentSuccessPage() {
               className="space-y-3"
             >
               <Button
-                onClick={() => router.push('/generator')}
+                onClick={() => router.push("/generator")}
                 className="w-full bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 py-3"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Start Creating Covers
               </Button>
-              
+
               <Button
                 variant="outline"
-                onClick={() => router.push('/subscription')}
+                onClick={() => router.push("/subscription")}
                 className="w-full border-white/20 text-white hover:bg-white/10"
               >
                 View Subscription Details

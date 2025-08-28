@@ -1,32 +1,29 @@
 :root {
   /* Spacing tokens for bottom nav + mini player */
   --nav-height: 80px; /* Updated at runtime by BottomNav ResizeObserver */
-  --nav-gap: 16px;    /* Breathing room above nav */
-  --mini-height: 68px;/* Fixed Mini Player height */
-  --mini-icon: 44px;  /* Diameter of play/pause button in Mini Player */
+  --nav-gap: 16px; /* Breathing room above nav */
+  --mini-height: 68px; /* Fixed Mini Player height */
+  --mini-icon: 44px; /* Diameter of play/pause button in Mini Player */
   /* Derived offset used to anchor Mini Player safely above the nav + safe-area */
   --mini-offset-bottom: calc(
-    var(--nav-height, 80px) +
-    var(--nav-gap, 16px) +
-    env(safe-area-inset-bottom, 0px)
+    var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px)
   );
 
   /* Full Player backdrop tokens */
   --backdrop-alpha: 0.35; /* 0.25–0.5 range */
-  --backdrop-blur: 6px;   /* 0 to disable blur */
+  --backdrop-blur: 6px; /* 0 to disable blur */
 
   /* Mini Player glow tokens */
   --mini-glow-opacity: 0.28;
   --mini-glow-size: 140%;
   --mini-glow-speed: 14s;
-  --mini-glow-colora: #9FFFA233; /* green alpha */
-  --mini-glow-colorb: #FF6F9133; /* pink alpha */
+  --mini-glow-colora: #9fffa233; /* green alpha */
+  --mini-glow-colorb: #ff6f9133; /* pink alpha */
 }
 
 /* Mini Player playing-state glow */
 .mini--playing {
-  background-image:
-    radial-gradient(circle at 30% 20%, var(--mini-glow-colora), transparent 60%),
+  background-image: radial-gradient(circle at 30% 20%, var(--mini-glow-colora), transparent 60%),
     radial-gradient(circle at 70% 80%, var(--mini-glow-colorb), transparent 60%);
   background-size: var(--mini-glow-size) var(--mini-glow-size);
   background-blend-mode: screen;
@@ -35,8 +32,16 @@
 }
 
 @keyframes miniGlow {
-  0%   { background-position: 0% 0%, 100% 100%; }
-  100% { background-position: 100% 0%, 0% 100%; }
+  0% {
+    background-position:
+      0% 0%,
+      100% 100%;
+  }
+  100% {
+    background-position:
+      100% 0%,
+      0% 100%;
+  }
 }
 
 /* Feature flag to disable glow */

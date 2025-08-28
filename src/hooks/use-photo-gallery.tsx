@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
-import { photoGallery, PhotoFile } from '@/lib/photo-gallery';
+import { useState, useCallback, useEffect } from "react";
+import { photoGallery, PhotoFile } from "@/lib/photo-gallery";
 
 interface PhotoGalleryState {
   photos: PhotoFile[];
@@ -25,8 +25,8 @@ export function usePhotoGallery() {
     const checkAvailability = async () => {
       const isSupported = photoGallery.isAvailable();
       const hasPermission = isSupported ? await photoGallery.requestPermission() : false;
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         isSupported,
         hasPermission,
@@ -39,19 +39,19 @@ export function usePhotoGallery() {
   // Select photos from device
   const selectPhotos = useCallback(async () => {
     if (!state.isSupported || !state.hasPermission) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: 'Photo gallery access not available or permission denied',
+        error: "Photo gallery access not available or permission denied",
       }));
       return [];
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       const selectedPhotos = await photoGallery.selectPhotosFromDevice();
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         photos: [...prev.photos, ...selectedPhotos],
         isLoading: false,
@@ -59,10 +59,10 @@ export function usePhotoGallery() {
 
       return selectedPhotos;
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to select photos',
+        error: error instanceof Error ? error.message : "Failed to select photos",
       }));
       return [];
     }
@@ -71,21 +71,21 @@ export function usePhotoGallery() {
   // Remove photo by ID
   const removePhoto = useCallback((photoId: string) => {
     const success = photoGallery.removePhoto(photoId);
-    
+
     if (success) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        photos: prev.photos.filter(photo => photo.id !== photoId),
+        photos: prev.photos.filter((photo) => photo.id !== photoId),
       }));
     }
-    
+
     return success;
   }, []);
 
   // Clear all photos
   const clearPhotos = useCallback(() => {
     photoGallery.clearSelectedPhotos();
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       photos: [],
     }));
@@ -96,30 +96,37 @@ export function usePhotoGallery() {
     try {
       return await photoGallery.fileToDataURL(photo.file);
     } catch (error) {
-      throw new Error(`Failed to convert photo to data URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to convert photo to data URL: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }, []);
 
   // Resize photo for better performance
-  const resizePhoto = useCallback(async (
-    photo: PhotoFile, 
-    maxWidth: number = 800, 
-    maxHeight: number = 800, 
-    quality: number = 0.8
-  ): Promise<Blob> => {
-    try {
-      return await photoGallery.resizeImage(photo.file, maxWidth, maxHeight, quality);
-    } catch (error) {
-      throw new Error(`Failed to resize photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }, []);
+  const resizePhoto = useCallback(
+    async (
+      photo: PhotoFile,
+      maxWidth: number = 800,
+      maxHeight: number = 800,
+      quality: number = 0.8,
+    ): Promise<Blob> => {
+      try {
+        return await photoGallery.resizeImage(photo.file, maxWidth, maxHeight, quality);
+      } catch (error) {
+        throw new Error(
+          `Failed to resize photo: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+    },
+    [],
+  );
 
   // Get image metadata
   const getPhotoMetadata = useCallback(async (photo: PhotoFile) => {
     try {
       return await photoGallery.getImageMetadata(photo.file);
     } catch (error) {
-      console.error('Failed to get photo metadata:', error);
+      console.error("Failed to get photo metadata:", error);
       return {};
     }
   }, []);
@@ -131,8 +138,8 @@ export function usePhotoGallery() {
     } catch (error) {
       return {
         isCompliant: false,
-        warnings: ['Failed to check privacy compliance'],
-        suggestions: ['Please manually verify photo privacy'],
+        warnings: ["Failed to check privacy compliance"],
+        suggestions: ["Please manually verify photo privacy"],
       };
     }
   }, []);
@@ -149,19 +156,19 @@ export function usePhotoGallery() {
 
   // Clear error
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   return {
     // State
     ...state,
-    
+
     // Actions
     selectPhotos,
     removePhoto,
     clearPhotos,
     clearError,
-    
+
     // Utils
     getPhotoDataURL,
     resizePhoto,

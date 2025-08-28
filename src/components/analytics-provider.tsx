@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, ReactNode } from 'react';
-import { analytics } from '@/lib/analytics';
-import type { AnalyticsEvent, EventProperties, UserProperties } from '@/lib/analytics';
+import { createContext, useContext, useEffect, ReactNode } from "react";
+import { analytics } from "@/lib/analytics";
+import type { AnalyticsEvent, EventProperties, UserProperties } from "@/lib/analytics";
 
 interface AnalyticsContextType {
   track: (event: AnalyticsEvent, properties?: EventProperties) => void;
@@ -18,7 +18,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       analytics.pageView(window.location.pathname);
     }
   }, []);
@@ -35,17 +35,13 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     },
   };
 
-  return (
-    <AnalyticsContext.Provider value={contextValue}>
-      {children}
-    </AnalyticsContext.Provider>
-  );
+  return <AnalyticsContext.Provider value={contextValue}>{children}</AnalyticsContext.Provider>;
 }
 
 export function useAnalytics() {
   const context = useContext(AnalyticsContext);
   if (!context) {
-    throw new Error('useAnalytics must be used within an AnalyticsProvider');
+    throw new Error("useAnalytics must be used within an AnalyticsProvider");
   }
   return context;
 }

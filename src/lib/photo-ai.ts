@@ -1,4 +1,4 @@
-export type PhotoMood = 'happy' | 'sad' | 'energetic' | 'chill';
+export type PhotoMood = "happy" | "sad" | "energetic" | "chill";
 export type PhotoAnalysis = {
   mood: PhotoMood;
   confidence: number;
@@ -23,7 +23,6 @@ export interface PhotoMatchScore {
 }
 
 class PhotoAIService {
-  
   /**
    * Analyze photo for mood, colors, and emotional content
    * In production, this would use computer vision APIs like Google Vision, AWS Rekognition, etc.
@@ -31,11 +30,14 @@ class PhotoAIService {
   async analyzePhoto(imageUrl: string): Promise<PhotoAnalysis> {
     return new Promise((resolve) => {
       // Simulate AI processing time
-      setTimeout(() => {
-        // Mock analysis based on image URL patterns
-        const analysis = this.generateMockAnalysis(imageUrl);
-        resolve(analysis);
-      }, 800 + Math.random() * 1200); // Random delay 0.8-2s
+      setTimeout(
+        () => {
+          // Mock analysis based on image URL patterns
+          const analysis = this.generateMockAnalysis(imageUrl);
+          resolve(analysis);
+        },
+        800 + Math.random() * 1200,
+      ); // Random delay 0.8-2s
     });
   }
 
@@ -43,7 +45,7 @@ class PhotoAIService {
    * Analyze multiple photos in batch
    */
   async analyzePhotos(imageUrls: string[]): Promise<PhotoAnalysis[]> {
-    const promises = imageUrls.map(url => this.analyzePhoto(url));
+    const promises = imageUrls.map((url) => this.analyzePhoto(url));
     return Promise.all(promises);
   }
 
@@ -53,22 +55,21 @@ class PhotoAIService {
   async matchPhotosToSong(
     photos: Array<{ id: string; url: string }>,
     songMood: PhotoMood,
-    audioFeatures?: { valence: number; energy: number; tempo: number }
+    audioFeatures?: { valence: number; energy: number; tempo: number },
   ): Promise<PhotoMatchScore[]> {
-    
-    const analyses = await this.analyzePhotos(photos.map(p => p.url));
-    
+    const analyses = await this.analyzePhotos(photos.map((p) => p.url));
+
     const matches: PhotoMatchScore[] = photos.map((photo, index) => {
       const analysis = analyses[index];
       const matchScore = this.calculateMatchScore(analysis, songMood, audioFeatures);
       const reasons = this.generateMatchReasons(analysis, songMood, matchScore);
-      
+
       return {
         photoId: photo.id,
         photoUrl: photo.url,
         matchScore,
         analysis,
-        reasons
+        reasons,
       };
     });
 
@@ -82,7 +83,7 @@ class PhotoAIService {
   async getBestPhotoMatch(
     photos: Array<{ id: string; url: string }>,
     songMood: PhotoMood,
-    audioFeatures?: { valence: number; energy: number; tempo: number }
+    audioFeatures?: { valence: number; energy: number; tempo: number },
   ): Promise<PhotoMatchScore | null> {
     const matches = await this.matchPhotosToSong(photos, songMood, audioFeatures);
     return matches.length > 0 ? matches[0] : null;
@@ -94,7 +95,7 @@ class PhotoAIService {
   private calculateMatchScore(
     analysis: PhotoAnalysis,
     songMood: PhotoMood,
-    audioFeatures?: { valence: number; energy: number; tempo: number }
+    audioFeatures?: { valence: number; energy: number; tempo: number },
   ): number {
     let score = 0;
 
@@ -120,13 +121,13 @@ class PhotoAIService {
 
   private getMoodMatchScore(photoMood: PhotoMood, songMood: PhotoMood): number {
     if (photoMood === songMood) return 100;
-    
+
     // Cross-mood compatibility matrix
     const compatibility: Record<PhotoMood, Record<PhotoMood, number>> = {
       happy: { happy: 100, energetic: 80, chill: 60, sad: 20 },
       sad: { sad: 100, chill: 70, energetic: 30, happy: 20 },
       energetic: { energetic: 100, happy: 80, chill: 50, sad: 30 },
-      chill: { chill: 100, sad: 70, happy: 60, energetic: 50 }
+      chill: { chill: 100, sad: 70, happy: 60, energetic: 50 },
     };
 
     return compatibility[photoMood][songMood] || 40;
@@ -134,7 +135,7 @@ class PhotoAIService {
 
   private getAudioFeatureMatchScore(
     analysis: PhotoAnalysis,
-    audioFeatures: { valence: number; energy: number; tempo: number }
+    audioFeatures: { valence: number; energy: number; tempo: number },
   ): number {
     let score = 0;
 
@@ -147,8 +148,10 @@ class PhotoAIService {
     if (audioFeatures.energy < 0.4 && analysis.contrast < 0.5) score += 25;
 
     // Tempo matching with visual dynamics
-    if (audioFeatures.tempo > 120 && analysis.emotions?.energy && analysis.emotions.energy > 0.6) score += 25;
-    if (audioFeatures.tempo < 90 && analysis.emotions?.calm && analysis.emotions.calm > 0.6) score += 25;
+    if (audioFeatures.tempo > 120 && analysis.emotions?.energy && analysis.emotions.energy > 0.6)
+      score += 25;
+    if (audioFeatures.tempo < 90 && analysis.emotions?.calm && analysis.emotions.calm > 0.6)
+      score += 25;
 
     return score;
   }
@@ -171,7 +174,7 @@ class PhotoAIService {
   private generateMatchReasons(
     analysis: PhotoAnalysis,
     songMood: PhotoMood,
-    matchScore: number
+    matchScore: number,
   ): string[] {
     const reasons: string[] = [];
 
@@ -182,19 +185,19 @@ class PhotoAIService {
     }
 
     if (analysis.faces > 0) {
-      reasons.push(`Contains ${analysis.faces} face${analysis.faces > 1 ? 's' : ''}`);
+      reasons.push(`Contains ${analysis.faces} face${analysis.faces > 1 ? "s" : ""}`);
     }
 
     if (analysis.brightness > 0.7) {
-      reasons.push('Bright and vibrant');
+      reasons.push("Bright and vibrant");
     } else if (analysis.brightness < 0.3) {
-      reasons.push('Moody and atmospheric');
+      reasons.push("Moody and atmospheric");
     }
 
     if (matchScore > 80) {
-      reasons.push('Excellent overall match');
+      reasons.push("Excellent overall match");
     } else if (matchScore > 60) {
-      reasons.push('Good visual harmony');
+      reasons.push("Good visual harmony");
     }
 
     return reasons;
@@ -207,24 +210,28 @@ class PhotoAIService {
   private generateMockAnalysis(imageUrl: string): PhotoAnalysis {
     // Simple heuristics based on URL patterns and random generation
     const urlLower = imageUrl.toLowerCase();
-    
-    let mood: PhotoMood = 'chill';
+
+    let mood: PhotoMood = "chill";
     let emotions = {
       joy: 0.3,
       calm: 0.5,
       energy: 0.4,
-      melancholy: 0.3
+      melancholy: 0.3,
     };
 
     // Detect mood from URL patterns (Unsplash/Picsum often have descriptive IDs)
-    if (urlLower.includes('happy') || urlLower.includes('joy') || urlLower.includes('smile')) {
-      mood = 'happy';
+    if (urlLower.includes("happy") || urlLower.includes("joy") || urlLower.includes("smile")) {
+      mood = "happy";
       emotions = { joy: 0.8, calm: 0.4, energy: 0.6, melancholy: 0.1 };
-    } else if (urlLower.includes('sad') || urlLower.includes('dark') || urlLower.includes('rain')) {
-      mood = 'sad';
+    } else if (urlLower.includes("sad") || urlLower.includes("dark") || urlLower.includes("rain")) {
+      mood = "sad";
       emotions = { joy: 0.2, calm: 0.3, energy: 0.2, melancholy: 0.8 };
-    } else if (urlLower.includes('energy') || urlLower.includes('sport') || urlLower.includes('dance')) {
-      mood = 'energetic';
+    } else if (
+      urlLower.includes("energy") ||
+      urlLower.includes("sport") ||
+      urlLower.includes("dance")
+    ) {
+      mood = "energetic";
       emotions = { joy: 0.7, calm: 0.2, energy: 0.9, melancholy: 0.1 };
     }
 
@@ -235,10 +242,10 @@ class PhotoAIService {
 
     // Generate dominant colors based on mood
     const colorPalettes = {
-      happy: ['#FFD36E', '#9FFFA2', '#8FD3FF'],
-      sad: ['#6B73FF', '#9AA0F7', '#444444'],
-      energetic: ['#FF6F91', '#9FFFA2', '#FF0080'],
-      chill: ['#8FD3FF', '#BAFFC9', '#E1BEE7']
+      happy: ["#FFD36E", "#9FFFA2", "#8FD3FF"],
+      sad: ["#6B73FF", "#9AA0F7", "#444444"],
+      energetic: ["#FF6F91", "#9FFFA2", "#FF0080"],
+      chill: ["#8FD3FF", "#BAFFC9", "#E1BEE7"],
     };
 
     const dominantColors = colorPalettes[mood].slice(0, 2 + Math.floor(Math.random() * 2));
@@ -250,7 +257,7 @@ class PhotoAIService {
       brightness,
       contrast,
       faces,
-      emotions
+      emotions,
     };
   }
 }
@@ -261,20 +268,20 @@ export const photoAI = new PhotoAIService();
 // Utility functions
 export const getMoodColor = (mood: PhotoMood): string => {
   const colors = {
-    happy: '#FFD36E',
-    sad: '#6B73FF', 
-    energetic: '#FF6F91',
-    chill: '#8FD3FF'
+    happy: "#FFD36E",
+    sad: "#6B73FF",
+    energetic: "#FF6F91",
+    chill: "#8FD3FF",
   };
   return colors[mood];
 };
 
 export const getMoodIcon = (mood: PhotoMood): string => {
   const icons = {
-    happy: '😊',
-    sad: '😢',
-    energetic: '⚡',
-    chill: '😌'
+    happy: "😊",
+    sad: "😢",
+    energetic: "⚡",
+    chill: "😌",
   };
   return icons[mood];
 };

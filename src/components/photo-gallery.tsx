@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { usePhotoGallery } from '@/hooks/use-photo-gallery';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  ImageIcon, 
-  Upload, 
-  X, 
-  AlertTriangle, 
-  Shield, 
+import { useState } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePhotoGallery } from "@/hooks/use-photo-gallery";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  ImageIcon,
+  Upload,
+  X,
+  AlertTriangle,
+  Shield,
   Info,
   Loader2,
   Camera,
   FileImage,
-  Trash2
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+  Trash2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface PhotoGalleryProps {
   onPhotoSelect?: (photoUrl: string) => void;
@@ -29,11 +29,11 @@ interface PhotoGalleryProps {
   className?: string;
 }
 
-export default function PhotoGallery({ 
-  onPhotoSelect, 
+export default function PhotoGallery({
+  onPhotoSelect,
   selectedPhotoUrl,
   maxPhotos = 10,
-  className 
+  className,
 }: PhotoGalleryProps) {
   const { toast } = useToast();
   const {
@@ -58,13 +58,13 @@ export default function PhotoGallery({
     try {
       clearError();
       const newPhotos = await selectPhotos();
-      
+
       if (newPhotos.length > 0) {
         // Check privacy compliance for new photos
         for (const photo of newPhotos) {
           const privacy = await checkPhotoPrivacy(photo);
-          setPrivacyCheck(prev => ({ ...prev, [photo.id]: privacy }));
-          
+          setPrivacyCheck((prev) => ({ ...prev, [photo.id]: privacy }));
+
           if (!privacy.isCompliant && privacy.warnings.length > 0) {
             toast({
               variant: "destructive",
@@ -76,27 +76,27 @@ export default function PhotoGallery({
 
         toast({
           title: "Photos Selected",
-          description: `Added ${newPhotos.length} photo${newPhotos.length > 1 ? 's' : ''} to gallery`,
+          description: `Added ${newPhotos.length} photo${newPhotos.length > 1 ? "s" : ""} to gallery`,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Selection Failed", 
+        title: "Selection Failed",
         description: error instanceof Error ? error.message : "Failed to select photos",
       });
     }
   };
 
   const handlePhotoClick = async (photoId: string) => {
-    const photo = photos.find(p => p.id === photoId);
+    const photo = photos.find((p) => p.id === photoId);
     if (!photo) return;
 
     try {
       setSelectedPhoto(photoId);
       const dataURL = await getPhotoDataURL(photo);
       onPhotoSelect?.(dataURL);
-      
+
       toast({
         title: "Photo Selected",
         description: "Photo ready for album cover generation",
@@ -115,9 +115,9 @@ export default function PhotoGallery({
     if (success) {
       if (selectedPhoto === photoId) {
         setSelectedPhoto(null);
-        onPhotoSelect?.('');
+        onPhotoSelect?.("");
       }
-      setPrivacyCheck(prev => {
+      setPrivacyCheck((prev) => {
         const updated = { ...prev };
         delete updated[photoId];
         return updated;
@@ -130,9 +130,7 @@ export default function PhotoGallery({
       <Card className={cn("bg-white/5 border-white/20", className)}>
         <CardContent className="p-6 text-center">
           <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
-          <h3 className="text-lg font-semibold text-white mb-2">
-            Photo Gallery Not Supported
-          </h3>
+          <h3 className="text-lg font-semibold text-white mb-2">Photo Gallery Not Supported</h3>
           <p className="text-white/70 text-sm">
             Your browser doesn't support photo gallery features. Please use a modern browser.
           </p>
@@ -152,7 +150,7 @@ export default function PhotoGallery({
           </Badge>
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Privacy Notice */}
         <div className="bg-[#9FFFA2]/10 border border-[#9FFFA2]/20 rounded-2xl p-4">
@@ -161,8 +159,8 @@ export default function PhotoGallery({
             <div>
               <h4 className="font-semibold text-white mb-2">Privacy First</h4>
               <p className="text-white/70 text-sm leading-relaxed">
-                Your photos stay on your device. We only process selected images locally 
-                for album cover generation. No photos are uploaded to our servers.
+                Your photos stay on your device. We only process selected images locally for album
+                cover generation. No photos are uploaded to our servers.
               </p>
             </div>
           </div>
@@ -204,7 +202,7 @@ export default function PhotoGallery({
               </>
             )}
           </Button>
-          
+
           {photos.length >= maxPhotos && (
             <p className="text-white/50 text-xs mt-2">
               Maximum photos reached. Remove some to add more.
@@ -226,13 +224,13 @@ export default function PhotoGallery({
                 Clear All
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <AnimatePresence>
                 {photos.map((photo) => {
                   const isSelected = selectedPhoto === photo.id || selectedPhotoUrl === photo.url;
                   const privacy = privacyCheck[photo.id];
-                  
+
                   return (
                     <motion.div
                       key={photo.id}
@@ -241,9 +239,9 @@ export default function PhotoGallery({
                       exit={{ opacity: 0, scale: 0.8 }}
                       className={cn(
                         "relative group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all",
-                        isSelected 
-                          ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20" 
-                          : "border-white/20 hover:border-white/40"
+                        isSelected
+                          ? "border-[#9FFFA2] shadow-lg shadow-[#9FFFA2]/20"
+                          : "border-white/20 hover:border-white/40",
                       )}
                       onClick={() => handlePhotoClick(photo.id)}
                     >
@@ -256,7 +254,7 @@ export default function PhotoGallery({
                           className="object-cover"
                           sizes="(max-width: 768px) 50vw, 33vw"
                         />
-                        
+
                         {/* Selected Indicator */}
                         {isSelected && (
                           <motion.div
@@ -296,12 +294,8 @@ export default function PhotoGallery({
 
                       {/* Photo Info */}
                       <div className="p-3 bg-white/5">
-                        <p className="text-white text-sm font-medium truncate">
-                          {photo.name}
-                        </p>
-                        <p className="text-white/50 text-xs">
-                          {formatFileSize(photo.size)}
-                        </p>
+                        <p className="text-white text-sm font-medium truncate">{photo.name}</p>
+                        <p className="text-white/50 text-xs">{formatFileSize(photo.size)}</p>
                       </div>
                     </motion.div>
                   );

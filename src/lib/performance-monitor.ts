@@ -3,7 +3,7 @@
  * Tracks Core Web Vitals and app-specific metrics
  */
 
-import React from 'react';
+import React from "react";
 
 // Performance metrics interface
 export interface PerformanceMetrics {
@@ -13,7 +13,7 @@ export interface PerformanceMetrics {
   FID?: number; // First Input Delay
   LCP?: number; // Largest Contentful Paint
   TTFB?: number; // Time to First Byte
-  
+
   // App-specific metrics
   musicLoadTime?: number;
   photoProcessingTime?: number;
@@ -28,7 +28,7 @@ class PerformanceMonitor {
   private isSupported: boolean;
 
   constructor() {
-    this.isSupported = typeof window !== 'undefined' && 'PerformanceObserver' in window;
+    this.isSupported = typeof window !== "undefined" && "PerformanceObserver" in window;
     if (this.isSupported) {
       this.initializeObservers();
     }
@@ -40,15 +40,15 @@ class PerformanceMonitor {
       const paintObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (entry.name === 'first-contentful-paint') {
+          if (entry.name === "first-contentful-paint") {
             this.metrics.FCP = entry.startTime;
           }
         });
       });
-      paintObserver.observe({ entryTypes: ['paint'] });
+      paintObserver.observe({ entryTypes: ["paint"] });
       this.observers.push(paintObserver);
     } catch (error) {
-      console.warn('Paint observer not supported');
+      console.warn("Paint observer not supported");
     }
 
     // Observe LCP
@@ -60,10 +60,10 @@ class PerformanceMonitor {
           this.metrics.LCP = lastEntry.startTime;
         }
       });
-      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+      lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
       this.observers.push(lcpObserver);
     } catch (error) {
-      console.warn('LCP observer not supported');
+      console.warn("LCP observer not supported");
     }
 
     // Observe FID
@@ -78,10 +78,10 @@ class PerformanceMonitor {
           }
         });
       });
-      fidObserver.observe({ entryTypes: ['first-input'] });
+      fidObserver.observe({ entryTypes: ["first-input"] });
       this.observers.push(fidObserver);
     } catch (error) {
-      console.warn('FID observer not supported');
+      console.warn("FID observer not supported");
     }
 
     // Observe CLS
@@ -96,10 +96,10 @@ class PerformanceMonitor {
         });
         this.metrics.CLS = Math.max(this.metrics.CLS || 0, clsValue);
       });
-      clsObserver.observe({ entryTypes: ['layout-shift'] });
+      clsObserver.observe({ entryTypes: ["layout-shift"] });
       this.observers.push(clsObserver);
     } catch (error) {
-      console.warn('CLS observer not supported');
+      console.warn("CLS observer not supported");
     }
 
     // Observe navigation timing for TTFB
@@ -107,7 +107,7 @@ class PerformanceMonitor {
   }
 
   private observeNavigationTiming() {
-    if (typeof window !== 'undefined' && window.performance && window.performance.timing) {
+    if (typeof window !== "undefined" && window.performance && window.performance.timing) {
       const timing = window.performance.timing;
       this.metrics.TTFB = timing.responseStart - timing.navigationStart;
     }
@@ -116,22 +116,22 @@ class PerformanceMonitor {
   // Track custom app metrics
   trackMusicLoadTime(startTime: number, endTime: number) {
     this.metrics.musicLoadTime = endTime - startTime;
-    this.reportMetric('music_load_time', this.metrics.musicLoadTime);
+    this.reportMetric("music_load_time", this.metrics.musicLoadTime);
   }
 
   trackPhotoProcessing(startTime: number, endTime: number) {
     this.metrics.photoProcessingTime = endTime - startTime;
-    this.reportMetric('photo_processing_time', this.metrics.photoProcessingTime);
+    this.reportMetric("photo_processing_time", this.metrics.photoProcessingTime);
   }
 
   trackCoverGeneration(startTime: number, endTime: number) {
     this.metrics.coverGenerationTime = endTime - startTime;
-    this.reportMetric('cover_generation_time', this.metrics.coverGenerationTime);
+    this.reportMetric("cover_generation_time", this.metrics.coverGenerationTime);
   }
 
   trackNavigation(route: string, loadTime: number) {
     this.metrics.navigationTime = loadTime;
-    this.reportMetric('navigation_time', loadTime, { route });
+    this.reportMetric("navigation_time", loadTime, { route });
   }
 
   // Get current metrics
@@ -141,10 +141,10 @@ class PerformanceMonitor {
 
   // Report metric to analytics (placeholder for future integration)
   public reportMetric(name: string, value: number, attributes?: Record<string, any>) {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.log(`📊 Performance Metric: ${name}`, {
         value: `${Math.round(value)}ms`,
-        ...attributes
+        ...attributes,
       });
     }
 
@@ -186,11 +186,11 @@ class PerformanceMonitor {
 
   // Cleanup observers
   disconnect() {
-    this.observers.forEach(observer => {
+    this.observers.forEach((observer) => {
       try {
         observer.disconnect();
       } catch (error) {
-        console.warn('Error disconnecting observer:', error);
+        console.warn("Error disconnecting observer:", error);
       }
     });
     this.observers = [];
@@ -228,14 +228,17 @@ export function usePerformanceTracking(componentName: string) {
     };
   }, []);
 
-  const trackCustomMetric = React.useCallback((name: string, duration: number) => {
-    performanceMonitor.reportMetric(`${componentName}_${name}`, duration);
-  }, [componentName]);
+  const trackCustomMetric = React.useCallback(
+    (name: string, duration: number) => {
+      performanceMonitor.reportMetric(`${componentName}_${name}`, duration);
+    },
+    [componentName],
+  );
 
   return {
     metrics,
     trackCustomMetric,
-    performanceScore: performanceMonitor.calculatePerformanceScore()
+    performanceScore: performanceMonitor.calculatePerformanceScore(),
   };
 }
 
@@ -249,21 +252,21 @@ export class PerformanceTimer {
     this.startTime = performance.now();
   }
 
-  end(category?: 'music' | 'photo' | 'cover' | 'navigation') {
+  end(category?: "music" | "photo" | "cover" | "navigation") {
     const endTime = performance.now();
     const duration = endTime - this.startTime;
 
     switch (category) {
-      case 'music':
+      case "music":
         performanceMonitor.trackMusicLoadTime(this.startTime, endTime);
         break;
-      case 'photo':
+      case "photo":
         performanceMonitor.trackPhotoProcessing(this.startTime, endTime);
         break;
-      case 'cover':
+      case "cover":
         performanceMonitor.trackCoverGeneration(this.startTime, endTime);
         break;
-      case 'navigation':
+      case "navigation":
         performanceMonitor.trackNavigation(this.name, duration);
         break;
       default:
@@ -281,13 +284,13 @@ export function createPerformanceTimer(name: string): PerformanceTimer {
 
 // Memory usage tracking
 export function getMemoryUsage() {
-  if (typeof window !== 'undefined' && 'memory' in performance) {
+  if (typeof window !== "undefined" && "memory" in performance) {
     const memory = (performance as any).memory;
     return {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,
       jsHeapSizeLimit: memory.jsHeapSizeLimit,
-      usagePercentage: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100
+      usagePercentage: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100,
     };
   }
   return null;

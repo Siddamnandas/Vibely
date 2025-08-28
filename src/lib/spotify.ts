@@ -1,19 +1,21 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Spotify API Configuration
 const SPOTIFY_CONFIG = {
-  clientId: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '',
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET || '',
-  redirectUri: process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || 'http://localhost:9002/api/auth/spotify/callback',
+  clientId: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "",
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
+  redirectUri:
+    process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+    "http://localhost:9002/api/auth/spotify/callback",
   scopes: [
-    'user-read-private',
-    'user-read-email', 
-    'playlist-read-private',
-    'playlist-read-collaborative',
-    'user-top-read',
-    'user-library-read',
-    'streaming'
-  ].join(' ')
+    "user-read-private",
+    "user-read-email",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "user-top-read",
+    "user-library-read",
+    "streaming",
+  ].join(" "),
 };
 
 export interface SpotifyTrack {
@@ -56,14 +58,14 @@ export interface SpotifyArtist {
 
 export interface SpotifyAudioFeatures {
   id: string;
-  valence: number;        // 0.0 to 1.0 (positivity)
-  energy: number;         // 0.0 to 1.0 (intensity)
-  danceability: number;   // 0.0 to 1.0 (danceability)
-  tempo: number;          // BPM
-  acousticness: number;   // 0.0 to 1.0 (acoustic)
+  valence: number; // 0.0 to 1.0 (positivity)
+  energy: number; // 0.0 to 1.0 (intensity)
+  danceability: number; // 0.0 to 1.0 (danceability)
+  tempo: number; // BPM
+  acousticness: number; // 0.0 to 1.0 (acoustic)
   instrumentalness: number; // 0.0 to 1.0 (instrumental)
-  liveness: number;       // 0.0 to 1.0 (live performance)
-  speechiness: number;    // 0.0 to 1.0 (speech content)
+  liveness: number; // 0.0 to 1.0 (live performance)
+  speechiness: number; // 0.0 to 1.0 (speech content)
 }
 
 class SpotifyAPIService {
@@ -73,10 +75,10 @@ class SpotifyAPIService {
 
   constructor() {
     // Load tokens from localStorage if available
-    if (typeof window !== 'undefined') {
-      this.accessToken = localStorage.getItem('spotify_access_token');
-      this.refreshToken = localStorage.getItem('spotify_refresh_token');
-      const expiry = localStorage.getItem('spotify_token_expiry');
+    if (typeof window !== "undefined") {
+      this.accessToken = localStorage.getItem("spotify_access_token");
+      this.refreshToken = localStorage.getItem("spotify_refresh_token");
+      const expiry = localStorage.getItem("spotify_token_expiry");
       this.tokenExpiry = expiry ? new Date(expiry) : null;
     }
   }
@@ -87,10 +89,10 @@ class SpotifyAPIService {
   getAuthUrl(): string {
     const params = new URLSearchParams({
       client_id: SPOTIFY_CONFIG.clientId,
-      response_type: 'code',
+      response_type: "code",
       redirect_uri: SPOTIFY_CONFIG.redirectUri,
       scope: SPOTIFY_CONFIG.scopes,
-      state: Math.random().toString(36).substring(7)
+      state: Math.random().toString(36).substring(7),
     });
 
     return `https://accounts.spotify.com/authorize?${params.toString()}`;
@@ -102,36 +104,36 @@ class SpotifyAPIService {
   async exchangeCodeForToken(code: string): Promise<boolean> {
     try {
       // Use our API route for token exchange
-      const response = await fetch('/api/auth/spotify/callback', {
-        method: 'POST',
+      const response = await fetch("/api/auth/spotify/callback", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ code }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Token exchange failed:', errorData);
+        console.error("Token exchange failed:", errorData);
         return false;
       }
 
       const { access_token, refresh_token, expires_in } = await response.json();
-      
+
       this.accessToken = access_token;
       this.refreshToken = refresh_token;
       this.tokenExpiry = new Date(Date.now() + expires_in * 1000);
 
       // Store in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('spotify_access_token', access_token);
-        localStorage.setItem('spotify_refresh_token', refresh_token);
-        localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toISOString());
+      if (typeof window !== "undefined") {
+        localStorage.setItem("spotify_access_token", access_token);
+        localStorage.setItem("spotify_refresh_token", refresh_token);
+        localStorage.setItem("spotify_token_expiry", this.tokenExpiry.toISOString());
       }
 
       return true;
     } catch (error) {
-      console.error('Error exchanging code for token:', error);
+      console.error("Error exchanging code for token:", error);
       return false;
     }
   }
@@ -144,22 +146,22 @@ class SpotifyAPIService {
 
     try {
       // Use our API route for token refresh
-      const response = await fetch('/api/auth/spotify/refresh', {
-        method: 'POST',
+      const response = await fetch("/api/auth/spotify/refresh", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ refresh_token: this.refreshToken }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Token refresh failed:', errorData);
+        console.error("Token refresh failed:", errorData);
         return false;
       }
 
       const { access_token, refresh_token, expires_in } = await response.json();
-      
+
       this.accessToken = access_token;
       if (refresh_token) {
         this.refreshToken = refresh_token;
@@ -167,17 +169,17 @@ class SpotifyAPIService {
       this.tokenExpiry = new Date(Date.now() + expires_in * 1000);
 
       // Update localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('spotify_access_token', access_token);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("spotify_access_token", access_token);
         if (refresh_token) {
-          localStorage.setItem('spotify_refresh_token', refresh_token);
+          localStorage.setItem("spotify_refresh_token", refresh_token);
         }
-        localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toISOString());
+        localStorage.setItem("spotify_token_expiry", this.tokenExpiry.toISOString());
       }
 
       return true;
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      console.error("Error refreshing token:", error);
       return false;
     }
   }
@@ -187,11 +189,11 @@ class SpotifyAPIService {
    */
   async isAuthenticated(): Promise<boolean> {
     if (!this.accessToken) return false;
-    
+
     if (this.tokenExpiry && this.tokenExpiry < new Date()) {
       return await this.refreshAccessToken();
     }
-    
+
     return true;
   }
 
@@ -199,20 +201,20 @@ class SpotifyAPIService {
    * Make authenticated request to Spotify API
    */
   private async makeRequest<T>(endpoint: string): Promise<T | null> {
-    if (!await this.isAuthenticated()) {
-      throw new Error('Not authenticated with Spotify');
+    if (!(await this.isAuthenticated())) {
+      throw new Error("Not authenticated with Spotify");
     }
 
     try {
       const response = await axios.get(`https://api.spotify.com/v1${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          Authorization: `Bearer ${this.accessToken}`,
         },
       });
 
       return response.data;
     } catch (error) {
-      console.error('Spotify API request failed:', error);
+      console.error("Spotify API request failed:", error);
       return null;
     }
   }
@@ -221,7 +223,7 @@ class SpotifyAPIService {
    * Get user's playlists
    */
   async getUserPlaylists(): Promise<SpotifyPlaylist[]> {
-    const data = await this.makeRequest<{ items: SpotifyPlaylist[] }>('/me/playlists?limit=50');
+    const data = await this.makeRequest<{ items: SpotifyPlaylist[] }>("/me/playlists?limit=50");
     return data?.items || [];
   }
 
@@ -229,23 +231,31 @@ class SpotifyAPIService {
    * Get user's saved tracks (liked songs)
    */
   async getUserSavedTracks(limit: number = 50): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest<{ items: Array<{ track: SpotifyTrack }> }>(`/me/tracks?limit=${limit}`);
-    return data?.items.map(item => item.track) || [];
+    const data = await this.makeRequest<{ items: Array<{ track: SpotifyTrack }> }>(
+      `/me/tracks?limit=${limit}`,
+    );
+    return data?.items.map((item) => item.track) || [];
   }
 
   /**
    * Get playlist tracks
    */
   async getPlaylistTracks(playlistId: string): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest<SpotifyPlaylist>(`/playlists/${playlistId}?fields=tracks.items(track(id,name,artists,album,preview_url,duration_ms,popularity,external_urls))`);
-    return data?.tracks.items.map(item => item.track) || [];
+    const data = await this.makeRequest<SpotifyPlaylist>(
+      `/playlists/${playlistId}?fields=tracks.items(track(id,name,artists,album,preview_url,duration_ms,popularity,external_urls))`,
+    );
+    return data?.tracks.items.map((item) => item.track) || [];
   }
 
   /**
    * Get user's top tracks
    */
-  async getUserTopTracks(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term'): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest<{ items: SpotifyTrack[] }>(`/me/top/tracks?time_range=${timeRange}&limit=50`);
+  async getUserTopTracks(
+    timeRange: "short_term" | "medium_term" | "long_term" = "medium_term",
+  ): Promise<SpotifyTrack[]> {
+    const data = await this.makeRequest<{ items: SpotifyTrack[] }>(
+      `/me/top/tracks?time_range=${timeRange}&limit=50`,
+    );
     return data?.items || [];
   }
 
@@ -254,9 +264,11 @@ class SpotifyAPIService {
    */
   async getAudioFeatures(trackIds: string[]): Promise<SpotifyAudioFeatures[]> {
     if (trackIds.length === 0) return [];
-    
-    const ids = trackIds.join(',');
-    const data = await this.makeRequest<{ audio_features: SpotifyAudioFeatures[] }>(`/audio-features?ids=${ids}`);
+
+    const ids = trackIds.join(",");
+    const data = await this.makeRequest<{ audio_features: SpotifyAudioFeatures[] }>(
+      `/audio-features?ids=${ids}`,
+    );
     return data?.audio_features || [];
   }
 
@@ -273,7 +285,7 @@ class SpotifyAPIService {
 
     const results: SpotifyArtist[] = [];
     for (const chunk of chunks) {
-      const ids = chunk.join(',');
+      const ids = chunk.join(",");
       const data = await this.makeRequest<{ artists: SpotifyArtist[] }>(`/artists?ids=${ids}`);
       if (data?.artists) results.push(...data.artists);
     }
@@ -289,14 +301,16 @@ class SpotifyAPIService {
       display_name: string;
       email: string;
       images: Array<{ url: string }>;
-    }>('/me');
+    }>("/me");
   }
 
   /**
    * Search for tracks
    */
   async searchTracks(query: string, limit: number = 20): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest<{ tracks: { items: SpotifyTrack[] } }>(`/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`);
+    const data = await this.makeRequest<{ tracks: { items: SpotifyTrack[] } }>(
+      `/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`,
+    );
     return data?.tracks.items || [];
   }
 
@@ -308,10 +322,10 @@ class SpotifyAPIService {
     this.refreshToken = null;
     this.tokenExpiry = null;
 
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('spotify_access_token');
-      localStorage.removeItem('spotify_refresh_token');
-      localStorage.removeItem('spotify_token_expiry');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("spotify_access_token");
+      localStorage.removeItem("spotify_refresh_token");
+      localStorage.removeItem("spotify_token_expiry");
     }
   }
 }
@@ -321,14 +335,14 @@ export const spotifyAPI = new SpotifyAPIService();
 
 // Helper functions
 export const getMoodFromAudioFeatures = (features: SpotifyAudioFeatures): string => {
-  if (features.valence > 0.7 && features.energy > 0.6) return 'Happy';
-  if (features.valence < 0.4 && features.energy < 0.5) return 'Sad';
-  if (features.energy > 0.7 && features.danceability > 0.6) return 'Energetic';
-  return 'Chill';
+  if (features.valence > 0.7 && features.energy > 0.6) return "Happy";
+  if (features.valence < 0.4 && features.energy < 0.5) return "Sad";
+  if (features.energy > 0.7 && features.danceability > 0.6) return "Energetic";
+  return "Chill";
 };
 
 export const formatDuration = (ms: number): string => {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };

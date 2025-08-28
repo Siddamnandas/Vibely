@@ -21,7 +21,10 @@ type HeroProps = {
 
 function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
   return (
-    <div className="relative h-[70vh] max-h-[760px] w-full rounded-[32px] overflow-hidden shadow-2xl" aria-label="Hero">
+    <div
+      className="relative h-[70vh] max-h-[760px] w-full rounded-[32px] overflow-hidden shadow-2xl"
+      aria-label="Hero"
+    >
       {/* Neon gradient background */}
       <div className="absolute inset-0 bg-[radial-gradient(65%_80%_at_50%_0%,#CFFFD7_0%,#9FFFA2_30%,#B8FFCE_60%,#D8FFE8_100%)]" />
 
@@ -30,7 +33,10 @@ function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
         <div className="text-black font-black leading-none tracking-tight" style={{ fontSize: 56 }}>
           {nameTop}
         </div>
-        <div className="text-black/45 font-black leading-none tracking-tight -mt-2" style={{ fontSize: 56 }}>
+        <div
+          className="text-black/45 font-black leading-none tracking-tight -mt-2"
+          style={{ fontSize: 56 }}
+        >
           {nameBottom}
         </div>
       </div>
@@ -76,7 +82,13 @@ function TopSongCard() {
   const { playTrackAt } = usePlayback();
   const { tracks, isLoading } = useMusicData();
   const visible = tracks && tracks.length > 0 ? tracks[0] : null;
-  const queue = (tracks.length > 0 ? tracks : demoSongs).map(s => ({ id: s.id, title: s.title, artist: s.artist, coverUrl: s.originalCoverUrl, available: true }));
+  const queue = (tracks.length > 0 ? tracks : demoSongs).map((s) => ({
+    id: s.id,
+    title: s.title,
+    artist: s.artist,
+    coverUrl: s.originalCoverUrl,
+    available: true,
+  }));
   const onPlay = () => playTrackAt(0, queue);
 
   return (
@@ -87,13 +99,24 @@ function TopSongCard() {
         ) : null}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[17px] font-bold truncate">{visible ? visible.title : "Midnight Drive"}</div>
-        <div className="text-white/70 text-sm truncate">{visible ? visible.artist : "Luna Vox"}</div>
+        <div className="text-[17px] font-bold truncate">
+          {visible ? visible.title : "Midnight Drive"}
+        </div>
+        <div className="text-white/70 text-sm truncate">
+          {visible ? visible.artist : "Luna Vox"}
+        </div>
         <div className="mt-1 text-xs text-white/60">
-          {visible ? `Tempo ${visible.tempo} • Energy ${visible.energy ?? 0.7}` : "Tempo 120 • Energy 0.7"}
+          {visible
+            ? `Tempo ${visible.tempo} • Energy ${visible.energy ?? 0.7}`
+            : "Tempo 120 • Energy 0.7"}
         </div>
       </div>
-      <Button size="sm" onClick={onPlay} disabled={isLoading} className="rounded-full bg-white text-black hover:bg-white/90">
+      <Button
+        size="sm"
+        onClick={onPlay}
+        disabled={isLoading}
+        className="rounded-full bg-white text-black hover:bg-white/90"
+      >
         <Play className="h-4 w-4 mr-1" />
         Play
       </Button>
@@ -118,7 +141,9 @@ function TopArtistCard() {
           <Badge className="bg-[#9FFFA2] text-black font-bold">Top 1% listener</Badge>
           <div className="mt-2 text-lg font-semibold">Top Artist</div>
         </div>
-        <Button className="rounded-full bg-white text-black hover:bg-white/90">Generate Covers</Button>
+        <Button className="rounded-full bg-white text-black hover:bg-white/90">
+          Generate Covers
+        </Button>
       </div>
     </div>
   );
@@ -131,7 +156,9 @@ export default function Home() {
   const displayName = user?.displayName || "Samanta Mikon";
   const [first, ...rest] = displayName.split(" ");
   const last = rest.join(" ") || "Mikon";
-  const photo = user?.photoURL || "https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=840&auto=format&fit=crop";
+  const photo =
+    user?.photoURL ||
+    "https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=840&auto=format&fit=crop";
   const chips = useMemo(() => generateHeroChips(tracks), [tracks]);
 
   return (
@@ -187,9 +214,15 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
       if (label) genreCounts.set(label, (genreCounts.get(label) || 0) + 1);
     }
     const tempo = t.tempo ?? t.audioFeatures?.tempo;
-    if (typeof tempo === 'number' && !Number.isNaN(tempo)) { tempoSum += tempo; tempoCount++; }
-    const energy = (t.energy ?? t.audioFeatures?.energy);
-    if (typeof energy === 'number' && !Number.isNaN(energy)) { energySum += energy; energyCount++; }
+    if (typeof tempo === "number" && !Number.isNaN(tempo)) {
+      tempoSum += tempo;
+      tempoCount++;
+    }
+    const energy = t.energy ?? t.audioFeatures?.energy;
+    if (typeof energy === "number" && !Number.isNaN(energy)) {
+      energySum += energy;
+      energyCount++;
+    }
   }
 
   const avgTempo = tempoCount ? tempoSum / tempoCount : undefined;
@@ -200,28 +233,28 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
     if (label && !tags.includes(`#${label}`) && tags.length < 4) tags.push(`#${label}`);
   };
 
-  const chillCount = moods.get('Chill') || 0;
-  const energeticCount = moods.get('Energetic') || 0;
-  const happyCount = moods.get('Happy') || 0;
+  const chillCount = moods.get("Chill") || 0;
+  const energeticCount = moods.get("Energetic") || 0;
+  const happyCount = moods.get("Happy") || 0;
 
   // Add top genre first if present
   if (genreCounts.size > 0) {
-    const topGenre = Array.from(genreCounts.entries()).sort((a,b) => b[1]-a[1])[0][0];
+    const topGenre = Array.from(genreCounts.entries()).sort((a, b) => b[1] - a[1])[0][0];
     push(topGenre);
   }
 
-  if ((avgEnergy ?? 0.5) < 0.5 || chillCount >= Math.max(2, energeticCount)) push('Chill');
-  if ((avgEnergy ?? 0.5) >= 0.7 || energeticCount > chillCount) push('Workout');
+  if ((avgEnergy ?? 0.5) < 0.5 || chillCount >= Math.max(2, energeticCount)) push("Chill");
+  if ((avgEnergy ?? 0.5) >= 0.7 || energeticCount > chillCount) push("Workout");
 
-  if (avgTempo && avgTempo >= 88 && avgTempo <= 112) push('Roadtrip');
-  else if (avgTempo && avgTempo < 90) push('Lofi');
-  else if (avgTempo && avgTempo > 125) push('Party');
+  if (avgTempo && avgTempo >= 88 && avgTempo <= 112) push("Roadtrip");
+  else if (avgTempo && avgTempo < 90) push("Lofi");
+  else if (avgTempo && avgTempo > 125) push("Party");
 
-  if (happyCount > 2 && tags.length < 4) push('Feelgood');
+  if (happyCount > 2 && tags.length < 4) push("Feelgood");
 
   while (tags.length < 4) {
-    const fillers = ['Indie', 'Focus', 'Acoustic', 'Chill'];
-    const pick = fillers.find(f => !tags.includes(`#${f}`));
+    const fillers = ["Indie", "Focus", "Acoustic", "Chill"];
+    const pick = fillers.find((f) => !tags.includes(`#${f}`));
     if (!pick) break;
     push(pick);
   }
@@ -231,13 +264,20 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
 
 function normalizeGenre(genre: string): string | null {
   const g = genre.toLowerCase();
-  if (g.includes('indie')) return 'Indie';
-  if (g.includes('hip hop') || g.includes('hip-hop') || g.includes('rap')) return 'HipHop';
-  if (g.includes('r&b') || g.includes('rnb') || g.includes('soul')) return 'RnB';
-  if (g.includes('electro') || g.includes('edm') || g.includes('dance') || g.includes('house') || g.includes('techno')) return 'Electronic';
-  if (g.includes('rock')) return 'Rock';
-  if (g.includes('pop')) return 'Pop';
-  if (g.includes('country')) return 'Country';
-  if (g.includes('lo-fi') || g.includes('lofi')) return 'Lofi';
+  if (g.includes("indie")) return "Indie";
+  if (g.includes("hip hop") || g.includes("hip-hop") || g.includes("rap")) return "HipHop";
+  if (g.includes("r&b") || g.includes("rnb") || g.includes("soul")) return "RnB";
+  if (
+    g.includes("electro") ||
+    g.includes("edm") ||
+    g.includes("dance") ||
+    g.includes("house") ||
+    g.includes("techno")
+  )
+    return "Electronic";
+  if (g.includes("rock")) return "Rock";
+  if (g.includes("pop")) return "Pop";
+  if (g.includes("country")) return "Country";
+  if (g.includes("lo-fi") || g.includes("lofi")) return "Lofi";
   return null;
 }

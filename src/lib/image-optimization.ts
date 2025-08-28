@@ -3,7 +3,7 @@
  * Handles image lazy loading, caching, and optimization for Vibely app
  */
 
-import React from 'react';
+import React from "react";
 
 // Image cache for storing processed images
 class ImageCache {
@@ -47,7 +47,7 @@ export class LazyImageLoader {
   private imageElements = new Set<HTMLImageElement>();
 
   constructor() {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       this.setupObserver();
     }
   }
@@ -55,8 +55,8 @@ export class LazyImageLoader {
   private setupObserver() {
     const options = {
       root: null,
-      rootMargin: '50px',
-      threshold: 0.1
+      rootMargin: "50px",
+      threshold: 0.1,
     };
 
     this.observer = new IntersectionObserver((entries) => {
@@ -78,7 +78,7 @@ export class LazyImageLoader {
       const cachedSrc = imageCache.get(src);
       if (cachedSrc) {
         img.src = cachedSrc;
-        img.classList.add('loaded');
+        img.classList.add("loaded");
         this.observer?.unobserve(img);
         return;
       }
@@ -86,15 +86,15 @@ export class LazyImageLoader {
       // Create optimized version
       const optimizedSrc = await this.optimizeImage(src);
       imageCache.set(src, optimizedSrc);
-      
+
       img.src = optimizedSrc;
-      img.classList.add('loaded');
+      img.classList.add("loaded");
       this.observer?.unobserve(img);
     } catch (error) {
-      console.warn('Failed to load image:', src, error);
+      console.warn("Failed to load image:", src, error);
       // Fallback to original
       img.src = src;
-      img.classList.add('loaded');
+      img.classList.add("loaded");
       this.observer?.unobserve(img);
     }
   }
@@ -102,13 +102,13 @@ export class LazyImageLoader {
   private async optimizeImage(src: string): Promise<string> {
     return new Promise((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
+      img.crossOrigin = "anonymous";
+
       img.onload = () => {
         try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
           if (!ctx) {
             resolve(src);
             return;
@@ -134,8 +134,8 @@ export class LazyImageLoader {
 
           // Draw and compress
           ctx.drawImage(img, 0, 0, width, height);
-          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          
+          const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+
           resolve(optimizedDataUrl);
         } catch (error) {
           resolve(src);
@@ -177,8 +177,8 @@ export class ImagePreloader {
 
   async preload(urls: string[]): Promise<void> {
     const promises = urls
-      .filter(url => !this.preloadCache.has(url))
-      .map(url => this.preloadSingle(url));
+      .filter((url) => !this.preloadCache.has(url))
+      .map((url) => this.preloadSingle(url));
 
     await Promise.allSettled(promises);
   }
@@ -206,10 +206,13 @@ export class ImagePreloader {
 export const imagePreloader = new ImagePreloader();
 
 // React hook for optimized images
-export function useOptimizedImage(src: string, options?: {
-  preload?: boolean;
-  quality?: number;
-}) {
+export function useOptimizedImage(
+  src: string,
+  options?: {
+    preload?: boolean;
+    quality?: number;
+  },
+) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
   const [optimizedSrc, setOptimizedSrc] = React.useState<string>();
@@ -224,13 +227,13 @@ export function useOptimizedImage(src: string, options?: {
 
         // Check cache
         let finalSrc = imageCache.get(src);
-        
+
         if (!finalSrc) {
           // If preload requested, use image preloader
           if (options?.preload) {
             await imagePreloader.preload([src]);
           }
-          
+
           finalSrc = src; // Use original for now
           imageCache.set(src, finalSrc);
         }
@@ -250,7 +253,7 @@ export function useOptimizedImage(src: string, options?: {
   return {
     src: optimizedSrc || src,
     loading,
-    error
+    error,
   };
 }
 
@@ -264,7 +267,7 @@ export function generateResponsiveImageProps(src: string, alt: string) {
     decoding: "async" as const,
     style: {
       objectFit: "cover" as const,
-      transition: "opacity 0.3s ease-in-out"
-    }
+      transition: "opacity 0.3s ease-in-out",
+    },
   };
 }

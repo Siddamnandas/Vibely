@@ -1,31 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Crown, 
-  Check, 
-  Zap, 
-  Download, 
-  Palette, 
-  Shield, 
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Crown,
+  Check,
+  Zap,
+  Download,
+  Palette,
+  Shield,
   Infinity,
   Loader2,
-  Sparkles
-} from 'lucide-react';
+  Sparkles,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useInAppPurchase } from '@/hooks/use-in-app-purchase';
-import { 
-  subscriptionService, 
-  SUBSCRIPTION_PLANS, 
-  formatPrice, 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useInAppPurchase } from "@/hooks/use-in-app-purchase";
+import {
+  subscriptionService,
+  SUBSCRIPTION_PLANS,
+  formatPrice,
   getSubscriptionBenefits,
-  UserSubscription 
-} from '@/lib/subscription';
+  UserSubscription,
+} from "@/lib/subscription";
 
 export default function SubscriptionPage() {
   const { toast } = useToast();
@@ -37,15 +37,15 @@ export default function SubscriptionPage() {
     restorePurchases,
     getPlatformInfo,
   } = useInAppPurchase();
-  
+
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
   useEffect(() => {
     // Load current subscription
-    const subscription = subscriptionService.getCurrentSubscription('user1');
+    const subscription = subscriptionService.getCurrentSubscription("user1");
     setCurrentSubscription(subscription);
   }, []);
 
@@ -53,17 +53,17 @@ export default function SubscriptionPage() {
     if (!currentSubscription) return;
 
     setIsUpgrading(true);
-    
+
     try {
       // Use in-app purchase for actual payment
-      const productId = selectedPlan === 'monthly' ? 'premium_monthly' : 'premium_yearly';
-      
+      const productId = selectedPlan === "monthly" ? "premium_monthly" : "premium_yearly";
+
       const purchase = await purchaseProduct(productId);
-      
+
       if (purchase) {
         // Update local subscription state
-        const result = await subscriptionService.upgradeToPremium('user1', selectedPlan);
-        
+        const result = await subscriptionService.upgradeToPremium("user1", selectedPlan);
+
         if (result.success && result.subscription) {
           setCurrentSubscription(result.subscription);
           toast({
@@ -82,7 +82,8 @@ export default function SubscriptionPage() {
       toast({
         variant: "destructive",
         title: "Upgrade Failed",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Something went wrong. Please try again.",
       });
     } finally {
       setIsUpgrading(false);
@@ -93,17 +94,18 @@ export default function SubscriptionPage() {
     if (!currentSubscription) return;
 
     setIsCanceling(true);
-    
+
     try {
-      const result = await subscriptionService.cancelSubscription('user1', false);
-      
+      const result = await subscriptionService.cancelSubscription("user1", false);
+
       if (result.success) {
-        const updatedSub = subscriptionService.getCurrentSubscription('user1');
+        const updatedSub = subscriptionService.getCurrentSubscription("user1");
         setCurrentSubscription(updatedSub);
-        
+
         toast({
           title: "Subscription Canceled",
-          description: "Your premium features will remain active until the end of your billing period.",
+          description:
+            "Your premium features will remain active until the end of your billing period.",
         });
       } else {
         toast({
@@ -126,16 +128,16 @@ export default function SubscriptionPage() {
   const handleRestore = async () => {
     try {
       const purchases = await restorePurchases();
-      
+
       if (purchases.length > 0) {
         // Update subscription status
-        const result = await subscriptionService.upgradeToPremium('user1', 'monthly');
-        
+        const result = await subscriptionService.upgradeToPremium("user1", "monthly");
+
         if (result.success && result.subscription) {
           setCurrentSubscription(result.subscription);
           toast({
             title: "Purchases Restored!",
-            description: `Found ${purchases.length} purchase${purchases.length > 1 ? 's' : ''}. Your premium access has been restored.`,
+            description: `Found ${purchases.length} purchase${purchases.length > 1 ? "s" : ""}. Your premium access has been restored.`,
           });
         }
       } else {
@@ -154,9 +156,9 @@ export default function SubscriptionPage() {
   };
 
   const { platform } = getPlatformInfo();
-  const isPremium = currentSubscription?.plan.tier === 'premium' || hasActiveSubscription;
-  const premiumPlan = SUBSCRIPTION_PLANS.find(p => p.tier === 'premium')!;
-  const freemiumPlan = SUBSCRIPTION_PLANS.find(p => p.tier === 'freemium')!;
+  const isPremium = currentSubscription?.plan.tier === "premium" || hasActiveSubscription;
+  const premiumPlan = SUBSCRIPTION_PLANS.find((p) => p.tier === "premium")!;
+  const freemiumPlan = SUBSCRIPTION_PLANS.find((p) => p.tier === "freemium")!;
 
   return (
     <div className="min-h-screen bg-[#0E0F12] text-white">
@@ -175,14 +177,14 @@ export default function SubscriptionPage() {
             <p className="text-xl text-white/70 mb-6">
               Unlock unlimited creativity with premium features
             </p>
-            
+
             {/* Current Plan Status */}
             {currentSubscription && (
               <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-white/10 to-white/5 rounded-full border border-white/20 backdrop-blur-sm">
-                <div className={`w-3 h-3 rounded-full ${isPremium ? 'bg-[#9FFFA2]' : 'bg-[#8FD3FF]'}`}></div>
-                <span className="font-semibold">
-                  Current Plan: {currentSubscription.plan.name}
-                </span>
+                <div
+                  className={`w-3 h-3 rounded-full ${isPremium ? "bg-[#9FFFA2]" : "bg-[#8FD3FF]"}`}
+                ></div>
+                <span className="font-semibold">Current Plan: {currentSubscription.plan.name}</span>
                 {isPremium && currentSubscription.cancelAtPeriodEnd && (
                   <Badge variant="outline" className="border-[#FF6F91]/30 text-[#FF6F91]">
                     Canceling
@@ -207,24 +209,26 @@ export default function SubscriptionPage() {
                   <div>
                     <h3 className="text-lg font-bold text-white mb-2">Monthly Usage</h3>
                     <p className="text-white/70">
-                      {currentSubscription.coversUsedThisMonth} of {currentSubscription.plan.features.coversPerMonth} covers used
+                      {currentSubscription.coversUsedThisMonth} of{" "}
+                      {currentSubscription.plan.features.coversPerMonth} covers used
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-black text-[#FF6F91] mb-1">
-                      {currentSubscription.plan.features.coversPerMonth - currentSubscription.coversUsedThisMonth}
+                      {currentSubscription.plan.features.coversPerMonth -
+                        currentSubscription.coversUsedThisMonth}
                     </div>
                     <div className="text-sm text-white/60">Remaining</div>
                   </div>
                 </div>
-                
+
                 {/* Usage Bar */}
                 <div className="mt-4">
                   <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] transition-all duration-300"
-                      style={{ 
-                        width: `${(currentSubscription.coversUsedThisMonth / currentSubscription.plan.features.coversPerMonth) * 100}%` 
+                      style={{
+                        width: `${(currentSubscription.coversUsedThisMonth / currentSubscription.plan.features.coversPerMonth) * 100}%`,
                       }}
                     />
                   </div>
@@ -242,7 +246,9 @@ export default function SubscriptionPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className={`bg-gradient-to-br from-white/5 to-white/10 border border-white/20 h-full ${!isPremium ? 'ring-2 ring-[#8FD3FF]/50' : ''}`}>
+            <Card
+              className={`bg-gradient-to-br from-white/5 to-white/10 border border-white/20 h-full ${!isPremium ? "ring-2 ring-[#8FD3FF]/50" : ""}`}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-2xl font-black">Freemium</CardTitle>
@@ -252,23 +258,21 @@ export default function SubscriptionPage() {
                     </Badge>
                   )}
                 </div>
-                <div className="text-4xl font-black text-white">
-                  Free
-                </div>
+                <div className="text-4xl font-black text-white">Free</div>
                 <p className="text-white/60">Perfect for getting started</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  {getSubscriptionBenefits('freemium').map((benefit, index) => (
+                  {getSubscriptionBenefits("freemium").map((benefit, index) => (
                     <li key={index} className="flex items-center gap-3">
                       <Check className="w-5 h-5 text-[#8FD3FF] flex-shrink-0" />
                       <span className="text-white/80">{benefit}</span>
                     </li>
                   ))}
                 </ul>
-                
+
                 {isPremium && (
-                  <Button 
+                  <Button
                     onClick={handleCancel}
                     disabled={isCanceling}
                     variant="outline"
@@ -280,7 +284,7 @@ export default function SubscriptionPage() {
                         Canceling...
                       </>
                     ) : (
-                      'Downgrade to Free'
+                      "Downgrade to Free"
                     )}
                   </Button>
                 )}
@@ -294,7 +298,9 @@ export default function SubscriptionPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className={`bg-gradient-to-br from-[#9FFFA2]/10 to-[#FF6F91]/10 border-2 border-[#9FFFA2]/30 h-full relative overflow-hidden ${isPremium ? 'ring-2 ring-[#9FFFA2]/50' : ''}`}>
+            <Card
+              className={`bg-gradient-to-br from-[#9FFFA2]/10 to-[#FF6F91]/10 border-2 border-[#9FFFA2]/30 h-full relative overflow-hidden ${isPremium ? "ring-2 ring-[#9FFFA2]/50" : ""}`}
+            >
               {/* Popular Badge */}
               <div className="absolute top-4 right-4 z-10">
                 <Badge className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold">
@@ -302,7 +308,7 @@ export default function SubscriptionPage() {
                   POPULAR
                 </Badge>
               </div>
-              
+
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-2xl font-black flex items-center gap-2">
@@ -315,59 +321,65 @@ export default function SubscriptionPage() {
                     </Badge>
                   )}
                 </div>
-                
+
                 {!isPremium && (
                   <div className="space-y-2">
                     {/* Billing Toggle */}
                     <div className="flex items-center gap-4 mb-4">
                       <button
-                        onClick={() => setSelectedPlan('monthly')}
+                        onClick={() => setSelectedPlan("monthly")}
                         className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                          selectedPlan === 'monthly'
-                            ? 'bg-[#9FFFA2] text-black'
-                            : 'text-white/70 hover:text-white'
+                          selectedPlan === "monthly"
+                            ? "bg-[#9FFFA2] text-black"
+                            : "text-white/70 hover:text-white"
                         }`}
                       >
                         Monthly
                       </button>
                       <button
-                        onClick={() => setSelectedPlan('yearly')}
+                        onClick={() => setSelectedPlan("yearly")}
                         className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                          selectedPlan === 'yearly'
-                            ? 'bg-[#9FFFA2] text-black'
-                            : 'text-white/70 hover:text-white'
+                          selectedPlan === "yearly"
+                            ? "bg-[#9FFFA2] text-black"
+                            : "text-white/70 hover:text-white"
                         }`}
                       >
                         Yearly
                       </button>
-                      {selectedPlan === 'yearly' && (
+                      {selectedPlan === "yearly" && (
                         <Badge className="bg-[#FFD36E]/20 text-[#FFD36E] border-[#FFD36E]/30">
                           17% OFF
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="text-4xl font-black text-white">
-                      {formatPrice(selectedPlan === 'monthly' ? premiumPlan.price.monthly : premiumPlan.price.yearly)}
+                      {formatPrice(
+                        selectedPlan === "monthly"
+                          ? premiumPlan.price.monthly
+                          : premiumPlan.price.yearly,
+                      )}
                       <span className="text-lg font-normal text-white/60">
-                        /{selectedPlan === 'monthly' ? 'month' : 'year'}
+                        /{selectedPlan === "monthly" ? "month" : "year"}
                       </span>
                     </div>
-                    
-                    {selectedPlan === 'yearly' && (
+
+                    {selectedPlan === "yearly" && (
                       <p className="text-sm text-[#9FFFA2]">
-                        Save ${((premiumPlan.price.monthly * 12) - premiumPlan.price.yearly).toFixed(2)} per year
+                        Save $
+                        {(premiumPlan.price.monthly * 12 - premiumPlan.price.yearly).toFixed(2)} per
+                        year
                       </p>
                     )}
                   </div>
                 )}
-                
+
                 <p className="text-white/60">Unlimited creativity unleashed</p>
               </CardHeader>
-              
+
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  {getSubscriptionBenefits('premium').map((benefit, index) => (
+                  {getSubscriptionBenefits("premium").map((benefit, index) => (
                     <li key={index} className="flex items-center gap-3">
                       <div className="w-5 h-5 rounded-full bg-[#9FFFA2] flex items-center justify-center flex-shrink-0">
                         <Check className="w-3 h-3 text-black" />
@@ -376,10 +388,10 @@ export default function SubscriptionPage() {
                     </li>
                   ))}
                 </ul>
-                
+
                 {!isPremium ? (
                   <div className="space-y-3">
-                    <Button 
+                    <Button
                       onClick={handleUpgrade}
                       disabled={isUpgrading}
                       className="w-full bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold text-lg py-6 rounded-full hover:opacity-90 transition-opacity"
@@ -396,9 +408,9 @@ export default function SubscriptionPage() {
                         </>
                       )}
                     </Button>
-                    
+
                     {/* Restore Purchases for iOS */}
-                    {platform === 'ios' && (
+                    {platform === "ios" && (
                       <Button
                         onClick={handleRestore}
                         variant="outline"
@@ -429,40 +441,46 @@ export default function SubscriptionPage() {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <h2 className="text-2xl font-black text-center mb-8">
-            Why Choose <span className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] bg-clip-text text-transparent">Vibely Pro?</span>
+            Why Choose{" "}
+            <span className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] bg-clip-text text-transparent">
+              Vibely Pro?
+            </span>
           </h2>
-          
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: Infinity,
-                title: 'Unlimited Covers',
-                description: 'Generate as many covers as you want',
-                color: '#9FFFA2'
+                title: "Unlimited Covers",
+                description: "Generate as many covers as you want",
+                color: "#9FFFA2",
               },
               {
                 icon: Download,
-                title: 'HD & 4K Export',
-                description: 'Professional quality downloads',
-                color: '#8FD3FF'
+                title: "HD & 4K Export",
+                description: "Professional quality downloads",
+                color: "#8FD3FF",
               },
               {
                 icon: Palette,
-                title: 'Exclusive Styles',
-                description: 'Premium templates and effects',
-                color: '#FF6F91'
+                title: "Exclusive Styles",
+                description: "Premium templates and effects",
+                color: "#FF6F91",
               },
               {
                 icon: Shield,
-                title: 'No Watermarks',
-                description: 'Clean, professional results',
-                color: '#FFD36E'
-              }
+                title: "No Watermarks",
+                description: "Clean, professional results",
+                color: "#FFD36E",
+              },
             ].map((feature, index) => (
-              <Card key={index} className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 text-center">
+              <Card
+                key={index}
+                className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 text-center"
+              >
                 <CardContent className="p-6">
-                  <feature.icon 
-                    className="w-12 h-12 mx-auto mb-4" 
+                  <feature.icon
+                    className="w-12 h-12 mx-auto mb-4"
                     style={{ color: feature.color }}
                   />
                   <h3 className="font-bold text-white mb-2">{feature.title}</h3>

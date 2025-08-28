@@ -5,8 +5,8 @@
 
 Next.js app with a mobile‑first UI for AI‑generated album art and playlist playback.
 
-Highlights
-----------
+## Highlights
+
 - Playlist Detail overlay in Library (no extra routes)
 - Persistent Mini Player (glassmorphic) + Full Player
 - Background cover regeneration with progress, pause/resume/cancel, restore
@@ -15,8 +15,8 @@ Highlights
 - Analytics event logging for key actions
 - A11y: all controls ≥44pt with descriptive labels
 
-Changelog – Refinements
------------------------
+## Changelog – Refinements
+
 - Parallax header with 28pt radius, soft shadow, ~16px parallax
 - Actions: Play All, Shuffle, Regenerate (modal preflight)
 - Regen: chip with pause/resume/cancel, queued state, push on completion, restore per track/playlist
@@ -25,8 +25,8 @@ Changelog – Refinements
 - Streaming auth: `useStreamingAuth()`; Reconnect banner when unauthenticated
 - Analytics: playlist, track, regen, seek, share, swipe
 
-Design Tokens
--------------
+## Design Tokens
+
 - `--nav-height`: Bottom nav height (updated by `BottomNav` via ResizeObserver)
 - `--nav-gap`: Breathing room above nav used by Mini Player offset
 - `--mini-height`: Fixed Mini Player height used across components
@@ -34,23 +34,23 @@ Design Tokens
 
 Tokens live in `src/styles/tokens.css` and are imported by `src/app/globals.css`.
 
-Getting Started
----------------
+## Getting Started
+
 Prereqs: Node 20 (see `.nvmrc`), npm 9+.
 
-1) Install
+1. Install
 
 ```bash
 npm ci
 ```
 
-2) Run locally
+2. Run locally
 
 ```bash
 npm run dev
 ```
 
-3) Typecheck, lint, test, build
+3. Typecheck, lint, test, build
 
 ```bash
 npm run typecheck
@@ -59,8 +59,8 @@ npm test
 npm run build
 ```
 
-Environment Variables
----------------------
+## Environment Variables
+
 Set these in `.env.local` (no values shown):
 
 - Public Firebase: `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
@@ -70,31 +70,32 @@ Set these in `.env.local` (no values shown):
 - Analytics: `NEXT_PUBLIC_AMPLITUDE_API_KEY`, `NEXT_PUBLIC_SEGMENT_WRITE_KEY`, `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_MIXPANEL_TOKEN`
 - Payments: `STRIPE_SECRET_KEY`
 
-CI/CD
------
+## CI/CD
+
 - CI runs on pushes/PRs to `main` (typecheck, lint, tests, build). See `.github/workflows/ci.yml`.
 - Vercel deploys on push to `main` using `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets. See `.github/workflows/deploy-vercel.yml`.
 
-Branch Protection
------------------
+## Branch Protection
+
 Enable on GitHub for `main`:
+
 - Require PR reviews
 - Require status checks (CI) to pass before merge
 
-Contributing
-------------
+## Contributing
+
 See `CONTRIBUTING.md`. In short:
+
 - Use Conventional Commits (e.g., `feat: ...`, `fix: ...`)
 - Run `npm run typecheck && npm run lint && npm test` before pushing
 - Open a PR targeting `main` with a clear description and screenshots if UI changes
 
-Discussions
------------
+## Discussions
+
 Consider enabling GitHub Discussions to collect feedback, Q&A, and ideas.
 
+## Mini Player (icon-only)
 
-Mini Player (icon-only)
------------------------
 - Converted Mini Player to an icon-only UI with a single centered Play/Pause button sized via `--mini-icon` (default 44px).
 - Removed title/artist, progress bar, and next/prev from the mini surface; Full Player retains full controls.
 - Preserves glassmorphism, rounded corners, and safe-area offset: `calc(var(--nav-height) + var(--nav-gap) + env(safe-area-inset-bottom))`.

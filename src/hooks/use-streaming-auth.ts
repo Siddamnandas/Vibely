@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-type Provider = 'spotify' | 'apple' | null;
+type Provider = "spotify" | "apple" | null;
 
 type State = {
   isAuthenticated: boolean;
@@ -11,27 +11,31 @@ type State = {
   error?: string;
 };
 
-const STORAGE_KEY = 'vibely.streamingAuth';
+const STORAGE_KEY = "vibely.streamingAuth";
 
 function readStorage(): { provider: Provider; token?: string } {
-  if (typeof window === 'undefined') return { provider: null };
+  if (typeof window === "undefined") return { provider: null };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { provider: 'spotify', token: undefined };
+    return raw ? JSON.parse(raw) : { provider: "spotify", token: undefined };
   } catch {
-    return { provider: 'spotify', token: undefined };
+    return { provider: "spotify", token: undefined };
   }
 }
 
 function writeStorage(data: { provider: Provider; token?: string }) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {}
 }
 
 export function useStreamingAuth() {
-  const [state, setState] = useState<State>({ isAuthenticated: false, provider: null, checking: true });
+  const [state, setState] = useState<State>({
+    isAuthenticated: false,
+    provider: null,
+    checking: true,
+  });
 
   useEffect(() => {
     const { provider, token } = readStorage();
@@ -43,7 +47,7 @@ export function useStreamingAuth() {
     await new Promise((r) => setTimeout(r, 800));
     const current = readStorage();
     // Simulate obtaining a token
-    writeStorage({ provider: current.provider ?? 'spotify', token: `tok_${Date.now()}` });
+    writeStorage({ provider: current.provider ?? "spotify", token: `tok_${Date.now()}` });
     const next = readStorage();
     setState({ isAuthenticated: Boolean(next.token), provider: next.provider, checking: false });
   }, []);
@@ -60,4 +64,3 @@ export function useStreamingAuth() {
 
   return { ...state, reconnect, refresh };
 }
-

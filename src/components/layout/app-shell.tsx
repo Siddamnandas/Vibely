@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import BottomNav from '@/components/layout/bottom-nav';
-import { FullPlayer } from '@/components/full-player';
-import { MiniPlayer } from '@/components/mini-player';
-import { PlaybackProvider } from '@/context/playback-context';
-import { RegenProvider } from '@/context/regen-context';
-import { usePlayback } from '@/context/playback-context';
+import { useEffect, useRef, useState } from "react";
+import BottomNav from "@/components/layout/bottom-nav";
+import { FullPlayer } from "@/components/full-player";
+import { MiniPlayer } from "@/components/mini-player";
+import { PlaybackProvider } from "@/context/playback-context";
+import { RegenProvider } from "@/context/regen-context";
+import { usePlayback } from "@/context/playback-context";
 
 interface AppShellProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 export default function AppShell({ children }: AppShellProps) {
@@ -21,10 +21,13 @@ export default function AppShell({ children }: AppShellProps) {
     const onPop = () => setShowFullPlayer(false);
     if (showFullPlayer) {
       if (!pushedRef.current) {
-        try { window.history.pushState({ vibelyFullPlayer: true }, '', window.location.href); pushedRef.current = true; } catch {}
+        try {
+          window.history.pushState({ vibelyFullPlayer: true }, "", window.location.href);
+          pushedRef.current = true;
+        } catch {}
       }
-      window.addEventListener('popstate', onPop);
-      return () => window.removeEventListener('popstate', onPop);
+      window.addEventListener("popstate", onPop);
+      return () => window.removeEventListener("popstate", onPop);
     }
     pushedRef.current = false;
   }, [showFullPlayer]);
@@ -33,15 +36,24 @@ export default function AppShell({ children }: AppShellProps) {
     <PlaybackProvider>
       <RegenProvider>
         <main className="pb-24">
-            {/* Auto-open full player when playback starts anywhere */}
-            <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
-            {children}
-            {/* Mini Player — persists across pages, above nav, below modals */}
-            <MiniPlayer onExpand={() => setShowFullPlayer(true)} />
-            <BottomNav />
+          {/* Auto-open full player when playback starts anywhere */}
+          <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
+          {children}
+          {/* Mini Player — persists across pages, above nav, below modals */}
+          <MiniPlayer onExpand={() => setShowFullPlayer(true)} />
+          <BottomNav />
 
-                {/* Full Player */}
-                <FullPlayer onClose={() => { try { window.history.back(); } catch { setShowFullPlayer(false); } }} isVisible={showFullPlayer} />
+          {/* Full Player */}
+          <FullPlayer
+            onClose={() => {
+              try {
+                window.history.back();
+              } catch {
+                setShowFullPlayer(false);
+              }
+            }}
+            isVisible={showFullPlayer}
+          />
         </main>
       </RegenProvider>
     </PlaybackProvider>

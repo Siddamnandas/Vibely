@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2024-11-20.acacia",
 });
 
 export async function POST(request: NextRequest) {
@@ -10,19 +10,16 @@ export async function POST(request: NextRequest) {
     const { productId, priceAmount, currency, type } = await request.json();
 
     if (!productId || !priceAmount || !currency) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
-    const isSubscription = type === 'subscription';
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const isSubscription = type === "subscription";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: isSubscription ? 'subscription' : 'payment',
+      payment_method_types: ["card"],
+      mode: isSubscription ? "subscription" : "payment",
       line_items: [
         {
           price_data: {
@@ -31,11 +28,13 @@ export async function POST(request: NextRequest) {
               name: getProductName(productId),
               description: getProductDescription(productId),
             },
-            ...(isSubscription ? {
-              recurring: {
-                interval: productId.includes('yearly') ? 'year' : 'month',
-              },
-            } : {}),
+            ...(isSubscription
+              ? {
+                  recurring: {
+                    interval: productId.includes("yearly") ? "year" : "month",
+                  },
+                }
+              : {}),
             unit_amount: Math.round(priceAmount * 100), // Convert to cents
           },
           quantity: 1,
@@ -53,32 +52,29 @@ export async function POST(request: NextRequest) {
       url: session.url,
       sessionId: session.id,
     });
-
   } catch (error) {
-    console.error('Stripe session creation failed:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error("Stripe session creation failed:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 function getProductName(productId: string): string {
   const productNames: Record<string, string> = {
-    'premium_monthly': 'Vibely Premium Monthly',
-    'premium_yearly': 'Vibely Premium Yearly',
-    'extra_covers_pack': '10 Extra Covers Pack',
+    premium_monthly: "Vibely Premium Monthly",
+    premium_yearly: "Vibely Premium Yearly",
+    extra_covers_pack: "10 Extra Covers Pack",
   };
-  
-  return productNames[productId] || 'Vibely Product';
+
+  return productNames[productId] || "Vibely Product";
 }
 
 function getProductDescription(productId: string): string {
   const productDescriptions: Record<string, string> = {
-    'premium_monthly': 'Unlimited album covers, no watermarks, HD export quality',
-    'premium_yearly': 'Unlimited album covers, no watermarks, HD export quality - Annual plan with 40% savings',
-    'extra_covers_pack': 'Add 10 additional covers to your monthly quota',
+    premium_monthly: "Unlimited album covers, no watermarks, HD export quality",
+    premium_yearly:
+      "Unlimited album covers, no watermarks, HD export quality - Annual plan with 40% savings",
+    extra_covers_pack: "Add 10 additional covers to your monthly quota",
   };
-  
-  return productDescriptions[productId] || 'Vibely Premium Features';
+
+  return productDescriptions[productId] || "Vibely Premium Features";
 }

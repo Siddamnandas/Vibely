@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useSpotifyAuth } from '@/hooks/use-spotify-auth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, LogOut, User, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { useSpotifyAuth } from "@/hooks/use-spotify-auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Music, LogOut, User, Loader2 } from "lucide-react";
+import Image from "next/image";
 
 export function SpotifyAuth() {
   const { isAuthenticated, isLoading, userProfile, login, logout } = useSpotifyAuth();
@@ -33,9 +33,10 @@ export function SpotifyAuth() {
         </CardHeader>
         <CardContent>
           <p className="text-white/70 mb-6">
-            Connect your Spotify account to access your playlists, top tracks, and personalized music data for cover generation.
+            Connect your Spotify account to access your playlists, top tracks, and personalized
+            music data for cover generation.
           </p>
-          <Button 
+          <Button
             onClick={login}
             className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 rounded-full"
           >
@@ -77,13 +78,13 @@ export function SpotifyAuth() {
           )}
           <div>
             <p className="text-white font-semibold">
-              {userProfile?.display_name || 'Spotify User'}
+              {userProfile?.display_name || "Spotify User"}
             </p>
             <p className="text-white/60 text-sm">Account connected</p>
           </div>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={logout}
           variant="outline"
           className="w-full border-white/20 text-white hover:bg-white/10"

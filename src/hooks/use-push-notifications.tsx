@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { pushNotificationService } from '@/lib/push-notifications';
+import { useState, useEffect, useCallback } from "react";
+import { pushNotificationService } from "@/lib/push-notifications";
 
 interface NotificationState {
   isSupported: boolean;
@@ -13,18 +13,18 @@ interface NotificationState {
 export function usePushNotifications() {
   const [state, setState] = useState<NotificationState>({
     isSupported: false,
-    permission: 'default',
+    permission: "default",
     isEnabled: false,
     token: null,
   });
-  
+
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   // Update state when service changes
   useEffect(() => {
     const updateState = () => {
       setState({
-        isSupported: 'Notification' in window && 'serviceWorker' in navigator,
+        isSupported: "Notification" in window && "serviceWorker" in navigator,
         permission: pushNotificationService.getPermissionStatus(),
         isEnabled: pushNotificationService.isEnabled(),
         token: pushNotificationService.getCurrentToken(),
@@ -32,7 +32,7 @@ export function usePushNotifications() {
     };
 
     updateState();
-    
+
     // Listen for permission changes
     const interval = setInterval(updateState, 1000);
     return () => clearInterval(interval);
@@ -40,19 +40,19 @@ export function usePushNotifications() {
 
   const requestPermission = useCallback(async () => {
     if (isRequestingPermission) return false;
-    
+
     setIsRequestingPermission(true);
-    
+
     try {
       const granted = await pushNotificationService.requestPermission();
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         permission: pushNotificationService.getPermissionStatus(),
         isEnabled: pushNotificationService.isEnabled(),
         token: pushNotificationService.getCurrentToken(),
       }));
-      
+
       return granted;
     } finally {
       setIsRequestingPermission(false);
@@ -61,15 +61,15 @@ export function usePushNotifications() {
 
   const unsubscribe = useCallback(async () => {
     const success = await pushNotificationService.unsubscribe();
-    
+
     if (success) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isEnabled: false,
         token: null,
       }));
     }
-    
+
     return success;
   }, []);
 
@@ -83,28 +83,34 @@ export function usePushNotifications() {
 
 // Hook for showing notifications
 export function useNotifications() {
-  const showNotification = useCallback(async (
-    title: string,
-    body: string,
-    options?: {
-      icon?: string;
-      image?: string;
-      data?: Record<string, any>;
-      requireInteraction?: boolean;
-    }
-  ) => {
-    return pushNotificationService.showNotification({
-      title,
-      body,
-      icon: options?.icon,
-      image: options?.image,
-      data: options?.data,
-    }, {
-      requireInteraction: options?.requireInteraction,
-    });
-  }, []);
+  const showNotification = useCallback(
+    async (
+      title: string,
+      body: string,
+      options?: {
+        icon?: string;
+        image?: string;
+        data?: Record<string, any>;
+        requireInteraction?: boolean;
+      },
+    ) => {
+      return pushNotificationService.showNotification(
+        {
+          title,
+          body,
+          icon: options?.icon,
+          image: options?.image,
+          data: options?.data,
+        },
+        {
+          requireInteraction: options?.requireInteraction,
+        },
+      );
+    },
+    [],
+  );
 
   return {
     showNotification,
   };
-}"
+}
