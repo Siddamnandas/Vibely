@@ -52,3 +52,29 @@ package-lock.json.*.backup
 # Guard against accidentally added dependency folders at repo root
 # Comment out if converting to a monorepo.
 @*/
+
+# --- STRICT WHITELIST MODE (DISABLED BY DEFAULT) ---
+# Uncomment to allowlist only core app files at repo root.
+# *
+# !/src/
+# !/public/
+# !/.github/
+# !/scripts/
+# !/__tests__/
+# !/styles/
+# !/app/
+# !/components/
+# !/context/
+# !/lib/
+# !/pages/
+# !/package.json
+# !/package-lock.json
+# !/tsconfig.json
+# !/next.config.ts
+# !/.nvmrc
+# !/.gitignore
+# !/.prettierrc.json
+# !/.prettierignore
+# !/README.md
+# !/CONTRIBUTING.md
+# !/LICENSE
