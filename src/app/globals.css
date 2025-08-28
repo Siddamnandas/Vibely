@@ -1,0 +1,44 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 122 100% 81%;
+    --primary-foreground: 120 25% 10%;
+    --secondary: 346 100% 72%;
+    --secondary-foreground: 345 30% 10%;
+    --muted: 240 10% 15%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 43 100% 71%;
+    --accent-foreground: 45 30% 10%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 122 100% 81%;
+    --radius: 2rem;
+    --chart-1: 122 100% 81%;
+    --chart-2: 346 100% 72%;
+    --chart-3: 203 100% 78%;
+    --chart-4: 43 100% 71%;
+    --chart-5: 27 87% 67%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
