@@ -30,3 +30,12 @@ node_modules/
 
 # Vendor-like folders at repo root
 @*/
+
+# Non-code text/binary files
+.gitignore
+.husky/
+.nvmrc
+.prettierignore
+.github/CODEOWNERS
+LICENSE
+src/app/favicon.ico
