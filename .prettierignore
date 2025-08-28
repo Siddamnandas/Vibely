@@ -1,0 +1,32 @@
+# Builds / caches
+.next/
+out/
+dist/
+build/
+coverage/
+.tmp/
+tmp/
+.cache/
+.turbo/
+
+# Deps
+node_modules/
+
+# Logs
+*.log
+
+# Env & system
+.env*
+.DS_Store
+
+# Misc
+*.snap
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webm
+
+# Vendor-like folders at repo root
+@*/
