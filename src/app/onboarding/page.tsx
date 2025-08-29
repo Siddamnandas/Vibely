@@ -55,14 +55,14 @@ export default function OnboardingPage() {
 
   // Load saved progress on mount
   useEffect(() => {
-    const savedProgress = localStorage.getItem('vibely.onboarding.progress');
+    const savedProgress = localStorage.getItem("vibely.onboarding.progress");
     if (savedProgress) {
       try {
         const progress = JSON.parse(savedProgress);
         setCompletedSteps(progress.completed || []);
         setSkippedSteps(progress.skipped || []);
       } catch (error) {
-        console.warn('Failed to load onboarding progress:', error);
+        console.warn("Failed to load onboarding progress:", error);
       }
     }
   }, []);
@@ -72,9 +72,9 @@ export default function OnboardingPage() {
     const progress = {
       completed: completedSteps,
       skipped: skippedSteps,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    localStorage.setItem('vibely.onboarding.progress', JSON.stringify(progress));
+    localStorage.setItem("vibely.onboarding.progress", JSON.stringify(progress));
   }, [completedSteps, skippedSteps]);
 
   // Show skip options after 3 seconds (UX best practice)
@@ -89,21 +89,21 @@ export default function OnboardingPage() {
   // Real step handlers with actual functionality
   const handleMusicConnect = async () => {
     setIsLoading(true);
-    setCurrentStep('music');
-    
+    setCurrentStep("music");
+
     try {
       if (!spotifyAuth.isAuthenticated) {
         spotifyAuth.login();
         return;
       }
-      
-      setCompletedSteps((prev) => [...prev, 'music']);
-      track('onboarding_music_connected', {
-        provider: 'spotify',
-        user_id: user?.uid
+
+      setCompletedSteps((prev) => [...prev, "music"]);
+      track("onboarding_music_connected", {
+        provider: "spotify",
+        user_id: user?.uid,
       });
     } catch (error) {
-      console.error('Music connection failed:', error);
+      console.error("Music connection failed:", error);
     } finally {
       setIsLoading(false);
       setCurrentStep(null);
@@ -112,15 +112,15 @@ export default function OnboardingPage() {
 
   const handlePhotosAccess = async () => {
     setIsLoading(true);
-    setCurrentStep('photos');
-    
+    setCurrentStep("photos");
+
     try {
       // Acknowledge photo access
-      setCompletedSteps((prev) => [...prev, 'photos']);
-      track('onboarding_photos_granted', { user_id: user?.uid });
+      setCompletedSteps((prev) => [...prev, "photos"]);
+      track("onboarding_photos_granted", { user_id: user?.uid });
     } catch (error) {
-      console.error('Photo access failed:', error);
-      setCompletedSteps((prev) => [...prev, 'photos']);
+      console.error("Photo access failed:", error);
+      setCompletedSteps((prev) => [...prev, "photos"]);
     } finally {
       setIsLoading(false);
       setCurrentStep(null);
@@ -129,23 +129,30 @@ export default function OnboardingPage() {
 
   const handlePrivacyAcknowledge = async () => {
     setIsLoading(true);
-    setCurrentStep('privacy');
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setCompletedSteps((prev) => [...prev, 'privacy']);
-    track('onboarding_privacy_acknowledged', { user_id: user?.uid });
-    
+    setCurrentStep("privacy");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setCompletedSteps((prev) => [...prev, "privacy"]);
+    track("onboarding_privacy_acknowledged", { user_id: user?.uid });
+
     setIsLoading(false);
     setCurrentStep(null);
   };
 
   const handleAction = async (stepId: string) => {
     switch (stepId) {
-      case 'music': await handleMusicConnect(); break;
-      case 'photos': await handlePhotosAccess(); break;
-      case 'privacy': await handlePrivacyAcknowledge(); break;
-      default: console.warn('Unknown step:', stepId);
+      case "music":
+        await handleMusicConnect();
+        break;
+      case "photos":
+        await handlePhotosAccess();
+        break;
+      case "privacy":
+        await handlePrivacyAcknowledge();
+        break;
+      default:
+        console.warn("Unknown step:", stepId);
     }
   };
 
@@ -153,19 +160,19 @@ export default function OnboardingPage() {
     setSkippedSteps((prev) => [...prev, stepId]);
     track("onboarding_step_skipped", {
       step: stepId,
-      user_id: user?.uid
+      user_id: user?.uid,
     });
   };
 
   const handleSkipAll = () => {
-    const remainingSteps = steps.filter(step => 
-      !completedSteps.includes(step.id) && !skippedSteps.includes(step.id)
-    ).map(step => step.id);
-    
+    const remainingSteps = steps
+      .filter((step) => !completedSteps.includes(step.id) && !skippedSteps.includes(step.id))
+      .map((step) => step.id);
+
     setSkippedSteps((prev) => [...prev, ...remainingSteps]);
     track("onboarding_skip_all", {
       skipped_steps: remainingSteps,
-      user_id: user?.uid
+      user_id: user?.uid,
     });
   };
 
@@ -173,11 +180,11 @@ export default function OnboardingPage() {
     track("onboarding_skip_now", {
       completed_count: completedSteps.length,
       total_steps: steps.length,
-      user_id: user?.uid
+      user_id: user?.uid,
     });
-    
+
     // Clear saved progress and mark as complete
-    localStorage.removeItem('vibely.onboarding.progress');
+    localStorage.removeItem("vibely.onboarding.progress");
     onboarding.completeOnboarding();
     router.push("/");
   }, [completedSteps.length, user?.uid, onboarding, router]);
@@ -186,33 +193,34 @@ export default function OnboardingPage() {
     track("onboarding_completed", {
       completed_steps: completedSteps,
       skipped_steps: skippedSteps,
-      user_id: user?.uid
+      user_id: user?.uid,
     });
-    
-    localStorage.removeItem('vibely.onboarding.progress');
+
+    localStorage.removeItem("vibely.onboarding.progress");
     onboarding.completeOnboarding();
     router.push("/");
   }, [completedSteps, skippedSteps, user?.uid, onboarding, router]);
 
   // Performance-aware animations (with null check)
-  const shouldUseReducedAnimations = deviceProfile.tier === 'low' || (deviceProfile.batteryLevel && deviceProfile.batteryLevel < 20);
-  const animationDuration = shouldUseReducedAnimations ? '200ms' : '500ms';
-  
+  const shouldUseReducedAnimations =
+    deviceProfile.tier === "low" || (deviceProfile.batteryLevel && deviceProfile.batteryLevel < 20);
+  const animationDuration = shouldUseReducedAnimations ? "200ms" : "500ms";
+
   const allStepsCompleted = completedSteps.length === steps.length;
   const progressPercentage = ((completedSteps.length + skippedSteps.length) / steps.length) * 100;
-  
+
   // Auto-focus management for accessibility
   useEffect(() => {
-    const firstIncompleteStep = steps.find(step => 
-      !completedSteps.includes(step.id) && !skippedSteps.includes(step.id)
+    const firstIncompleteStep = steps.find(
+      (step) => !completedSteps.includes(step.id) && !skippedSteps.includes(step.id),
     );
-    
+
     if (firstIncompleteStep) {
       const stepElement = document.querySelector(`[data-step-id="${firstIncompleteStep.id}"]`);
       if (stepElement) {
-        (stepElement as HTMLElement).scrollIntoView({ 
-          behavior: shouldUseReducedAnimations ? 'auto' : 'smooth',
-          block: 'center' 
+        (stepElement as HTMLElement).scrollIntoView({
+          behavior: shouldUseReducedAnimations ? "auto" : "smooth",
+          block: "center",
         });
       }
     }
@@ -224,10 +232,13 @@ export default function OnboardingPage() {
       {!shouldUseReducedAnimations && (
         <>
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-cyan-500/10 animate-pulse" />
-          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-3xl animate-bounce" style={{ animationDuration: '8s' }} />
+          <div
+            className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-3xl animate-bounce"
+            style={{ animationDuration: "8s" }}
+          />
         </>
       )}
-      
+
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Top Navigation with Skip Now Button */}
         <div className="flex items-center justify-between p-6">
@@ -237,7 +248,7 @@ export default function OnboardingPage() {
             </div>
             <span className="text-white font-bold text-lg">Vibely</span>
           </div>
-          
+
           {showSkipOptions && (
             <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-xl border border-slate-600/30 rounded-2xl p-2">
               <Button
@@ -262,7 +273,7 @@ export default function OnboardingPage() {
                   "h-1 rounded-full flex-1 transition-all duration-500 ease-out",
                   index < completedSteps.length + skippedSteps.length
                     ? "bg-gradient-to-r from-emerald-400 to-cyan-400"
-                    : "bg-slate-700/50"
+                    : "bg-slate-700/50",
                 )}
               />
             ))}
@@ -290,9 +301,9 @@ export default function OnboardingPage() {
                 The Future 🚀
               </h2>
               <p className="text-lg text-white/70 font-medium max-w-xs mx-auto leading-relaxed mb-6">
-                Let's unlock your creative superpowers in 60 seconds
+                Let&apos;s unlock your creative superpowers in 60 seconds
               </p>
-              
+
               {/* Flexible Setup Section with Skip Options */}
               <div className="bg-slate-800/40 backdrop-blur-lg border border-emerald-400/20 rounded-2xl p-4 mb-6 max-w-sm mx-auto">
                 <div className="flex items-center gap-2 mb-3">
@@ -300,7 +311,8 @@ export default function OnboardingPage() {
                   <span className="text-emerald-200 font-semibold text-sm">Flexible Setup</span>
                 </div>
                 <p className="text-white/60 text-sm mb-4 leading-relaxed">
-                  Skip any step and return later through your Settings. We'll save your progress!
+                  Skip any step and return later through your Settings. We&apos;ll save your
+                  progress!
                 </p>
                 <div className="flex gap-2">
                   {showSkipOptions && (
@@ -326,18 +338,26 @@ export default function OnboardingPage() {
                   )}
                   {!showSkipOptions && (
                     <div className="flex-1 text-center">
-                      <span className="text-slate-400 text-xs">Skip options available in 3s...</span>
+                      <span className="text-slate-400 text-xs">
+                        Skip options available in 3s...
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
-              
+
               {/* Next Step Recommendation */}
               {completedSteps.length < steps.length && (
                 <div className="mt-6 inline-flex items-center gap-2 bg-slate-800/40 backdrop-blur-lg border border-emerald-400/30 rounded-2xl px-4 py-2">
                   <Star className="w-4 h-4 text-emerald-300" />
                   <span className="text-emerald-200 text-sm font-medium">
-                    Next: {steps.find(step => !completedSteps.includes(step.id) && !skippedSteps.includes(step.id))?.title}
+                    Next:{" "}
+                    {
+                      steps.find(
+                        (step) =>
+                          !completedSteps.includes(step.id) && !skippedSteps.includes(step.id),
+                      )?.title
+                    }
                   </span>
                 </div>
               )}
@@ -349,25 +369,27 @@ export default function OnboardingPage() {
                 const isCompleted = completedSteps.includes(step.id);
                 const isSkipped = skippedSteps.includes(step.id);
                 const isCurrent = !isCompleted && !isSkipped;
-                
+
                 return (
                   <Card
                     key={step.id}
                     className={cn(
                       "group relative overflow-hidden transition-all duration-500 ease-out border-2",
-                      isCompleted 
+                      isCompleted
                         ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-400/50 backdrop-blur-xl shadow-lg shadow-emerald-500/20"
                         : isSkipped
-                        ? "bg-slate-800/40 border-slate-600/30 backdrop-blur-xl"
-                        : "bg-slate-800/60 border-slate-600/50 backdrop-blur-xl hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02]"
+                          ? "bg-slate-800/40 border-slate-600/30 backdrop-blur-xl"
+                          : "bg-slate-800/60 border-slate-600/50 backdrop-blur-xl hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02]",
                     )}
                   >
                     {/* Visual Effects */}
-                    <div className={cn(
-                      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-                      `bg-gradient-to-r ${step.color} opacity-5`
-                    )} />
-                    
+                    <div
+                      className={cn(
+                        "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                        `bg-gradient-to-r ${step.color} opacity-5`,
+                      )}
+                    />
+
                     <CardContent className="p-6 relative z-10">
                       <div className="flex items-start gap-4">
                         {/* Icon with Status */}
@@ -378,8 +400,8 @@ export default function OnboardingPage() {
                               isCompleted
                                 ? "bg-gradient-to-r from-emerald-400 to-teal-400 border-emerald-300 text-slate-900 shadow-lg"
                                 : isSkipped
-                                ? "bg-slate-700 border-slate-600 text-slate-400"
-                                : "bg-slate-700/80 border-slate-500 text-white group-hover:border-emerald-400 group-hover:text-emerald-300"
+                                  ? "bg-slate-700 border-slate-600 text-slate-400"
+                                  : "bg-slate-700/80 border-slate-500 text-white group-hover:border-emerald-400 group-hover:text-emerald-300",
                             )}
                           >
                             {isCompleted ? (
@@ -395,10 +417,16 @@ export default function OnboardingPage() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className={cn(
-                              "font-bold text-lg leading-tight",
-                              isCompleted ? "text-emerald-200" : isSkipped ? "text-slate-400 line-through" : "text-white"
-                            )}>
+                            <h3
+                              className={cn(
+                                "font-bold text-lg leading-tight",
+                                isCompleted
+                                  ? "text-emerald-200"
+                                  : isSkipped
+                                    ? "text-slate-400 line-through"
+                                    : "text-white",
+                              )}
+                            >
                               {step.title}
                             </h3>
                             {isCurrent && (
@@ -408,22 +436,30 @@ export default function OnboardingPage() {
                               </div>
                             )}
                           </div>
-                          
-                          <p className={cn(
-                            "text-sm mb-3 leading-relaxed",
-                            isCompleted ? "text-emerald-100/80" : isSkipped ? "text-slate-500" : "text-white/70"
-                          )}>
+
+                          <p
+                            className={cn(
+                              "text-sm mb-3 leading-relaxed",
+                              isCompleted
+                                ? "text-emerald-100/80"
+                                : isSkipped
+                                  ? "text-slate-500"
+                                  : "text-white/70",
+                            )}
+                          >
                             {step.description}
                           </p>
-                          
+
                           {/* Benefit Badge */}
                           <div className="flex items-center gap-2 text-xs">
-                            <div className={cn(
-                              "inline-flex items-center gap-1 px-2 py-1 rounded-full border",
-                              isCompleted 
-                                ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/40"
-                                : "bg-slate-700/50 text-slate-300 border-slate-600/50"
-                            )}>
+                            <div
+                              className={cn(
+                                "inline-flex items-center gap-1 px-2 py-1 rounded-full border",
+                                isCompleted
+                                  ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/40"
+                                  : "bg-slate-700/50 text-slate-300 border-slate-600/50",
+                              )}
+                            >
                               <Star className="w-3 h-3" />
                               {step.benefit}
                             </div>
@@ -449,7 +485,7 @@ export default function OnboardingPage() {
                                   </>
                                 )}
                               </Button>
-                              
+
                               {showSkipOptions && (
                                 <Button
                                   size="sm"
@@ -482,8 +518,8 @@ export default function OnboardingPage() {
                   allStepsCompleted
                     ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-emerald-400 shadow-emerald-500/30 hover:scale-105"
                     : completedSteps.length > 0 || skippedSteps.length > 0
-                    ? "bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white border-slate-500"
-                    : "bg-slate-800/50 text-slate-400 border-slate-700 cursor-not-allowed"
+                      ? "bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white border-slate-500"
+                      : "bg-slate-800/50 text-slate-400 border-slate-700 cursor-not-allowed",
                 )}
               >
                 {allStepsCompleted ? (
@@ -497,7 +533,7 @@ export default function OnboardingPage() {
                   "Complete steps above"
                 )}
               </Button>
-              
+
               {/* Skip All Option */}
               {showSkipOptions && completedSteps.length === 0 && skippedSteps.length === 0 && (
                 <div className="pt-4 border-t border-slate-700/50">

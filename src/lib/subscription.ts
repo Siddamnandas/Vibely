@@ -1,4 +1,8 @@
-import { firebasePurchaseService, type SubscriptionRecord, type PurchaseRecord } from "@/lib/firebase-purchase-service";
+import {
+  firebasePurchaseService,
+  type SubscriptionRecord,
+  type PurchaseRecord,
+} from "@/lib/firebase-purchase-service";
 import { track as trackEvent } from "@/lib/analytics";
 
 export type SubscriptionTier = "freemium" | "premium";
@@ -78,7 +82,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 ];
 
 class SubscriptionService {
-  private subscriptionCache: Map<string, { subscription: UserSubscription; timestamp: number }> = new Map();
+  private subscriptionCache: Map<string, { subscription: UserSubscription; timestamp: number }> =
+    new Map();
   private cacheExpiryMs = 5 * 60 * 1000; // 5 minutes
   private migrationChecked: Set<string> = new Set();
 
@@ -88,7 +93,7 @@ class SubscriptionService {
   async getCurrentSubscription(userId: string): Promise<UserSubscription> {
     // Check cache first
     const cached = this.subscriptionCache.get(userId);
-    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiryMs) {
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiryMs) {
       return cached.subscription;
     }
 
@@ -101,10 +106,12 @@ class SubscriptionService {
 
       // Try to get from Firebase
       const firebaseSubscription = await firebasePurchaseService.getUserActiveSubscription(userId);
-      
+
       if (firebaseSubscription) {
-        const plan = SUBSCRIPTION_PLANS.find(p => p.id === firebaseSubscription.planId) || SUBSCRIPTION_PLANS[0];
-        
+        const plan =
+          SUBSCRIPTION_PLANS.find((p) => p.id === firebaseSubscription.planId) ||
+          SUBSCRIPTION_PLANS[0];
+
         const subscription: UserSubscription = {
           id: firebaseSubscription.id,
           userId: firebaseSubscription.userId,
@@ -129,10 +136,9 @@ class SubscriptionService {
 
       // Return default freemium subscription if none found
       return this.createDefaultSubscription(userId);
-
     } catch (error) {
       console.error("Failed to get subscription from Firebase:", error);
-      
+
       // Fallback to localStorage for compatibility
       const localSubscription = this.getSubscriptionFromLocalStorage(userId);
       if (localSubscription) {
@@ -244,14 +250,22 @@ class SubscriptionService {
   /**
    * Record cover generation usage
    */
-  async recordCoverGeneration(userId: string, coverCount: number = 1, metadata?: { playlistId?: string; trackId?: string; generationTime?: number }): Promise<void> {
+  async recordCoverGeneration(
+    userId: string,
+    coverCount: number = 1,
+    metadata?: { playlistId?: string; trackId?: string; generationTime?: number },
+  ): Promise<void> {
     try {
       const subscription = await this.getCurrentSubscription(userId);
-      
+
       if (subscription.id) {
         // Update Firebase subscription usage
-        await firebasePurchaseService.updateSubscriptionUsage(subscription.id, "cover_generated", coverCount);
-        
+        await firebasePurchaseService.updateSubscriptionUsage(
+          subscription.id,
+          "cover_generated",
+          coverCount,
+        );
+
         // Record detailed usage
         await firebasePurchaseService.recordUsage({
           userId,
@@ -281,10 +295,9 @@ class SubscriptionService {
         subscription_tier: subscription.plan.tier,
         has_firebase_id: !!subscription.id,
       });
-
     } catch (error) {
       console.error("Failed to record cover generation:", error);
-      
+
       // Fallback to localStorage
       if (typeof window !== "undefined") {
         const subscription = await this.getCurrentSubscription(userId);
@@ -300,7 +313,7 @@ class SubscriptionService {
   async resetMonthlyUsage(userId: string): Promise<void> {
     try {
       const subscription = await this.getCurrentSubscription(userId);
-      
+
       if (subscription.id) {
         // Reset usage in Firebase
         await firebasePurchaseService.resetMonthlyUsage(subscription.id);
@@ -308,11 +321,15 @@ class SubscriptionService {
 
       // Update local data
       subscription.coversUsedThisMonth = 0;
-      
+
       // Update period dates
       const now = new Date();
       subscription.currentPeriodStart = now;
-      subscription.currentPeriodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      subscription.currentPeriodEnd = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        now.getDate(),
+      );
 
       // Update cache
       this.subscriptionCache.set(userId, {
@@ -329,7 +346,6 @@ class SubscriptionService {
         user_id: userId,
         subscription_tier: subscription.plan.tier,
       });
-
     } catch (error) {
       console.error("Failed to reset monthly usage:", error);
     }
@@ -341,7 +357,12 @@ class SubscriptionService {
   async upgradeToPremium(
     userId: string,
     billingCycle: "monthly" | "yearly",
-    purchaseData?: { transactionId: string; purchaseToken: string; amount: number; currency: string }
+    purchaseData?: {
+      transactionId: string;
+      purchaseToken: string;
+      amount: number;
+      currency: string;
+    },
   ): Promise<{
     success: boolean;
     error?: string;
@@ -433,7 +454,7 @@ class SubscriptionService {
       };
     } catch (error) {
       console.error("Upgrade failed:", error);
-      
+
       trackEvent("subscription_upgrade_failed", {
         user_id: userId,
         billing_cycle: billingCycle,
@@ -453,7 +474,7 @@ class SubscriptionService {
   async cancelSubscription(
     userId: string,
     immediate: boolean = false,
-    reason?: string
+    reason?: string,
   ): Promise<{
     success: boolean;
     error?: string;
@@ -498,7 +519,7 @@ class SubscriptionService {
       return { success: true };
     } catch (error) {
       console.error("Cancellation failed:", error);
-      
+
       trackEvent("subscription_cancellation_failed", {
         user_id: userId,
         immediate,
@@ -532,7 +553,7 @@ class SubscriptionService {
     }>;
   }> {
     const subscription = await this.getCurrentSubscription(userId);
-    
+
     const baseFormats = [
       {
         name: "Standard",
@@ -571,11 +592,16 @@ class SubscriptionService {
   /**
    * Subscribe to real-time subscription updates
    */
-  subscribeToUserSubscription(userId: string, callback: (subscription: UserSubscription | null) => void): () => void {
+  subscribeToUserSubscription(
+    userId: string,
+    callback: (subscription: UserSubscription | null) => void,
+  ): () => void {
     return firebasePurchaseService.subscribeToUserSubscription(userId, (firebaseSubscription) => {
       if (firebaseSubscription) {
-        const plan = SUBSCRIPTION_PLANS.find(p => p.id === firebaseSubscription.planId) || SUBSCRIPTION_PLANS[0];
-        
+        const plan =
+          SUBSCRIPTION_PLANS.find((p) => p.id === firebaseSubscription.planId) ||
+          SUBSCRIPTION_PLANS[0];
+
         const subscription: UserSubscription = {
           id: firebaseSubscription.id,
           userId: firebaseSubscription.userId,

@@ -71,7 +71,7 @@ class MobileAccessibilityService {
     // Detect user preferences
     this.config.enableReducedMotion = this.prefersReducedMotion();
     this.config.enableHighContrast = this.prefersHighContrast();
-    
+
     // Apply preferences
     this.applyAccessibilityPreferences();
 
@@ -192,7 +192,7 @@ class MobileAccessibilityService {
 
   private applyAccessibilityPreferences() {
     const body = document.body;
-    
+
     // Apply reduced motion
     if (this.config.enableReducedMotion) {
       body.classList.add("a11y-reduced-motion");
@@ -248,7 +248,7 @@ class MobileAccessibilityService {
   private isInteractiveElement(element: HTMLElement): boolean {
     const interactiveTags = ["button", "a", "input", "select", "textarea"];
     const interactiveRoles = ["button", "link", "tab", "menuitem"];
-    
+
     return (
       interactiveTags.includes(element.tagName.toLowerCase()) ||
       interactiveRoles.includes(element.getAttribute("role") || "") ||
@@ -260,25 +260,25 @@ class MobileAccessibilityService {
   private enhanceInteractiveElement(element: HTMLElement) {
     // Ensure minimum touch target size
     this.ensureMinimumTouchTarget(element);
-    
+
     // Enhance focus indicator
     element.classList.add("a11y-enhanced-focus");
-    
+
     // Ensure proper ARIA labels
     this.ensureProperLabeling(element);
-    
+
     // Ensure keyboard accessibility
     this.ensureKeyboardAccessibility(element);
   }
 
   private ensureMinimumTouchTarget(element: HTMLElement) {
     const rect = element.getBoundingClientRect();
-    const isSmall = rect.width < this.config.minTouchTargetSize || 
-                   rect.height < this.config.minTouchTargetSize;
+    const isSmall =
+      rect.width < this.config.minTouchTargetSize || rect.height < this.config.minTouchTargetSize;
 
     if (isSmall) {
       element.classList.add("a11y-touch-target");
-      
+
       // Log violation
       this.violations.push({
         element,
@@ -288,17 +288,18 @@ class MobileAccessibilityService {
         suggestions: [
           "Increase padding around the element",
           "Add min-width and min-height CSS properties",
-          "Consider using a larger icon or text"
-        ]
+          "Consider using a larger icon or text",
+        ],
       });
     }
   }
 
   private ensureProperLabeling(element: HTMLElement) {
-    const hasLabel = element.getAttribute("aria-label") ||
-                    element.getAttribute("aria-labelledby") ||
-                    element.title ||
-                    element.textContent?.trim();
+    const hasLabel =
+      element.getAttribute("aria-label") ||
+      element.getAttribute("aria-labelledby") ||
+      element.title ||
+      element.textContent?.trim();
 
     if (!hasLabel) {
       this.violations.push({
@@ -310,8 +311,8 @@ class MobileAccessibilityService {
           "Add aria-label attribute",
           "Add descriptive text content",
           "Use aria-labelledby to reference a label element",
-          "Add title attribute for additional context"
-        ]
+          "Add title attribute for additional context",
+        ],
       });
     }
   }
@@ -319,8 +320,7 @@ class MobileAccessibilityService {
   private ensureKeyboardAccessibility(element: HTMLElement) {
     // Ensure focusable elements have tabindex
     if (this.isInteractiveElement(element) && !element.hasAttribute("tabindex")) {
-      if (element.tagName.toLowerCase() === "div" || 
-          element.tagName.toLowerCase() === "span") {
+      if (element.tagName.toLowerCase() === "div" || element.tagName.toLowerCase() === "span") {
         element.setAttribute("tabindex", "0");
       }
     }
@@ -354,8 +354,9 @@ class MobileAccessibilityService {
     const target = event.target as HTMLElement;
     if (this.isInteractiveElement(target)) {
       const rect = target.getBoundingClientRect();
-      const isCompliant = rect.width >= this.config.minTouchTargetSize && 
-                         rect.height >= this.config.minTouchTargetSize;
+      const isCompliant =
+        rect.width >= this.config.minTouchTargetSize &&
+        rect.height >= this.config.minTouchTargetSize;
 
       if (!isCompliant) {
         trackEvent("accessibility_violation_touch_target", {
@@ -374,10 +375,12 @@ class MobileAccessibilityService {
   }
 
   private getElementDescription(element: HTMLElement): string {
-    return element.getAttribute("aria-label") ||
-           element.title ||
-           element.textContent?.trim() ||
-           `${element.tagName.toLowerCase()} element`;
+    return (
+      element.getAttribute("aria-label") ||
+      element.title ||
+      element.textContent?.trim() ||
+      `${element.tagName.toLowerCase()} element`
+    );
   }
 
   private announceToScreenReader(message: string) {
@@ -386,9 +389,9 @@ class MobileAccessibilityService {
     announcement.setAttribute("aria-atomic", "true");
     announcement.className = "a11y-sr-only";
     announcement.textContent = message;
-    
+
     document.body.appendChild(announcement);
-    
+
     setTimeout(() => {
       document.body.removeChild(announcement);
     }, 1000);
@@ -398,15 +401,15 @@ class MobileAccessibilityService {
   scanDocumentAccessibility(): AccessibilityReport {
     this.violations = [];
     const allInteractiveElements = document.querySelectorAll(
-      "button, a, input, select, textarea, [role='button'], [tabindex], [onclick]"
+      "button, a, input, select, textarea, [role='button'], [tabindex], [onclick]",
     );
 
     allInteractiveElements.forEach((element) => {
       this.enhanceElementAccessibility(element as HTMLElement);
     });
 
-    const score = Math.max(0, 100 - (this.violations.length * 5));
-    
+    const score = Math.max(0, 100 - this.violations.length * 5);
+
     const report: AccessibilityReport = {
       violations: this.violations,
       score,
@@ -433,11 +436,11 @@ class MobileAccessibilityService {
       "Consider user preferences for reduced motion and high contrast",
     ];
 
-    if (this.violations.some(v => v.type === "touch_target_too_small")) {
+    if (this.violations.some((v) => v.type === "touch_target_too_small")) {
       recommendations.push("Increase padding or size of small touch targets");
     }
 
-    if (this.violations.some(v => v.type === "missing_label")) {
+    if (this.violations.some((v) => v.type === "missing_label")) {
       recommendations.push("Add aria-label or descriptive text to unlabeled elements");
     }
 
@@ -447,7 +450,7 @@ class MobileAccessibilityService {
   updateConfig(newConfig: Partial<AccessibilityConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.applyAccessibilityPreferences();
-    
+
     trackEvent("accessibility_config_updated", newConfig);
   }
 
@@ -457,7 +460,7 @@ class MobileAccessibilityService {
       this.config.minTouchTargetSize = Math.max(this.config.minTouchTargetSize, 48);
       this.scanDocumentAccessibility();
     }
-    
+
     trackEvent("accessibility_mode_toggled", { enabled });
   }
 
@@ -466,7 +469,7 @@ class MobileAccessibilityService {
     skipLink.href = `#${targetId}`;
     skipLink.className = "a11y-skip-link";
     skipLink.textContent = label;
-    
+
     document.body.insertBefore(skipLink, document.body.firstChild);
   }
 
@@ -478,7 +481,7 @@ class MobileAccessibilityService {
     if (this.observer) {
       this.observer.disconnect();
     }
-    
+
     const style = document.getElementById("mobile-accessibility-styles");
     if (style) {
       style.remove();

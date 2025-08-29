@@ -4,15 +4,12 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Smartphone, 
-  Tablet, 
-  RotateCcw, 
-  RotateCw,
-  Monitor,
-  Info
-} from "lucide-react";
-import { useOrientation, useResponsiveDesign, useMiniPlayerResponsive } from "@/hooks/use-orientation";
+import { Smartphone, Tablet, RotateCcw, RotateCw, Monitor, Info } from "lucide-react";
+import {
+  useOrientation,
+  useResponsiveDesign,
+  useMiniPlayerResponsive,
+} from "@/hooks/use-orientation";
 
 export function OrientationDemo({ className }: { className?: string }) {
   const orientation = useOrientation();
@@ -60,12 +57,8 @@ export function OrientationDemo({ className }: { className?: string }) {
               {getOrientationIcon()}
               Orientation
             </div>
-            <div className="text-2xl font-bold capitalize">
-              {orientation.orientation}
-            </div>
-            <div className="text-xs text-gray-500">
-              {orientation.angle}° rotation
-            </div>
+            <div className="text-2xl font-bold capitalize">{orientation.orientation}</div>
+            <div className="text-xs text-gray-500">{orientation.angle}° rotation</div>
           </div>
 
           <div className="space-y-2">
@@ -88,7 +81,7 @@ export function OrientationDemo({ className }: { className?: string }) {
             <Info className="h-4 w-4" />
             Mini-Player Responsive Configuration
           </div>
-          
+
           <div className="grid grid-cols-3 gap-3 text-sm">
             <div>
               <div className="text-gray-600">Height</div>
@@ -117,7 +110,7 @@ export function OrientationDemo({ className }: { className?: string }) {
         </div>
 
         {/* Safe Area Insets */}
-        {(orientation.safeAreaInsets.top > 0 || 
+        {(orientation.safeAreaInsets.top > 0 ||
           orientation.safeAreaInsets.bottom > 0 ||
           orientation.safeAreaInsets.left > 0 ||
           orientation.safeAreaInsets.right > 0) && (
@@ -167,21 +160,14 @@ export function OrientationDemo({ className }: { className?: string }) {
 
         {/* Testing Instructions */}
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="text-sm font-medium text-yellow-800 mb-2">
-            Testing Instructions
-          </div>
+          <div className="text-sm font-medium text-yellow-800 mb-2">Testing Instructions</div>
           <div className="text-xs text-yellow-700 space-y-1">
             <p>• Rotate your device to see mini-player size adjustments</p>
             <p>• Try different screen sizes using browser dev tools</p>
             <p>• Mini-player becomes smaller in landscape mode</p>
             <p>• Safe area insets are respected for iPhone X+ devices</p>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleForceRefresh}
-            className="mt-2"
-          >
+          <Button size="sm" variant="outline" onClick={handleForceRefresh} className="mt-2">
             Force Refresh Layout
           </Button>
         </div>

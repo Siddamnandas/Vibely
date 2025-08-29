@@ -219,11 +219,11 @@ class PushNotificationService {
         // Update progress indicators
         window.dispatchEvent(
           new CustomEvent("notification-regen-progress", {
-            detail: { 
-              playlistId: data.playlistId, 
-              completed: data.completed, 
+            detail: {
+              playlistId: data.playlistId,
+              completed: data.completed,
               total: data.total,
-              percentage: data.percentage 
+              percentage: data.percentage,
             },
           }),
         );
@@ -233,10 +233,10 @@ class PushNotificationService {
         // Handle pause action or show resume option
         window.dispatchEvent(
           new CustomEvent("notification-regen-paused", {
-            detail: { 
-              playlistId: data.playlistId, 
-              completed: data.completed, 
-              total: data.total 
+            detail: {
+              playlistId: data.playlistId,
+              completed: data.completed,
+              total: data.total,
             },
           }),
         );
@@ -255,10 +255,10 @@ class PushNotificationService {
         // Handle cancellation notification
         window.dispatchEvent(
           new CustomEvent("notification-regen-canceled", {
-            detail: { 
-              playlistId: data.playlistId, 
-              completed: data.completed, 
-              total: data.total 
+            detail: {
+              playlistId: data.playlistId,
+              completed: data.completed,
+              total: data.total,
             },
           }),
         );
@@ -386,7 +386,11 @@ export async function notifyRegenComplete(playlistName: string, playlistId: stri
 }
 
 // New regeneration progress notification functions
-export async function notifyRegenStarted(playlistName: string, playlistId: string, totalTracks: number) {
+export async function notifyRegenStarted(
+  playlistName: string,
+  playlistId: string,
+  totalTracks: number,
+) {
   return pushNotificationService.showNotification(
     {
       title: "Generating Album Covers 🎨",
@@ -407,14 +411,14 @@ export async function notifyRegenStarted(playlistName: string, playlistId: strin
 }
 
 export async function notifyRegenProgress(
-  playlistName: string, 
-  playlistId: string, 
-  completed: number, 
+  playlistName: string,
+  playlistId: string,
+  completed: number,
   total: number,
-  milestone?: boolean
+  milestone?: boolean,
 ) {
   const percentage = Math.round((completed / total) * 100);
-  
+
   // Only send notifications for milestone percentages or when specifically requested
   if (!milestone && ![25, 50, 75].includes(percentage)) {
     return false;
@@ -450,7 +454,12 @@ export async function notifyRegenProgress(
   );
 }
 
-export async function notifyRegenPaused(playlistName: string, playlistId: string, completed: number, total: number) {
+export async function notifyRegenPaused(
+  playlistName: string,
+  playlistId: string,
+  completed: number,
+  total: number,
+) {
   return pushNotificationService.showNotification(
     {
       title: "Generation Paused ⏸️",
@@ -500,7 +509,12 @@ export async function notifyRegenResumed(playlistName: string, playlistId: strin
   );
 }
 
-export async function notifyRegenCanceled(playlistName: string, playlistId: string, completed: number, total: number) {
+export async function notifyRegenCanceled(
+  playlistName: string,
+  playlistId: string,
+  completed: number,
+  total: number,
+) {
   return pushNotificationService.showNotification(
     {
       title: "Generation Canceled 🚫",
@@ -521,7 +535,11 @@ export async function notifyRegenCanceled(playlistName: string, playlistId: stri
 }
 
 // Playlist update notification functions
-export async function notifyPlaylistCreated(playlistName: string, playlistId: string, trackCount: number) {
+export async function notifyPlaylistCreated(
+  playlistName: string,
+  playlistId: string,
+  trackCount: number,
+) {
   return pushNotificationService.showNotification(
     {
       title: "New Playlist Created 🎵",
@@ -550,13 +568,18 @@ export async function notifyPlaylistCreated(playlistName: string, playlistId: st
   );
 }
 
-export async function notifyPlaylistUpdated(playlistName: string, playlistId: string, changeType: string, changeCount: number) {
+export async function notifyPlaylistUpdated(
+  playlistName: string,
+  playlistId: string,
+  changeType: string,
+  changeCount: number,
+) {
   const getUpdateMessage = (type: string, count: number) => {
     switch (type) {
       case "songs_added":
-        return `${count} song${count !== 1 ? 's' : ''} added to "${playlistName}"`;
+        return `${count} song${count !== 1 ? "s" : ""} added to "${playlistName}"`;
       case "songs_removed":
-        return `${count} song${count !== 1 ? 's' : ''} removed from "${playlistName}"`;
+        return `${count} song${count !== 1 ? "s" : ""} removed from "${playlistName}"`;
       case "songs_reordered":
         return `Songs reordered in "${playlistName}"`;
       case "metadata_updated":
@@ -595,7 +618,11 @@ export async function notifyPlaylistUpdated(playlistName: string, playlistId: st
   );
 }
 
-export async function notifyPlaylistShared(playlistName: string, playlistId: string, sharedBy: string) {
+export async function notifyPlaylistShared(
+  playlistName: string,
+  playlistId: string,
+  sharedBy: string,
+) {
   return pushNotificationService.showNotification(
     {
       title: "Playlist Shared 🤝",
@@ -655,8 +682,12 @@ export async function notifyPlaylistDeleted(playlistName: string, playlistId: st
   );
 }
 
-export async function notifyNewMusicAdded(artistName: string, songTitle: string, playlistName?: string) {
-  const body = playlistName 
+export async function notifyNewMusicAdded(
+  artistName: string,
+  songTitle: string,
+  playlistName?: string,
+) {
+  const body = playlistName
     ? `New song "${songTitle}" by ${artistName} added to "${playlistName}"`
     : `New song "${songTitle}" by ${artistName} available`;
 

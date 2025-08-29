@@ -24,11 +24,13 @@ class WebhookService {
   private eventQueue: WebhookEvent[] = [];
   private processing = false;
 
-  constructor(config: WebhookServiceConfig = {
-    retryAttempts: 3,
-    retryDelay: 1000,
-    enableLogging: true,
-  }) {
+  constructor(
+    config: WebhookServiceConfig = {
+      retryAttempts: 3,
+      retryDelay: 1000,
+      enableLogging: true,
+    },
+  ) {
     this.config = config;
   }
 
@@ -47,7 +49,7 @@ class WebhookService {
       // In a real implementation, this would validate against your webhook secret
       // For now, we'll simulate validation
       const isValid = signature.startsWith("whsec_");
-      
+
       trackEvent("webhook_signature_validation", {
         is_valid: isValid,
         signature_prefix: signature.substring(0, 10),
@@ -79,14 +81,14 @@ class WebhookService {
    */
   private async processQueue(): Promise<boolean> {
     if (this.processing) return true;
-    
+
     this.processing = true;
     let allSuccessful = true;
 
     try {
       while (this.eventQueue.length > 0) {
         const event = this.eventQueue.shift()!;
-        
+
         if (event.processed) continue;
 
         const success = await this.processEvent(event);
@@ -106,12 +108,12 @@ class WebhookService {
    */
   private async processEvent(event: WebhookEvent): Promise<boolean> {
     let attempts = 0;
-    
+
     while (attempts < this.config.retryAttempts) {
       try {
         await this.handleEventByType(event);
         event.processed = true;
-        
+
         trackEvent("webhook_event_processed", {
           event_type: event.type,
           event_id: event.id,
@@ -122,7 +124,7 @@ class WebhookService {
       } catch (error) {
         attempts++;
         event.error = error instanceof Error ? error.message : "Unknown error";
-        
+
         if (attempts < this.config.retryAttempts) {
           await this.delay(this.config.retryDelay * attempts);
         }
@@ -147,19 +149,19 @@ class WebhookService {
       case "payment.succeeded":
         await this.handlePaymentSucceeded(event.data);
         break;
-      
+
       case "payment.failed":
         await this.handlePaymentFailed(event.data);
         break;
-      
+
       case "subscription.created":
         await this.handleSubscriptionCreated(event.data);
         break;
-      
+
       case "subscription.updated":
         await this.handleSubscriptionUpdated(event.data);
         break;
-      
+
       case "subscription.cancelled":
         await this.handleSubscriptionCancelled(event.data);
         break;
@@ -177,7 +179,7 @@ class WebhookService {
       window.dispatchEvent(
         new CustomEvent("payment-succeeded", {
           detail: data,
-        })
+        }),
       );
     }
   }
@@ -188,7 +190,7 @@ class WebhookService {
       window.dispatchEvent(
         new CustomEvent("payment-failed", {
           detail: data,
-        })
+        }),
       );
     }
   }
@@ -199,7 +201,7 @@ class WebhookService {
       window.dispatchEvent(
         new CustomEvent("subscription-created", {
           detail: data,
-        })
+        }),
       );
     }
   }
@@ -210,7 +212,7 @@ class WebhookService {
       window.dispatchEvent(
         new CustomEvent("subscription-updated", {
           detail: data,
-        })
+        }),
       );
     }
   }
@@ -221,13 +223,13 @@ class WebhookService {
       window.dispatchEvent(
         new CustomEvent("subscription-cancelled", {
           detail: data,
-        })
+        }),
       );
     }
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -305,9 +307,18 @@ export function useWebhookHandler() {
     return () => {
       window.removeEventListener("payment-succeeded", handlePaymentSucceeded as EventListener);
       window.removeEventListener("payment-failed", handlePaymentFailed as EventListener);
-      window.removeEventListener("subscription-created", handleSubscriptionCreated as EventListener);
-      window.removeEventListener("subscription-updated", handleSubscriptionUpdated as EventListener);
-      window.removeEventListener("subscription-cancelled", handleSubscriptionCancelled as EventListener);
+      window.removeEventListener(
+        "subscription-created",
+        handleSubscriptionCreated as EventListener,
+      );
+      window.removeEventListener(
+        "subscription-updated",
+        handleSubscriptionUpdated as EventListener,
+      );
+      window.removeEventListener(
+        "subscription-cancelled",
+        handleSubscriptionCancelled as EventListener,
+      );
     };
   }, []);
 
@@ -347,7 +358,7 @@ export function simulateWebhookEvent(type: string, data: any) {
       created: Math.floor(Date.now() / 1000),
       data,
     };
-    
+
     webhookService.processWebhookEvent(event);
   }
 }

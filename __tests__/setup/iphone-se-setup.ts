@@ -5,7 +5,8 @@
 
 // iPhone SE specific configuration
 const IPHONE_SE_CONFIG = {
-  userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+  userAgent:
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
   viewport: { width: 375, height: 667 },
   pixelRatio: 2,
   safeAreaInsets: { top: 20, right: 0, bottom: 0, left: 0 },
@@ -132,15 +133,15 @@ CSS.supports = jest.fn((property: string, value?: string) => {
     "backdrop-filter": false, // iPhone SE doesn't support backdrop-filter well
     "aspect-ratio": false, // Limited support on older iOS
   };
-  
+
   if (value === undefined && property in iosSpecificSupport) {
     return iosSpecificSupport[property];
   }
-  
+
   if (typeof originalCSSSupports === "function") {
     return originalCSSSupports(property, value);
   }
-  
+
   return false;
 });
 
@@ -167,7 +168,7 @@ Object.defineProperty(window, "matchMedia", {
           return false;
       }
     })();
-    
+
     return {
       matches,
       media: query,

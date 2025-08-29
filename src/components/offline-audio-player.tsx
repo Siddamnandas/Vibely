@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, 
-  Play, 
-  Pause, 
-  Square as Stop, 
-  Trash2, 
-  WifiOff, 
+import {
+  Download,
+  Play,
+  Pause,
+  Square as Stop,
+  Trash2,
+  WifiOff,
   Wifi,
   Music,
   HardDrive,
-  Download as DownloadIcon
+  Download as DownloadIcon,
 } from "lucide-react";
 import { useOfflineAudio } from "@/lib/offline-audio-service";
 import { formatBytes } from "@/lib/utils";
@@ -84,7 +84,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
     setIsLoading(true);
     try {
       await removeCachedTrack(trackId);
-      setCachedTracks(tracks => tracks.filter(t => t.id !== trackId));
+      setCachedTracks((tracks) => tracks.filter((t) => t.id !== trackId));
     } catch (error) {
       console.error("Failed to remove track:", error);
     } finally {
@@ -112,7 +112,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
       // Simulate caching progress
       for (let i = 0; i <= 100; i += 10) {
         setCachingProgress({ [exampleTrack.id]: i });
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       await cacheTrack(exampleTrack);
@@ -137,7 +137,8 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
           {isOnline && <Wifi className="h-4 w-4 text-green-500" />}
         </CardTitle>
         <CardDescription>
-          Play music even when you're offline. Cache your favorite tracks for uninterrupted listening.
+          Play music even when you&apos;re offline. Cache your favorite tracks for uninterrupted
+          listening.
         </CardDescription>
       </CardHeader>
 
@@ -150,9 +151,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
               <span className="text-sm font-medium">Cached Tracks</span>
             </div>
             <div className="text-2xl font-bold">{cachedTracksCount}</div>
-            <div className="text-xs text-gray-500">
-              {formatBytes(totalAudioCacheSize)} used
-            </div>
+            <div className="text-xs text-gray-500">{formatBytes(totalAudioCacheSize)} used</div>
           </div>
 
           <div className="p-4 bg-gray-50 rounded-lg">
@@ -163,9 +162,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
             <Badge variant={canPlayOffline ? "default" : "secondary"}>
               {canPlayOffline ? "Ready" : "No Offline Music"}
             </Badge>
-            <div className="text-xs text-gray-500 mt-1">
-              {isOnline ? "Online" : "Offline Mode"}
-            </div>
+            <div className="text-xs text-gray-500 mt-1">{isOnline ? "Online" : "Offline Mode"}</div>
           </div>
         </div>
 
@@ -201,9 +198,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
             <div className="mb-4">
               <Download className="h-12 w-12 text-gray-400 mx-auto mb-2" />
               <h3 className="text-lg font-medium text-gray-900">No Offline Music</h3>
-              <p className="text-sm text-gray-500">
-                Cache your favorite tracks to listen offline
-              </p>
+              <p className="text-sm text-gray-500">Cache your favorite tracks to listen offline</p>
             </div>
             <Button onClick={handleCacheExampleTrack} disabled={isLoading}>
               <DownloadIcon className="h-4 w-4 mr-2" />
@@ -216,7 +211,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
         {cachedTracks.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-900">Cached Tracks</h4>
-            
+
             {cachedTracks.map((track) => (
               <div
                 key={track.id}
@@ -230,9 +225,7 @@ export function OfflineAudioPlayer({ className }: OfflineAudioPlayerProps) {
                     <div className="font-medium text-sm">{track.title}</div>
                     <div className="text-xs text-gray-500">{track.artist}</div>
                     {track.cacheSize && (
-                      <div className="text-xs text-gray-400">
-                        {formatBytes(track.cacheSize)}
-                      </div>
+                      <div className="text-xs text-gray-400">{formatBytes(track.cacheSize)}</div>
                     )}
                   </div>
                 </div>

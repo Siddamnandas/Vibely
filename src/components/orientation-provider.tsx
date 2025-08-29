@@ -12,11 +12,7 @@ interface OrientationProviderProps {
   };
 }
 
-export function OrientationProvider({ 
-  children, 
-  config = {} 
-}: OrientationProviderProps) {
-  
+export function OrientationProvider({ children, config = {} }: OrientationProviderProps) {
   useEffect(() => {
     // Update service configuration
     mobileOrientationService.updateConfig({
@@ -33,8 +29,8 @@ export function OrientationProvider({
     console.log("📱 Orientation Provider initialized");
   }, [
     config.enableLayoutOptimization,
-    config.enableResponsiveSpacing, 
-    config.trackOrientationChanges
+    config.enableResponsiveSpacing,
+    config.trackOrientationChanges,
   ]);
 
   return <>{children}</>;

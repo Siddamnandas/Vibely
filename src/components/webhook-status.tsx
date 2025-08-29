@@ -5,14 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Webhook, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Activity, 
+import {
+  Webhook,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Activity,
   AlertTriangle,
-  Trash2 
+  Trash2,
 } from "lucide-react";
 import { useWebhookHandler, simulateWebhookEvent } from "@/lib/webhook-service";
 
@@ -63,10 +63,16 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
         simulateWebhookEvent("subscription.created", testData.subscription);
         break;
       case "subscription_updated":
-        simulateWebhookEvent("subscription.updated", { ...testData.subscription, status: "active" });
+        simulateWebhookEvent("subscription.updated", {
+          ...testData.subscription,
+          status: "active",
+        });
         break;
       case "subscription_cancelled":
-        simulateWebhookEvent("subscription.cancelled", { ...testData.subscription, status: "cancelled" });
+        simulateWebhookEvent("subscription.cancelled", {
+          ...testData.subscription,
+          status: "cancelled",
+        });
         break;
     }
   };
@@ -77,10 +83,7 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
         <CardTitle className="flex items-center gap-2">
           <Webhook className="h-5 w-5" />
           Webhook Status
-          <Badge 
-            variant="secondary" 
-            className={`ml-auto ${getStatusColor()} text-white`}
-          >
+          <Badge variant="secondary" className={`ml-auto ${getStatusColor()} text-white`}>
             {getStatusText()}
           </Badge>
         </CardTitle>
@@ -88,7 +91,7 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
           Real-time payment and subscription webhook processing status
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Processing Status */}
         <div className="space-y-2">
@@ -108,10 +111,8 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
               )}
             </div>
           </div>
-          
-          {isProcessing && (
-            <Progress value={75} className="h-2" />
-          )}
+
+          {isProcessing && <Progress value={75} className="h-2" />}
         </div>
 
         {/* Queue Statistics */}
@@ -120,7 +121,7 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
             <div className="text-2xl font-bold text-gray-900">{stats.queueLength}</div>
             <div className="text-xs text-gray-500">Queued Events</div>
           </div>
-          
+
           <div className="text-center p-3 bg-gray-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{stats.totalProcessed}</div>
             <div className="text-xs text-gray-500">Processed</div>
@@ -133,12 +134,12 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-600" />
               <span className="text-sm text-yellow-800">
-                {stats.queueLength} event{stats.queueLength !== 1 ? 's' : ''} pending
+                {stats.queueLength} event{stats.queueLength !== 1 ? "s" : ""} pending
               </span>
             </div>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={clearQueue}
               className="text-yellow-700 border-yellow-300"
             >
@@ -153,7 +154,7 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
           <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <span className="text-sm text-red-800">
-              {stats.totalFailed} event{stats.totalFailed !== 1 ? 's' : ''} failed processing
+              {stats.totalFailed} event{stats.totalFailed !== 1 ? "s" : ""} failed processing
             </span>
           </div>
         )}
@@ -162,40 +163,40 @@ export function WebhookStatus({ className, showTestButtons = false }: WebhookSta
         {showTestButtons && (
           <div className="space-y-3 pt-4 border-t">
             <h4 className="text-sm font-medium text-gray-900">Test Webhooks</h4>
-            
+
             <div className="grid grid-cols-2 gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => handleTestWebhook("payment_success")}
                 className="text-green-700 border-green-300"
               >
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Payment Success
               </Button>
-              
-              <Button 
-                size="sm" 
-                variant="outline" 
+
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => handleTestWebhook("payment_failed")}
                 className="text-red-700 border-red-300"
               >
                 <XCircle className="h-3 w-3 mr-1" />
                 Payment Failed
               </Button>
-              
-              <Button 
-                size="sm" 
-                variant="outline" 
+
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => handleTestWebhook("subscription_created")}
                 className="text-blue-700 border-blue-300"
               >
                 New Subscription
               </Button>
-              
-              <Button 
-                size="sm" 
-                variant="outline" 
+
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => handleTestWebhook("subscription_cancelled")}
                 className="text-orange-700 border-orange-300"
               >

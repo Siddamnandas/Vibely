@@ -5,7 +5,11 @@ import { track as trackEvent } from "@/lib/analytics";
 import { songs as baseSongs } from "@/lib/data";
 import { getAudioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
 import { useAuth } from "@/hooks/use-auth";
-import { useBatteryAwareAudio, type BatteryAwareAudioSettings, type BatteryStatus } from "@/hooks/use-battery-aware-audio";
+import {
+  useBatteryAwareAudio,
+  type BatteryAwareAudioSettings,
+  type BatteryStatus,
+} from "@/hooks/use-battery-aware-audio";
 
 export type Track = {
   id: string;
@@ -81,15 +85,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
-  
+
   // Battery-aware audio integration
-  const {
-    batteryStatus,
-    audioSettings,
-    enableBatterySaveMode,
-    disableBatterySaveMode,
-  } = useBatteryAwareAudio();
-  
+  const { batteryStatus, audioSettings, enableBatterySaveMode, disableBatterySaveMode } =
+    useBatteryAwareAudio();
+
   const isBatterySaveMode = audioSettings.autoSaveMode;
 
   const current = useMemo(() => queue[currentIndex] ?? null, [queue, currentIndex]);
@@ -118,7 +118,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     };
 
     const audioEngine = getAudioEngine();
-    
+
     // Only set up listeners on the client side
     if (typeof window !== "undefined") {
       audioEngine.addEventListener("stateChange", handleStateChange);
@@ -167,14 +167,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current as any);
     };
   }, []);
-  
+
   // Apply battery optimizations to audio engine
   useEffect(() => {
     if (!isReady) return;
-    
+
     const audioEngine = getAudioEngine();
     audioEngine.applyBatteryOptimizations(audioSettings);
-    
+
     // Preload next track if settings allow
     if (audioSettings.preloadNext && !audioSettings.shouldReduceQuality) {
       const nextTrack = queue[currentIndex + 1];

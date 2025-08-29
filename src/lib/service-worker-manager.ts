@@ -139,7 +139,9 @@ class ServiceWorkerManager {
     window.addEventListener("popstate", handler);
   }
 
-  async cacheResource(url: string): Promise<{ success: boolean; error?: string; canRetry?: boolean }> {
+  async cacheResource(
+    url: string,
+  ): Promise<{ success: boolean; error?: string; canRetry?: boolean }> {
     try {
       await this.sendMessage({ type: "CACHE_RESOURCE", url });
       return { success: true };

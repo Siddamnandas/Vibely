@@ -51,27 +51,28 @@ export function AdaptiveImage({
   const [cacheHit, setCacheHit] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const loadStartTime = useRef<number>(Date.now());
-  
+
   // Adaptive quality based on device performance
   const adaptiveQuality = providedQuality || getAdaptiveQuality(deviceProfile.maxImageQuality);
-  
+
   // Adaptive loading behavior
-  const adaptiveLoading = providedLoading || (deviceProfile.shouldUseLazyLoading ? "lazy" : "eager");
-  
+  const adaptiveLoading =
+    providedLoading || (deviceProfile.shouldUseLazyLoading ? "lazy" : "eager");
+
   // Load optimized image from cache
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadOptimizedImage = async () => {
       try {
         loadStartTime.current = Date.now();
-        
+
         const optimizedUrl = await getOptimizedImageUrl(imageSrc, {
           priority: priority ? "high" : "medium",
           quality: deviceProfile.maxImageQuality,
           format: "auto",
         });
-        
+
         if (isMounted) {
           setOptimizedSrc(optimizedUrl);
           setCacheHit(true);
@@ -84,24 +85,24 @@ export function AdaptiveImage({
         }
       }
     };
-    
+
     if (imageSrc && !deviceProfile.isLowEndDevice) {
       loadOptimizedImage();
     } else {
       setOptimizedSrc(imageSrc);
       setCacheHit(false);
     }
-    
+
     return () => {
       isMounted = false;
     };
   }, [imageSrc, deviceProfile, getOptimizedImageUrl, priority]);
-  
+
   // Handle image load
   const handleLoad = () => {
     const loadTime = Date.now() - loadStartTime.current;
     setIsLoading(false);
-    
+
     // Track image load performance
     trackEvent("optimized_image_loaded", {
       load_time: loadTime,
@@ -111,24 +112,24 @@ export function AdaptiveImage({
       network_type: deviceProfile.connectionType,
       was_adaptive: true,
     });
-    
+
     onLoad?.();
   };
-  
+
   // Handle image error with fallback
   const handleError = () => {
     setHasError(true);
     setIsLoading(false);
-    
+
     if (fallbackSrc && imageSrc !== fallbackSrc) {
       setImageSrc(fallbackSrc);
       setHasError(false);
       setIsLoading(true);
     }
-    
+
     onError?.();
   };
-  
+
   // Progressive loading for low-end devices
   useEffect(() => {
     if (deviceProfile.isLowEndDevice && !priority) {
@@ -136,18 +137,18 @@ export function AdaptiveImage({
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [deviceProfile.isLowEndDevice, priority]);
-  
+
   // Intersection Observer for lazy loading enhancement
   useEffect(() => {
     if (!deviceProfile.shouldUseLazyLoading || priority) return;
-    
+
     const img = imgRef.current;
     if (!img) return;
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -161,14 +162,14 @@ export function AdaptiveImage({
       {
         rootMargin: "100px", // Start loading 100px before image is visible
         threshold: 0.1,
-      }
+      },
     );
-    
+
     observer.observe(img);
-    
+
     return () => observer.disconnect();
   }, [deviceProfile.shouldUseLazyLoading, priority]);
-  
+
   const imageProps = {
     src: optimizedSrc || imageSrc,
     alt,
@@ -180,15 +181,11 @@ export function AdaptiveImage({
     ref: imgRef,
     ...props,
   };
-  
+
   if (fill) {
     return (
       <div className="relative w-full h-full">
-        <Image
-          {...imageProps}
-          fill
-          sizes={sizes || "100vw"}
-        />
+        <Image {...imageProps} alt={props.alt || ""} fill sizes={sizes || "100vw"} />
         {/* Loading skeleton for low-end devices */}
         {isLoading && deviceProfile.isLowEndDevice && (
           <div className="absolute inset-0 bg-white/10 animate-pulse" />
@@ -202,24 +199,17 @@ export function AdaptiveImage({
       </div>
     );
   }
-  
+
   return (
     <div className="relative" style={{ width, height }}>
-      <Image
-        {...imageProps}
-        width={width}
-        height={height}
-      />
+      <Image {...imageProps} alt={props.alt || ""} width={width} height={height} />
       {/* Loading skeleton for low-end devices */}
       {isLoading && deviceProfile.isLowEndDevice && (
-        <div 
-          className="absolute inset-0 bg-white/10 animate-pulse" 
-          style={{ width, height }}
-        />
+        <div className="absolute inset-0 bg-white/10 animate-pulse" style={{ width, height }} />
       )}
       {/* Error state */}
       {hasError && !fallbackSrc && (
-        <div 
+        <div
           className="absolute inset-0 bg-white/5 flex items-center justify-center"
           style={{ width, height }}
         >

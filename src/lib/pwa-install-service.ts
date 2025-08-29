@@ -106,15 +106,15 @@ class PWAInstallService {
     // Listen for the beforeinstallprompt event
     window.addEventListener("beforeinstallprompt", (e) => {
       console.log("📱 PWA install prompt available");
-      
+
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      
+
       // Store the event for later use
       this.deferredPrompt = e as BeforeInstallPromptEvent;
-      
+
       this.notifyStatusListeners();
-      
+
       trackEvent("pwa_install_prompt_available", {
         platforms: this.deferredPrompt.platforms,
         user_agent: navigator.userAgent,
@@ -124,12 +124,12 @@ class PWAInstallService {
     // Listen for app installation
     window.addEventListener("appinstalled", (e) => {
       console.log("✅ PWA installed successfully");
-      
+
       this.deferredPrompt = null;
       this.isStandalone = true;
-      
+
       this.notifyStatusListeners();
-      
+
       trackEvent("pwa_installed", {
         installation_method: "browser_prompt",
       });
@@ -153,7 +153,8 @@ class PWAInstallService {
       notification_support: "Notification" in window,
       cache_api_support: "caches" in window,
       indexeddb_support: "indexedDB" in window,
-      background_sync_support: "serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype,
+      background_sync_support:
+        "serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype,
       web_share_support: "share" in navigator,
       is_standalone: this.isStandalone,
       is_ios: /iPad|iPhone|iPod/.test(navigator.userAgent),
@@ -182,7 +183,7 @@ class PWAInstallService {
 
       if (outcome === "accepted") {
         console.log("✅ User accepted the install prompt");
-        
+
         trackEvent("pwa_install_accepted", {
           prompt_trigger: "manual",
           dismiss_count_before: this.installPromptDismissCount,
@@ -191,10 +192,10 @@ class PWAInstallService {
         return true;
       } else {
         console.log("❌ User dismissed the install prompt");
-        
+
         this.installPromptDismissCount++;
         this.savePromptHistory();
-        
+
         trackEvent("pwa_install_dismissed", {
           prompt_trigger: "manual",
           dismiss_count: this.installPromptDismissCount,
@@ -204,7 +205,7 @@ class PWAInstallService {
       }
     } catch (error) {
       console.error("Failed to show install prompt:", error);
-      
+
       trackEvent("pwa_install_prompt_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -219,9 +220,7 @@ class PWAInstallService {
 
   canShowInstallPrompt(): boolean {
     return (
-      this.deferredPrompt !== null &&
-      !this.isStandalone &&
-      this.installPromptDismissCount < 3 // Don't spam users
+      this.deferredPrompt !== null && !this.isStandalone && this.installPromptDismissCount < 3 // Don't spam users
     );
   }
 
@@ -241,7 +240,7 @@ class PWAInstallService {
 
   private detectPlatform(): string {
     const userAgent = navigator.userAgent.toLowerCase();
-    
+
     if (/iphone|ipad|ipod/.test(userAgent)) {
       return "ios";
     } else if (/android/.test(userAgent)) {
@@ -253,16 +252,13 @@ class PWAInstallService {
     } else if (/linux/.test(userAgent)) {
       return "linux";
     }
-    
+
     return "unknown";
   }
 
   private checkBrowserSupport(): boolean {
     // Check if browser supports PWA installation
-    return (
-      "serviceWorker" in navigator &&
-      window.location.protocol === "https:"
-    );
+    return "serviceWorker" in navigator && window.location.protocol === "https:";
   }
 
   // iOS specific install instructions
@@ -281,17 +277,13 @@ class PWAInstallService {
   }
 
   shouldShowInstallBanner(): boolean {
-    return (
-      !this.isStandalone &&
-      this.installPromptDismissCount < 2 &&
-      this.checkBrowserSupport()
-    );
+    return !this.isStandalone && this.installPromptDismissCount < 2 && this.checkBrowserSupport();
   }
 
   // Status listeners management
   onStatusChange(listener: (status: PWAInstallStatus) => void): () => void {
     this.statusListeners.push(listener);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.statusListeners.indexOf(listener);
@@ -303,7 +295,7 @@ class PWAInstallService {
 
   private notifyStatusListeners(): void {
     const status = this.getInstallStatus();
-    this.statusListeners.forEach(listener => {
+    this.statusListeners.forEach((listener) => {
       try {
         listener(status);
       } catch (error) {
@@ -315,7 +307,11 @@ class PWAInstallService {
   // Utility methods
   isIOSSafari(): boolean {
     const userAgent = navigator.userAgent;
-    return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/CriOS|FxiOS/.test(userAgent);
+    return (
+      /iPad|iPhone|iPod/.test(userAgent) &&
+      /Safari/.test(userAgent) &&
+      !/CriOS|FxiOS/.test(userAgent)
+    );
   }
 
   isAndroidChrome(): boolean {
@@ -335,7 +331,7 @@ class PWAInstallService {
   trackInstallBannerDismissed(): void {
     this.installPromptDismissCount++;
     this.savePromptHistory();
-    
+
     trackEvent("pwa_install_banner_dismissed", {
       platform: this.detectPlatform(),
       dismiss_count: this.installPromptDismissCount,

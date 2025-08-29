@@ -79,7 +79,7 @@ self.addEventListener("notificationclick", (event) => {
           return clientList[0].focus();
         }
         return clients.openWindow(`${self.location.origin}/library`);
-      })
+      }),
     );
   } else if (action === "add") {
     // Handle add to library action
@@ -95,7 +95,7 @@ self.addEventListener("notificationclick", (event) => {
           return clientList[0].focus();
         }
         return clients.openWindow(getUrlForNotification(data));
-      })
+      }),
     );
   } else if (action === "play") {
     // Handle play now action
@@ -112,7 +112,7 @@ self.addEventListener("notificationclick", (event) => {
           return clientList[0].focus();
         }
         return clients.openWindow(getUrlForNotification(data));
-      })
+      }),
     );
   } else if (action === "pause" || action === "resume") {
     // Handle pause/resume actions for regeneration
@@ -127,7 +127,7 @@ self.addEventListener("notificationclick", (event) => {
           return clientList[0].focus();
         }
         return clients.openWindow(getUrlForNotification(data));
-      })
+      }),
     );
   }
 });
@@ -329,7 +329,7 @@ function getUrlForNotification(data) {
 
     case "new_music":
       if (data.playlistName) {
-        return `${baseUrl}/playlist/${data.playlistId || 'library'}`;
+        return `${baseUrl}/playlist/${data.playlistId || "library"}`;
       }
       return `${baseUrl}/library`;
 

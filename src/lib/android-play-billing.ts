@@ -55,27 +55,37 @@ declare global {
       startConnection: () => Promise<{ billingResult: { responseCode: number } }>;
       endConnection: () => void;
       isReady: () => Promise<boolean>;
-      
+
       // Product management
-      queryProductDetails: (productIds: string[], productType: "inapp" | "subs") => Promise<{
+      queryProductDetails: (
+        productIds: string[],
+        productType: "inapp" | "subs",
+      ) => Promise<{
         billingResult: { responseCode: number };
         productDetailsList: PlayBillingProduct[];
       }>;
-      
+
       // Purchase management
-      launchBillingFlow: (productDetails: PlayBillingProduct, offerToken?: string) => Promise<{
+      launchBillingFlow: (
+        productDetails: PlayBillingProduct,
+        offerToken?: string,
+      ) => Promise<{
         billingResult: { responseCode: number };
         purchases?: PlayBillingPurchase[];
       }>;
-      
+
       queryPurchases: (productType: "inapp" | "subs") => Promise<{
         billingResult: { responseCode: number };
         purchasesList: PlayBillingPurchase[];
       }>;
-      
-      acknowledgePurchase: (purchaseToken: string) => Promise<{ billingResult: { responseCode: number } }>;
-      consumePurchase: (purchaseToken: string) => Promise<{ billingResult: { responseCode: number } }>;
-      
+
+      acknowledgePurchase: (
+        purchaseToken: string,
+      ) => Promise<{ billingResult: { responseCode: number } }>;
+      consumePurchase: (
+        purchaseToken: string,
+      ) => Promise<{ billingResult: { responseCode: number } }>;
+
       // Events
       onPurchasesUpdated: (callback: (purchases: PlayBillingPurchase[]) => void) => void;
       onBillingSetupFinished: (callback: (billingResult: { responseCode: number }) => void) => void;
@@ -93,12 +103,12 @@ export class AndroidPlayBillingService {
   private isConnected = false;
   private products = new Map<string, PlayBillingProduct>();
   private pendingPurchases = new Map<string, Promise<PlayBillingPurchase>>();
-  
+
   // Map Vibely product IDs to Google Play product IDs
   private readonly productIdMapping = {
-    "premium_monthly": "com.vibely.premium.monthly",
-    "premium_yearly": "com.vibely.premium.yearly",
-    "extra_covers_pack": "com.vibely.covers.pack10",
+    premium_monthly: "com.vibely.premium.monthly",
+    premium_yearly: "com.vibely.premium.yearly",
+    extra_covers_pack: "com.vibely.covers.pack10",
   };
 
   constructor() {
@@ -116,24 +126,23 @@ export class AndroidPlayBillingService {
 
       // Start connection to Google Play Billing
       const connectionResult = await window.GooglePlayBilling!.startConnection();
-      
+
       if (connectionResult.billingResult.responseCode !== 0) {
-        throw new Error(`Billing connection failed: ${connectionResult.billingResult.responseCode}`);
+        throw new Error(
+          `Billing connection failed: ${connectionResult.billingResult.responseCode}`,
+        );
       }
 
       this.isConnected = true;
 
       // Query both subscription and in-app products
-      await Promise.all([
-        this.queryProducts("subs"),
-        this.queryProducts("inapp")
-      ]);
+      await Promise.all([this.queryProducts("subs"), this.queryProducts("inapp")]);
 
       this.isInitialized = true;
-      
+
       trackEvent("android_billing_initialized", {
         products_loaded: this.products.size,
-        platform: "android"
+        platform: "android",
       });
 
       return true;
@@ -141,7 +150,7 @@ export class AndroidPlayBillingService {
       console.error("Failed to initialize Google Play Billing:", error);
       trackEvent("android_billing_init_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "android"
+        platform: "android",
       });
       return false;
     }
@@ -151,9 +160,11 @@ export class AndroidPlayBillingService {
    * Check if Google Play Billing is available
    */
   private isPlayBillingAvailable(): boolean {
-    return typeof window !== "undefined" && 
-           "GooglePlayBilling" in window && 
-           window.GooglePlayBilling !== undefined;
+    return (
+      typeof window !== "undefined" &&
+      "GooglePlayBilling" in window &&
+      window.GooglePlayBilling !== undefined
+    );
   }
 
   /**
@@ -161,11 +172,11 @@ export class AndroidPlayBillingService {
    */
   private async queryProducts(productType: "inapp" | "subs"): Promise<void> {
     const productIds = Object.values(this.productIdMapping);
-    
+
     const result = await window.GooglePlayBilling!.queryProductDetails(productIds, productType);
-    
+
     if (result.billingResult.responseCode === 0) {
-      result.productDetailsList.forEach(product => {
+      result.productDetailsList.forEach((product) => {
         this.products.set(product.productId, product);
       });
     }
@@ -184,7 +195,7 @@ export class AndroidPlayBillingService {
     window.GooglePlayBilling!.onBillingServiceDisconnected(() => {
       this.isConnected = false;
       console.warn("Google Play Billing service disconnected");
-      
+
       // Attempt to reconnect
       setTimeout(() => {
         this.initialize();
@@ -223,7 +234,7 @@ export class AndroidPlayBillingService {
       if (isValid) {
         // Process the purchase
         await this.processValidatedPurchase(purchase);
-        
+
         // Acknowledge or consume the purchase
         if (this.isConsumable(purchase.productId)) {
           await window.GooglePlayBilling!.consumePurchase(purchase.purchaseToken);
@@ -232,18 +243,18 @@ export class AndroidPlayBillingService {
             await window.GooglePlayBilling!.acknowledgePurchase(purchase.purchaseToken);
           }
         }
-        
+
         trackEvent("android_purchase_success", {
           product_id: purchase.productId,
           order_id: purchase.orderId,
-          platform: "android"
+          platform: "android",
         });
       } else {
         console.error("Purchase validation failed for:", purchase.orderId);
         trackEvent("android_purchase_validation_failed", {
           product_id: purchase.productId,
           order_id: purchase.orderId,
-          platform: "android"
+          platform: "android",
         });
       }
     } catch (error) {
@@ -252,7 +263,7 @@ export class AndroidPlayBillingService {
         product_id: purchase.productId,
         order_id: purchase.orderId,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "android"
+        platform: "android",
       });
     }
   }
@@ -264,9 +275,9 @@ export class AndroidPlayBillingService {
     trackEvent("android_purchase_pending", {
       product_id: purchase.productId,
       order_id: purchase.orderId,
-      platform: "android"
+      platform: "android",
     });
-    
+
     // Store pending purchase for later processing
     console.log("Purchase is pending approval:", purchase.orderId);
   }
@@ -279,7 +290,8 @@ export class AndroidPlayBillingService {
       await this.initialize();
     }
 
-    const playProductId = this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
+    const playProductId =
+      this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
     if (!playProductId) {
       throw new Error(`Unknown product ID: ${vibelyProductId}`);
     }
@@ -293,14 +305,14 @@ export class AndroidPlayBillingService {
       trackEvent("android_purchase_initiated", {
         product_id: playProductId,
         vibely_product_id: vibelyProductId,
-        platform: "android"
+        platform: "android",
       });
 
       // For subscriptions, use the first offer token if available
       const offerToken = product.subscriptionOfferDetails?.[0]?.offerToken;
 
       const result = await window.GooglePlayBilling!.launchBillingFlow(product, offerToken);
-      
+
       if (result.billingResult.responseCode === 0 && result.purchases) {
         return result.purchases[0] || null;
       } else {
@@ -312,7 +324,7 @@ export class AndroidPlayBillingService {
         product_id: playProductId,
         vibely_product_id: vibelyProductId,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "android"
+        platform: "android",
       });
       throw error;
     }
@@ -328,22 +340,22 @@ export class AndroidPlayBillingService {
 
     try {
       trackEvent("android_query_purchases", {
-        platform: "android"
+        platform: "android",
       });
 
       const [subsResult, inappResult] = await Promise.all([
         window.GooglePlayBilling!.queryPurchases("subs"),
-        window.GooglePlayBilling!.queryPurchases("inapp")
+        window.GooglePlayBilling!.queryPurchases("inapp"),
       ]);
 
       const allPurchases = [
         ...(subsResult.billingResult.responseCode === 0 ? subsResult.purchasesList : []),
-        ...(inappResult.billingResult.responseCode === 0 ? inappResult.purchasesList : [])
+        ...(inappResult.billingResult.responseCode === 0 ? inappResult.purchasesList : []),
       ];
 
       trackEvent("android_query_purchases_success", {
         purchases_found: allPurchases.length,
-        platform: "android"
+        platform: "android",
       });
 
       return allPurchases;
@@ -351,7 +363,7 @@ export class AndroidPlayBillingService {
       console.error("Failed to query purchases:", error);
       trackEvent("android_query_purchases_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "android"
+        platform: "android",
       });
       return [];
     }
@@ -438,9 +450,10 @@ export class AndroidPlayBillingService {
    * Get product by Vibely product ID
    */
   getProduct(vibelyProductId: string): PlayBillingProduct | null {
-    const playProductId = this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
+    const playProductId =
+      this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
     if (!playProductId) return null;
-    
+
     return this.products.get(playProductId) || null;
   }
 

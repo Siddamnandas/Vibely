@@ -60,11 +60,12 @@ export async function POST(request: NextRequest) {
     if (session.mode === "subscription" && session.metadata?.productId) {
       const billingCycle = session.metadata.productId.includes("yearly") ? "yearly" : "monthly";
       const tier = session.metadata.productId.includes("premium") ? "premium" : "freemium";
-      
+
       const now = new Date();
-      const endDate = billingCycle === "yearly" 
-        ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
-        : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      const endDate =
+        billingCycle === "yearly"
+          ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+          : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
       await firebasePurchaseService.saveSubscriptionRecord({
         userId,

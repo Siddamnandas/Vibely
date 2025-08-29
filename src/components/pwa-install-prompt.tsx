@@ -4,17 +4,17 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, 
-  Smartphone, 
-  X, 
-  Share, 
+import {
+  Download,
+  Smartphone,
+  X,
+  Share,
   Plus,
   Chrome,
   Globe as Safari,
   Wifi,
   WifiOff,
-  Zap
+  Zap,
 } from "lucide-react";
 import { pwaInstallService, PWAInstallStatus } from "@/lib/pwa-install-service";
 
@@ -24,10 +24,10 @@ interface PWAInstallPromptProps {
   onDismiss?: () => void;
 }
 
-export function PWAInstallPrompt({ 
-  className, 
-  showAsModal = false, 
-  onDismiss 
+export function PWAInstallPrompt({
+  className,
+  showAsModal = false,
+  onDismiss,
 }: PWAInstallPromptProps) {
   const [installStatus, setInstallStatus] = React.useState<PWAInstallStatus>({
     canInstall: false,
@@ -148,9 +148,11 @@ function InstallCard({
             <Smartphone className="h-5 w-5 text-green-600" />
             <CardTitle className="text-lg">Install Vibely</CardTitle>
             <Badge variant="outline" className="text-xs">
-              {installStatus.platform === "ios" ? "iOS" : 
-               installStatus.platform === "android" ? "Android" : 
-               "PWA"}
+              {installStatus.platform === "ios"
+                ? "iOS"
+                : installStatus.platform === "android"
+                  ? "Android"
+                  : "PWA"}
             </Badge>
           </div>
           <Button variant="ghost" size="sm" onClick={onDismiss}>
@@ -158,7 +160,8 @@ function InstallCard({
           </Button>
         </div>
         <CardDescription>
-          Get the best experience with our mobile app. Access your music offline and enjoy faster performance.
+          Get the best experience with our mobile app. Access your music offline and enjoy faster
+          performance.
         </CardDescription>
       </CardHeader>
 
@@ -209,12 +212,7 @@ function InstallCard({
               <Chrome className="h-4 w-4" />
               Install on Android Chrome:
             </div>
-            <Button 
-              onClick={onInstall} 
-              disabled={isInstalling}
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={onInstall} disabled={isInstalling} className="w-full" size="lg">
               <Download className="h-4 w-4 mr-2" />
               {isInstalling ? "Installing..." : "Install App"}
             </Button>
@@ -224,12 +222,7 @@ function InstallCard({
         {canUsePrompt && !isAndroid && (
           <div className="space-y-3">
             <div className="text-sm font-medium">Install Vibely App:</div>
-            <Button 
-              onClick={onInstall} 
-              disabled={isInstalling}
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={onInstall} disabled={isInstalling} className="w-full" size="lg">
               <Download className="h-4 w-4 mr-2" />
               {isInstalling ? "Installing..." : "Install App"}
             </Button>
@@ -249,7 +242,7 @@ function InstallCard({
 
         {/* Dismiss Options */}
         <div className="flex justify-between items-center pt-2 border-t text-xs text-gray-500">
-          <span>This won't show again if dismissed</span>
+          <span>This won&apos;t show again if dismissed</span>
           <Button variant="ghost" size="sm" onClick={onDismiss}>
             Maybe Later
           </Button>

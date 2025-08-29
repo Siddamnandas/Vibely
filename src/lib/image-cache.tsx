@@ -51,7 +51,7 @@ class ImageCacheManager {
     }
 
     // Set up cache cleanup on memory pressure
-    if ('memory' in (navigator as any)) {
+    if ("memory" in (navigator as any)) {
       this.setupMemoryPressureHandling();
     }
   }
@@ -92,10 +92,10 @@ class ImageCacheManager {
 
   async getOptimizedImageUrl(
     originalUrl: string,
-    options: NetworkOptimizedImageOptions = {}
+    options: NetworkOptimizedImageOptions = {},
   ): Promise<string> {
     const cacheKey = this.generateCacheKey(originalUrl, options);
-    
+
     // Check if image is already cached
     const cached = this.cache.get(cacheKey);
     if (cached) {
@@ -126,7 +126,7 @@ class ImageCacheManager {
   private async loadAndCacheImage(
     url: string,
     options: NetworkOptimizedImageOptions,
-    cacheKey: string
+    cacheKey: string,
   ): Promise<string> {
     const startTime = performance.now();
     let attempt = 0;
@@ -136,7 +136,7 @@ class ImageCacheManager {
       try {
         const optimizedUrl = this.getOptimizedUrl(url, options);
         const response = await this.fetchWithTimeout(optimizedUrl, this.config.networkTimeoutMs);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -161,11 +161,11 @@ class ImageCacheManager {
       } catch (error) {
         lastError = error as Error;
         attempt++;
-        
+
         if (attempt < this.config.retryAttempts) {
           // Exponential backoff
           const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
@@ -183,9 +183,12 @@ class ImageCacheManager {
   private getOptimizedUrl(url: string, options: NetworkOptimizedImageOptions): string {
     try {
       const urlObj = new URL(url);
-      
+
       // Apply quality optimizations based on network and device
-      if (this.deviceProfile?.connectionType === "slow" || this.batterySettings?.shouldReduceQuality) {
+      if (
+        this.deviceProfile?.connectionType === "slow" ||
+        this.batterySettings?.shouldReduceQuality
+      ) {
         options.quality = "low";
       }
 
@@ -202,62 +205,66 @@ class ImageCacheManager {
 
   private isOptimizableUrl(url: string): boolean {
     const optimizableDomains = [
-      'picsum.photos',
-      'unsplash.com',
-      'images.unsplash.com',
-      'cloudinary.com',
-      'imgix.net',
+      "picsum.photos",
+      "unsplash.com",
+      "images.unsplash.com",
+      "cloudinary.com",
+      "imgix.net",
     ];
-    
-    return optimizableDomains.some(domain => url.includes(domain));
+
+    return optimizableDomains.some((domain) => url.includes(domain));
   }
 
   private addQualityParams(urlObj: URL, options: NetworkOptimizedImageOptions) {
     // Quality parameter
     const qualityValue = this.getQualityValue(options.quality);
-    urlObj.searchParams.set('q', qualityValue.toString());
+    urlObj.searchParams.set("q", qualityValue.toString());
 
     // Format parameter
     const format = this.getOptimalFormat(options.format);
-    if (format !== 'auto') {
-      urlObj.searchParams.set('fm', format);
+    if (format !== "auto") {
+      urlObj.searchParams.set("fm", format);
     }
 
     // Add responsive parameters for mobile
     if (this.deviceProfile?.isLowEndDevice) {
-      urlObj.searchParams.set('w', '800'); // Max width 800px
-      urlObj.searchParams.set('dpr', '1'); // Standard DPR for low-end devices
+      urlObj.searchParams.set("w", "800"); // Max width 800px
+      urlObj.searchParams.set("dpr", "1"); // Standard DPR for low-end devices
     }
   }
 
   private getQualityValue(quality?: string): number {
     switch (quality) {
-      case "high": return 90;
-      case "medium": return 75;
-      case "low": return 60;
-      default: return this.batterySettings?.shouldReduceQuality ? 60 : 80;
+      case "high":
+        return 90;
+      case "medium":
+        return 75;
+      case "low":
+        return 60;
+      default:
+        return this.batterySettings?.shouldReduceQuality ? 60 : 80;
     }
   }
 
   private getOptimalFormat(preferredFormat?: string): string {
-    if (preferredFormat && preferredFormat !== 'auto') {
+    if (preferredFormat && preferredFormat !== "auto") {
       return preferredFormat;
     }
 
     // Check browser support for modern formats
     if (this.supportsWebP()) {
-      return 'webp';
+      return "webp";
     }
 
-    return 'jpeg';
+    return "jpeg";
   }
 
   private supportsWebP(): boolean {
     try {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = 1;
       canvas.height = 1;
-      return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      return canvas.toDataURL("image/webp").indexOf("data:image/webp") === 0;
     } catch {
       return false;
     }
@@ -271,7 +278,7 @@ class ImageCacheManager {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'Accept': 'image/webp,image/avif,image/jpeg,image/png,*/*',
+          Accept: "image/webp,image/avif,image/jpeg,image/png,*/*",
         },
       });
       clearTimeout(timeoutId);
@@ -284,7 +291,7 @@ class ImageCacheManager {
 
   private async cacheImage(cacheKey: string, blob: Blob, priority: "high" | "medium" | "low") {
     const imageSize = blob.size;
-    
+
     // Check if we need to free up space
     while (this.shouldEvictCache(imageSize)) {
       this.evictLeastRecentlyUsed();
@@ -388,7 +395,7 @@ class ImageCacheManager {
   getCacheStats() {
     return {
       entries: this.cache.size,
-      sizeMB: Math.round(this.totalCacheSize / (1024 * 1024) * 100) / 100,
+      sizeMB: Math.round((this.totalCacheSize / (1024 * 1024)) * 100) / 100,
       maxSizeMB: this.config.maxCacheSize,
       hitRate: this.calculateHitRate(),
     };
@@ -412,8 +419,8 @@ class ImageCacheManager {
 
   private setupMemoryPressureHandling() {
     // Listen for memory pressure events and clear cache if needed
-    if ('addEventListener' in navigator && 'memory' in navigator) {
-      (navigator as any).addEventListener('memorypressure', () => {
+    if ("addEventListener" in navigator && "memory" in navigator) {
+      (navigator as any).addEventListener("memorypressure", () => {
         this.clearCache();
         trackEvent("image_cache_cleared", { reason: "memory_pressure" });
       });

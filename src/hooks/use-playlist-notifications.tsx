@@ -110,7 +110,7 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         trackEvent("shared_playlist_added", {
           playlist_id: playlistId,
           shared_by: sharedBy,
@@ -135,7 +135,7 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
             songTitle: data.songTitle,
             playlistName: data.playlistName,
           },
-        })
+        }),
       );
 
       trackEvent("new_music_played", {
@@ -152,7 +152,7 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
   const handleRegenControl = useCallback(async (action: string, playlistId: string) => {
     try {
       const endpoint = action === "pause_regeneration" ? "pause" : "resume";
-      
+
       const response = await fetch(`/api/playlists/${playlistId}/regeneration/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -169,88 +169,90 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
         window.dispatchEvent(
           new CustomEvent(`notification-regen-${endpoint}d`, {
             detail: { playlistId },
-          })
+          }),
         );
       }
     } catch (error) {
-      console.error(`Failed to ${action.split('_')[0]} regeneration:`, error);
+      console.error(`Failed to ${action.split("_")[0]} regeneration:`, error);
     }
   }, []);
 
-  const notifyPlaylistChange = useCallback(async (event: PlaylistChangeEvent) => {
-    if (!isEnabledRef.current || !user) {
-      // Store pending notification if not enabled or not logged in
-      pendingNotificationsRef.current.push(event);
-      return;
-    }
-
-    try {
-      switch (event.type) {
-        case "created":
-          await notifyPlaylistCreated(
-            event.playlistName,
-            event.playlistId,
-            event.data?.trackCount || 0
-          );
-          break;
-
-        case "updated":
-          await notifyPlaylistUpdated(
-            event.playlistName,
-            event.playlistId,
-            event.data?.changeType || "updated",
-            event.data?.changeCount || 0
-          );
-          break;
-
-        case "shared":
-          await notifyPlaylistShared(
-            event.playlistName,
-            event.playlistId,
-            event.data?.sharedBy || "Someone"
-          );
-          break;
-
-        case "deleted":
-          await notifyPlaylistDeleted(event.playlistName, event.playlistId);
-          break;
-
-        case "new_music":
-          await notifyNewMusicAdded(
-            event.data?.artistName || "Unknown Artist",
-            event.data?.songTitle || "New Song",
-            event.playlistName
-          );
-          break;
+  const notifyPlaylistChange = useCallback(
+    async (event: PlaylistChangeEvent) => {
+      if (!isEnabledRef.current || !user) {
+        // Store pending notification if not enabled or not logged in
+        pendingNotificationsRef.current.push(event);
+        return;
       }
 
-      // Track notification sent
-      trackEvent("playlist_notification_sent", {
-        notification_type: event.type,
-        playlist_id: event.playlistId,
-        playlist_name: event.playlistName,
-      });
+      try {
+        switch (event.type) {
+          case "created":
+            await notifyPlaylistCreated(
+              event.playlistName,
+              event.playlistId,
+              event.data?.trackCount || 0,
+            );
+            break;
 
-    } catch (error) {
-      console.error("Failed to send playlist notification:", error);
-      
-      trackEvent("playlist_notification_failed", {
-        notification_type: event.type,
-        playlist_id: event.playlistId,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }, [user]);
+          case "updated":
+            await notifyPlaylistUpdated(
+              event.playlistName,
+              event.playlistId,
+              event.data?.changeType || "updated",
+              event.data?.changeCount || 0,
+            );
+            break;
+
+          case "shared":
+            await notifyPlaylistShared(
+              event.playlistName,
+              event.playlistId,
+              event.data?.sharedBy || "Someone",
+            );
+            break;
+
+          case "deleted":
+            await notifyPlaylistDeleted(event.playlistName, event.playlistId);
+            break;
+
+          case "new_music":
+            await notifyNewMusicAdded(
+              event.data?.artistName || "Unknown Artist",
+              event.data?.songTitle || "New Song",
+              event.playlistName,
+            );
+            break;
+        }
+
+        // Track notification sent
+        trackEvent("playlist_notification_sent", {
+          notification_type: event.type,
+          playlist_id: event.playlistId,
+          playlist_name: event.playlistName,
+        });
+      } catch (error) {
+        console.error("Failed to send playlist notification:", error);
+
+        trackEvent("playlist_notification_failed", {
+          notification_type: event.type,
+          playlist_id: event.playlistId,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+    [user],
+  );
 
   const enablePlaylistNotifications = useCallback(() => {
     isEnabledRef.current = true;
     localStorage.setItem("playlist-notifications-enabled", "true");
-    
+
     // Process any pending notifications
     const pending = pendingNotificationsRef.current;
     pendingNotificationsRef.current = [];
-    
-    pending.forEach(event => {
+
+    pending.forEach((event) => {
       notifyPlaylistChange(event);
     });
 
@@ -262,7 +264,7 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
   const disablePlaylistNotifications = useCallback(() => {
     isEnabledRef.current = false;
     localStorage.setItem("playlist-notifications-enabled", "false");
-    
+
     trackEvent("playlist_notifications_disabled");
   }, []);
 
@@ -277,7 +279,7 @@ export function usePlaylistNotifications(): PlaylistNotificationHook {
 // Helper function to monitor playlist changes automatically
 export function usePlaylistChangeMonitor() {
   const { notifyPlaylistChange } = usePlaylistNotifications();
-  
+
   // Monitor playlist mutations via MutationObserver or custom events
   useEffect(() => {
     const handlePlaylistCreated = (event: CustomEvent) => {

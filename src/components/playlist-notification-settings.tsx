@@ -6,7 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, BellOff, PlayCircle, Plus, Share2, Trash2 } from "lucide-react";
-import { usePlaylistNotifications, usePlaylistChangeMonitor } from "@/hooks/use-playlist-notifications";
+import {
+  usePlaylistNotifications,
+  usePlaylistChangeMonitor,
+} from "@/hooks/use-playlist-notifications";
 import { pushNotificationService } from "@/lib/push-notifications";
 
 interface PlaylistNotificationSettingsProps {
@@ -47,39 +50,44 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
 
   // Demo functions to test notifications
   const testNotifications = {
-    created: () => notifyPlaylistChange({
-      type: "created",
-      playlistId: "demo-playlist-1",
-      playlistName: "My Awesome Playlist",
-      data: { trackCount: 15 }
-    }),
-    
-    updated: () => notifyPlaylistChange({
-      type: "updated",
-      playlistId: "demo-playlist-2",
-      playlistName: "Chill Vibes",
-      data: { changeType: "songs_added", changeCount: 3 }
-    }),
-    
-    shared: () => notifyPlaylistChange({
-      type: "shared",
-      playlistId: "demo-playlist-3",
-      playlistName: "Road Trip Mix",
-      data: { sharedBy: "Alex Johnson" }
-    }),
-    
-    deleted: () => notifyPlaylistChange({
-      type: "deleted",
-      playlistId: "demo-playlist-4",
-      playlistName: "Old Favorites"
-    }),
-    
-    newMusic: () => notifyPlaylistChange({
-      type: "new_music",
-      playlistId: "demo-playlist-5",
-      playlistName: "New Releases",
-      data: { artistName: "The Weekend", songTitle: "Blinding Lights" }
-    })
+    created: () =>
+      notifyPlaylistChange({
+        type: "created",
+        playlistId: "demo-playlist-1",
+        playlistName: "My Awesome Playlist",
+        data: { trackCount: 15 },
+      }),
+
+    updated: () =>
+      notifyPlaylistChange({
+        type: "updated",
+        playlistId: "demo-playlist-2",
+        playlistName: "Chill Vibes",
+        data: { changeType: "songs_added", changeCount: 3 },
+      }),
+
+    shared: () =>
+      notifyPlaylistChange({
+        type: "shared",
+        playlistId: "demo-playlist-3",
+        playlistName: "Road Trip Mix",
+        data: { sharedBy: "Alex Johnson" },
+      }),
+
+    deleted: () =>
+      notifyPlaylistChange({
+        type: "deleted",
+        playlistId: "demo-playlist-4",
+        playlistName: "Old Favorites",
+      }),
+
+    newMusic: () =>
+      notifyPlaylistChange({
+        type: "new_music",
+        playlistId: "demo-playlist-5",
+        playlistName: "New Releases",
+        data: { artistName: "The Weekend", songTitle: "Blinding Lights" },
+      }),
   };
 
   return (
@@ -93,7 +101,7 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
           Get notified when playlists are created, updated, shared, or when new music is added.
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Permission Status */}
         {permissionStatus !== "granted" && (
@@ -102,7 +110,8 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
               <div className="flex items-center gap-2">
                 <BellOff className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm text-yellow-800">
-                  Notifications permission {permissionStatus === "denied" ? "denied" : "not granted"}
+                  Notifications permission{" "}
+                  {permissionStatus === "denied" ? "denied" : "not granted"}
                 </span>
               </div>
               {permissionStatus === "default" && (
@@ -131,7 +140,7 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
         {isPlaylistNotificationsEnabled && permissionStatus === "granted" && (
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-gray-900">Notification Types</h4>
-            
+
             <div className="grid grid-cols-1 gap-3">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -164,7 +173,9 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
                   <Share2 className="h-4 w-4 text-purple-600" />
                   <div>
                     <div className="text-sm font-medium">Playlist Shared</div>
-                    <div className="text-xs text-gray-500">When someone shares a playlist with you</div>
+                    <div className="text-xs text-gray-500">
+                      When someone shares a playlist with you
+                    </div>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" onClick={testNotifications.shared}>
@@ -177,7 +188,9 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
                   <Trash2 className="h-4 w-4 text-red-600" />
                   <div>
                     <div className="text-sm font-medium">Playlist Deleted</div>
-                    <div className="text-xs text-gray-500">When playlists are deleted (with undo option)</div>
+                    <div className="text-xs text-gray-500">
+                      When playlists are deleted (with undo option)
+                    </div>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" onClick={testNotifications.deleted}>
@@ -190,7 +203,9 @@ export function PlaylistNotificationSettings({ className }: PlaylistNotification
                   <Bell className="h-4 w-4 text-orange-600" />
                   <div>
                     <div className="text-sm font-medium">New Music Added</div>
-                    <div className="text-xs text-gray-500">When new songs are added to your library</div>
+                    <div className="text-xs text-gray-500">
+                      When new songs are added to your library
+                    </div>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" onClick={testNotifications.newMusic}>

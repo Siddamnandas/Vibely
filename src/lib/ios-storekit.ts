@@ -36,25 +36,27 @@ declare global {
     StoreKit?: {
       // Product management
       requestProducts: (productIds: string[]) => Promise<StoreKitProduct[]>;
-      
+
       // Purchase management
       purchaseProduct: (productId: string) => Promise<StoreKitTransaction>;
       restorePurchases: () => Promise<StoreKitTransaction[]>;
       finishTransaction: (transactionId: string) => Promise<void>;
-      
+
       // Receipt validation
       getAppStoreReceiptData: () => Promise<string>;
-      
+
       // Subscription management
       getSubscriptionStatus: (productId: string) => Promise<{
         isActive: boolean;
         expirationDate?: string;
         autoRenewStatus: boolean;
       }>;
-      
+
       // Events
       onTransactionUpdate: (callback: (transaction: StoreKitTransaction) => void) => void;
-      onProductsRequest: (callback: (products: StoreKitProduct[], invalidIds: string[]) => void) => void;
+      onProductsRequest: (
+        callback: (products: StoreKitProduct[], invalidIds: string[]) => void,
+      ) => void;
     };
   }
 }
@@ -67,12 +69,12 @@ export class IOSStoreKitService {
   private isInitialized = false;
   private products = new Map<string, StoreKitProduct>();
   private pendingTransactions = new Map<string, Promise<StoreKitTransaction>>();
-  
+
   // Map Vibely product IDs to iOS App Store product IDs
   private readonly productIdMapping = {
-    "premium_monthly": "com.vibely.premium.monthly",
-    "premium_yearly": "com.vibely.premium.yearly", 
-    "extra_covers_pack": "com.vibely.covers.pack10",
+    premium_monthly: "com.vibely.premium.monthly",
+    premium_yearly: "com.vibely.premium.yearly",
+    extra_covers_pack: "com.vibely.covers.pack10",
   };
 
   constructor() {
@@ -91,17 +93,17 @@ export class IOSStoreKitService {
       // Request products from App Store
       const appStoreProductIds = Object.values(this.productIdMapping);
       const products = await window.StoreKit!.requestProducts(appStoreProductIds);
-      
+
       // Cache products
-      products.forEach(product => {
+      products.forEach((product) => {
         this.products.set(product.productIdentifier, product);
       });
 
       this.isInitialized = true;
-      
+
       trackEvent("ios_storekit_initialized", {
         products_loaded: products.length,
-        platform: "ios"
+        platform: "ios",
       });
 
       return true;
@@ -109,7 +111,7 @@ export class IOSStoreKitService {
       console.error("Failed to initialize StoreKit:", error);
       trackEvent("ios_storekit_init_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "ios"
+        platform: "ios",
       });
       return false;
     }
@@ -119,9 +121,7 @@ export class IOSStoreKitService {
    * Check if StoreKit is available
    */
   private isStoreKitAvailable(): boolean {
-    return typeof window !== "undefined" && 
-           "StoreKit" in window && 
-           window.StoreKit !== undefined;
+    return typeof window !== "undefined" && "StoreKit" in window && window.StoreKit !== undefined;
   }
 
   /**
@@ -171,18 +171,21 @@ export class IOSStoreKitService {
       if (isValid) {
         // Update local subscription state
         await this.processValidatedPurchase(transaction);
-        
+
         trackEvent("ios_purchase_success", {
           product_id: transaction.productIdentifier,
           transaction_id: transaction.transactionIdentifier,
-          platform: "ios"
+          platform: "ios",
         });
       } else {
-        console.error("Receipt validation failed for transaction:", transaction.transactionIdentifier);
+        console.error(
+          "Receipt validation failed for transaction:",
+          transaction.transactionIdentifier,
+        );
         trackEvent("ios_receipt_validation_failed", {
           product_id: transaction.productIdentifier,
           transaction_id: transaction.transactionIdentifier,
-          platform: "ios"
+          platform: "ios",
         });
       }
 
@@ -194,7 +197,7 @@ export class IOSStoreKitService {
         product_id: transaction.productIdentifier,
         transaction_id: transaction.transactionIdentifier,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "ios"
+        platform: "ios",
       });
     }
   }
@@ -206,12 +209,12 @@ export class IOSStoreKitService {
     try {
       // Process restored purchase similar to new purchase
       await this.handlePurchaseSuccess(transaction);
-      
+
       trackEvent("ios_purchase_restored", {
         product_id: transaction.productIdentifier,
         transaction_id: transaction.transactionIdentifier,
         original_transaction_id: transaction.originalTransaction?.transactionIdentifier,
-        platform: "ios"
+        platform: "ios",
       });
     } catch (error) {
       console.error("Error processing restored purchase:", error);
@@ -225,7 +228,7 @@ export class IOSStoreKitService {
     trackEvent("ios_purchase_failed", {
       product_id: transaction.productIdentifier,
       transaction_id: transaction.transactionIdentifier,
-      platform: "ios"
+      platform: "ios",
     });
 
     // Finish failed transaction
@@ -239,9 +242,9 @@ export class IOSStoreKitService {
     trackEvent("ios_purchase_deferred", {
       product_id: transaction.productIdentifier,
       transaction_id: transaction.transactionIdentifier,
-      platform: "ios"
+      platform: "ios",
     });
-    
+
     // Don't finish deferred transactions - they will complete later
   }
 
@@ -253,7 +256,8 @@ export class IOSStoreKitService {
       await this.initialize();
     }
 
-    const appStoreProductId = this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
+    const appStoreProductId =
+      this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
     if (!appStoreProductId) {
       throw new Error(`Unknown product ID: ${vibelyProductId}`);
     }
@@ -267,7 +271,7 @@ export class IOSStoreKitService {
       trackEvent("ios_purchase_initiated", {
         product_id: appStoreProductId,
         vibely_product_id: vibelyProductId,
-        platform: "ios"
+        platform: "ios",
       });
 
       // Initiate purchase through StoreKit
@@ -279,7 +283,7 @@ export class IOSStoreKitService {
         product_id: appStoreProductId,
         vibely_product_id: vibelyProductId,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "ios"
+        platform: "ios",
       });
       throw error;
     }
@@ -295,14 +299,14 @@ export class IOSStoreKitService {
 
     try {
       trackEvent("ios_restore_initiated", {
-        platform: "ios"
+        platform: "ios",
       });
 
       const transactions = await window.StoreKit!.restorePurchases();
-      
+
       trackEvent("ios_restore_completed", {
         transactions_found: transactions.length,
-        platform: "ios"
+        platform: "ios",
       });
 
       return transactions;
@@ -310,7 +314,7 @@ export class IOSStoreKitService {
       console.error("Failed to restore purchases:", error);
       trackEvent("ios_restore_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "ios"
+        platform: "ios",
       });
       throw error;
     }
@@ -319,7 +323,10 @@ export class IOSStoreKitService {
   /**
    * Validate receipt with server
    */
-  private async validateReceipt(receiptData: string, transaction: StoreKitTransaction): Promise<boolean> {
+  private async validateReceipt(
+    receiptData: string,
+    transaction: StoreKitTransaction,
+  ): Promise<boolean> {
     try {
       const response = await fetch("/api/payments/validate-ios-receipt", {
         method: "POST",
@@ -386,9 +393,10 @@ export class IOSStoreKitService {
    * Get product by Vibely product ID
    */
   getProduct(vibelyProductId: string): StoreKitProduct | null {
-    const appStoreProductId = this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
+    const appStoreProductId =
+      this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
     if (!appStoreProductId) return null;
-    
+
     return this.products.get(appStoreProductId) || null;
   }
 
@@ -402,7 +410,8 @@ export class IOSStoreKitService {
   } | null> {
     if (!this.isInitialized) return null;
 
-    const appStoreProductId = this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
+    const appStoreProductId =
+      this.productIdMapping[vibelyProductId as keyof typeof this.productIdMapping];
     if (!appStoreProductId) return null;
 
     try {

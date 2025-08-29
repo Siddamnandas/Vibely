@@ -120,15 +120,19 @@ export default function PlaylistDetailOverlay({
   const handleRestoreAll = () => {
     setShowRestoreDialog(false);
     restoreAll(playlist.id);
-    toast({ 
-      title: "Restored all covers", 
-      description: `${Object.keys(job?.rows || {}).length} songs restored to original covers` 
+    toast({
+      title: "Restored all covers",
+      description: `${Object.keys(job?.rows || {}).length} songs restored to original covers`,
     });
   };
 
   // Count tracks that can be restored
-  const updatedTracksCount = Object.values(job?.rows || {}).filter(row => row.status === "updated").length;
-  const restoredTracksCount = Object.values(job?.rows || {}).filter(row => row.status === "restored").length;
+  const updatedTracksCount = Object.values(job?.rows || {}).filter(
+    (row) => row.status === "updated",
+  ).length;
+  const restoredTracksCount = Object.values(job?.rows || {}).filter(
+    (row) => row.status === "restored",
+  ).length;
 
   const pct = job ? Math.round((job.completed / job.total) * 100) : 0;
 
@@ -150,7 +154,8 @@ export default function PlaylistDetailOverlay({
         {/* Offline banner */}
         {isOffline && (
           <div className="sticky top-[52px] z-40 bg-red-500/10 text-red-300 px-4 py-2 flex items-center gap-2 backdrop-blur-xl">
-            <AlertTriangle className="h-4 w-4" /> You're offline. Some actions may be unavailable.
+            <AlertTriangle className="h-4 w-4" /> You&apos;re offline. Some actions may be
+            unavailable.
           </div>
         )}
 
@@ -264,32 +269,38 @@ export default function PlaylistDetailOverlay({
                   New covers are ready ✨
                 </Badge>
               )}
-              
+
               {/* Restore status summary */}
               {(updatedTracksCount > 0 || restoredTracksCount > 0) && (
                 <div className="flex items-center gap-1 text-xs">
                   {updatedTracksCount > 0 && (
-                    <Badge variant="outline" className="border-[#9FFFA2] text-[#9FFFA2] bg-[#9FFFA2]/10">
+                    <Badge
+                      variant="outline"
+                      className="border-[#9FFFA2] text-[#9FFFA2] bg-[#9FFFA2]/10"
+                    >
                       {updatedTracksCount} new
                     </Badge>
                   )}
                   {restoredTracksCount > 0 && (
-                    <Badge variant="outline" className="border-amber-400 text-amber-400 bg-amber-400/10">
+                    <Badge
+                      variant="outline"
+                      className="border-amber-400 text-amber-400 bg-amber-400/10"
+                    >
                       {restoredTracksCount} restored
                     </Badge>
                   )}
                 </div>
               )}
-              
+
               <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     disabled={updatedTracksCount === 0}
                     className="disabled:opacity-50"
                   >
-                    <RotateCcw className="h-4 w-4 mr-1" /> 
+                    <RotateCcw className="h-4 w-4 mr-1" />
                     Restore previous covers
                     {updatedTracksCount > 0 && (
                       <Badge variant="secondary" className="ml-2 bg-white/20 text-white text-xs">
@@ -302,16 +313,20 @@ export default function PlaylistDetailOverlay({
                   <DialogHeader>
                     <DialogTitle>Restore Previous Covers</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to restore {updatedTracksCount} song{updatedTracksCount !== 1 ? 's' : ''} to their original covers? 
-                      This will undo the recent AI-generated covers.
+                      Are you sure you want to restore {updatedTracksCount} song
+                      {updatedTracksCount !== 1 ? "s" : ""} to their original covers? This will undo
+                      the recent AI-generated covers.
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
                     <Button variant="secondary" onClick={() => setShowRestoreDialog(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleRestoreAll} className="bg-amber-500 hover:bg-amber-600 text-black">
-                      Restore {updatedTracksCount} cover{updatedTracksCount !== 1 ? 's' : ''}
+                    <Button
+                      onClick={handleRestoreAll}
+                      className="bg-amber-500 hover:bg-amber-600 text-black"
+                    >
+                      Restore {updatedTracksCount} cover{updatedTracksCount !== 1 ? "s" : ""}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -357,10 +372,15 @@ export default function PlaylistDetailOverlay({
               {tracks.map((t, idx) => {
                 const rowState = job?.rows[t.id];
                 const disabled = t.available === false;
-                const isCurrentlyGenerating = job?.status === "running" && job?.completed === idx && rowState?.status === "pending";
+                const isCurrentlyGenerating =
+                  job?.status === "running" &&
+                  job?.completed === idx &&
+                  rowState?.status === "pending";
                 const statusText =
                   rowState?.status === "pending"
-                    ? isCurrentlyGenerating ? "Generating now..." : "Queued for generation"
+                    ? isCurrentlyGenerating
+                      ? "Generating now..."
+                      : "Queued for generation"
                     : rowState?.status === "updating"
                       ? "Generating..."
                       : rowState?.status === "updated"
@@ -379,14 +399,14 @@ export default function PlaylistDetailOverlay({
                           fill
                           className="object-cover"
                         />
-                        
+
                         {/* Individual progress indicator */}
                         {isCurrentlyGenerating && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                             <div className="w-8 h-8 border-2 border-[#9FFFA2] border-t-transparent rounded-full animate-spin" />
                           </div>
                         )}
-                        
+
                         {/* Progress status indicator */}
                         {rowState?.status === "updated" && (
                           <div className="absolute top-1 right-1">
@@ -395,7 +415,7 @@ export default function PlaylistDetailOverlay({
                             </div>
                           </div>
                         )}
-                        
+
                         {rowState?.status === "restored" && (
                           <div className="absolute top-1 right-1">
                             <div className="w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
@@ -403,7 +423,7 @@ export default function PlaylistDetailOverlay({
                             </div>
                           </div>
                         )}
-                        
+
                         {rowState?.status === "pending" && job?.status === "running" && (
                           <div className="absolute top-1 right-1">
                             <div className="w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
@@ -412,16 +432,20 @@ export default function PlaylistDetailOverlay({
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-white truncate">{t.title}</p>
                         <p className="text-white/70 text-sm truncate">{t.artist}</p>
                         {statusText && (
-                          <p className={`text-xs mt-1 ${
-                            isCurrentlyGenerating ? "text-[#9FFFA2] font-medium" : 
-                            rowState?.status === "restored" ? "text-amber-400 font-medium" :
-                            "text-white/60"
-                          }`}>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isCurrentlyGenerating
+                                ? "text-[#9FFFA2] font-medium"
+                                : rowState?.status === "restored"
+                                  ? "text-amber-400 font-medium"
+                                  : "text-white/60"
+                            }`}
+                          >
                             {statusText}
                             {isCurrentlyGenerating && (
                               <span className="inline-block ml-1 w-1 h-1 bg-[#9FFFA2] rounded-full animate-pulse" />
@@ -429,7 +453,7 @@ export default function PlaylistDetailOverlay({
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {disabled ? (
                           <Tooltip>
@@ -471,8 +495,8 @@ export default function PlaylistDetailOverlay({
                               }
                             }}
                             aria-label={`${
-                              rowState.status === "updated" 
-                                ? `Restore original cover for ${t.title}` 
+                              rowState.status === "updated"
+                                ? `Restore original cover for ${t.title}`
                                 : rowState.status === "restored" && rowState.aiCoverUrl
                                   ? `Switch back to AI cover for ${t.title}`
                                   : `Regenerate cover for ${t.title}`

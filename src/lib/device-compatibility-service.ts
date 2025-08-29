@@ -79,7 +79,7 @@ class DeviceCompatibilityService {
     if (this.deviceInfo) return this.deviceInfo;
 
     const userAgent = navigator.userAgent;
-    
+
     // Platform detection
     let platform: DeviceInfo["platform"] = "Unknown";
     let device = "Unknown Device";
@@ -89,7 +89,7 @@ class DeviceCompatibilityService {
     // iOS Detection
     if (/iPhone|iPad|iPod/.test(userAgent)) {
       platform = "iOS";
-      
+
       if (/iPhone/.test(userAgent)) {
         device = this.detectiPhoneModel(userAgent);
       } else if (/iPad/.test(userAgent)) {
@@ -97,7 +97,7 @@ class DeviceCompatibilityService {
       } else {
         device = "iPod";
       }
-      
+
       browser = "Safari";
       const versionMatch = userAgent.match(/OS (\d+)_(\d+)/);
       if (versionMatch) {
@@ -107,13 +107,13 @@ class DeviceCompatibilityService {
     // Android Detection
     else if (/Android/.test(userAgent)) {
       platform = "Android";
-      
+
       // Detect Android device
       const deviceMatch = userAgent.match(/Android.*?;\s*([^)]+)\)/);
       if (deviceMatch) {
         device = deviceMatch[1].trim();
       }
-      
+
       // Detect browser
       if (/Chrome/.test(userAgent)) {
         browser = "Chrome";
@@ -126,7 +126,7 @@ class DeviceCompatibilityService {
     // Desktop Detection
     else if (/Windows|Mac|Linux/.test(userAgent)) {
       platform = "Desktop";
-      
+
       if (/Chrome/.test(userAgent)) browser = "Chrome";
       else if (/Firefox/.test(userAgent)) browser = "Firefox";
       else if (/Safari/.test(userAgent)) browser = "Safari";
@@ -225,7 +225,7 @@ class DeviceCompatibilityService {
   checkCSSSupport() {
     const cssSupports = (property: string, value?: string) => {
       try {
-        if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
+        if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
           return false;
         }
         return value ? CSS.supports(property, value) : CSS.supports(property);
@@ -233,12 +233,16 @@ class DeviceCompatibilityService {
         return false;
       }
     };
-    
+
     return {
       flexbox: this.checkFeature("flexbox", () => cssSupports("display", "flex")),
       grid: this.checkFeature("grid", () => cssSupports("display", "grid")),
-      customProperties: this.checkFeature("customProperties", () => cssSupports("--custom", "value")),
-      backdropFilter: this.checkFeature("backdropFilter", () => cssSupports("backdrop-filter", "blur(1px)")),
+      customProperties: this.checkFeature("customProperties", () =>
+        cssSupports("--custom", "value"),
+      ),
+      backdropFilter: this.checkFeature("backdropFilter", () =>
+        cssSupports("backdrop-filter", "blur(1px)"),
+      ),
       aspectRatio: this.checkFeature("aspectRatio", () => cssSupports("aspect-ratio", "1")),
     };
   }
@@ -272,7 +276,10 @@ class DeviceCompatibilityService {
    */
   checkServiceWorkerSupport() {
     return {
-      registration: this.checkFeature("swRegistration", () => "serviceWorker" in navigator && navigator.serviceWorker !== null),
+      registration: this.checkFeature(
+        "swRegistration",
+        () => "serviceWorker" in navigator && navigator.serviceWorker !== null,
+      ),
       caching: this.checkFeature("swCaching", () => "caches" in window),
       backgroundSync: this.checkFeature("backgroundSync", () => {
         try {
@@ -290,10 +297,11 @@ class DeviceCompatibilityService {
    */
   checkPWASupport() {
     const deviceInfo = this.getDeviceInfo();
-    
+
     return {
-      canInstall: deviceInfo.platform === "Android" || 
-                  (deviceInfo.platform === "iOS" && deviceInfo.browser === "Safari"),
+      canInstall:
+        deviceInfo.platform === "Android" ||
+        (deviceInfo.platform === "iOS" && deviceInfo.browser === "Safari"),
       addToHomeScreen: deviceInfo.isMobile,
       fullscreen: "standalone" in window.navigator || "fullscreen" in document,
       appBadge: "setAppBadge" in navigator,
@@ -305,7 +313,7 @@ class DeviceCompatibilityService {
    */
   getSupportedFeatures() {
     const deviceInfo = this.getDeviceInfo();
-    
+
     return {
       webkitAppearance: deviceInfo.platform === "iOS",
       safariSpecific: deviceInfo.platform === "iOS" && deviceInfo.browser === "Safari",
@@ -323,14 +331,14 @@ class DeviceCompatibilityService {
   getPerformanceProfile(): PerformanceProfile {
     const deviceInfo = this.getDeviceInfo();
     const displayInfo = this.getDisplayInfo();
-    
+
     // Get hardware information (if available)
     const deviceMemory = (navigator as any).deviceMemory || 4;
     const hardwareConcurrency = navigator.hardwareConcurrency || 4;
-    
+
     // Determine performance tier based on hardware specs first
     let tier: PerformanceProfile["tier"] = "mid";
-    
+
     // Hardware-based detection
     if (deviceMemory >= 6 && hardwareConcurrency >= 6) {
       tier = "high";
@@ -339,7 +347,7 @@ class DeviceCompatibilityService {
     } else if (deviceMemory <= 2 || hardwareConcurrency <= 2) {
       tier = "low";
     }
-    
+
     // Platform and device specific adjustments
     if (deviceInfo.platform === "iOS") {
       if (deviceInfo.device.includes("Pro") || deviceInfo.device.includes("iPad")) {
@@ -352,7 +360,7 @@ class DeviceCompatibilityService {
         tier = tier === "low" ? "mid" : tier;
       }
     }
-    
+
     // Android flagships - only upgrade if not already marked as low by hardware
     if (deviceInfo.platform === "Android" && tier !== "low") {
       if (deviceInfo.device.includes("Pixel") && !deviceInfo.device.includes("a")) {
@@ -361,7 +369,7 @@ class DeviceCompatibilityService {
         tier = "high";
       }
     }
-    
+
     return {
       tier,
       deviceMemory,
@@ -380,10 +388,10 @@ class DeviceCompatibilityService {
     const connection = (navigator as any).connection;
     const effectiveType = connection?.effectiveType || "4g";
     const downlink = connection?.downlink || 10;
-    
+
     const isSlowConnection = effectiveType === "2g" || effectiveType === "slow-2g" || downlink < 1;
     const isFastConnection = (effectiveType === "4g" && downlink > 5) || effectiveType === "wifi";
-    
+
     return {
       enableDataSaver: isSlowConnection,
       reducedImageQuality: isSlowConnection,
@@ -398,10 +406,10 @@ class DeviceCompatibilityService {
    */
   checkAccessibilitySupport(): AccessibilitySupport {
     const deviceInfo = this.getDeviceInfo();
-    
+
     const cssSupports = (property: string, value?: string) => {
       try {
-        if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
+        if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
           return false;
         }
         return value ? CSS.supports(property, value) : CSS.supports(property);
@@ -409,7 +417,7 @@ class DeviceCompatibilityService {
         return false;
       }
     };
-    
+
     return {
       screenReader: true, // Assume basic screen reader support
       voiceOver: deviceInfo.platform === "iOS",
@@ -438,7 +446,7 @@ class DeviceCompatibilityService {
   getDegradationStrategy() {
     const performanceProfile = this.getPerformanceProfile();
     const accessibilitySupport = this.checkAccessibilitySupport();
-    
+
     return {
       reduceAnimations: performanceProfile.tier === "low" || accessibilitySupport.reducedMotion,
       simplifyUI: performanceProfile.tier === "low",
@@ -476,15 +484,17 @@ class DeviceCompatibilityService {
   }
 
   private detectTablet(userAgent: string): boolean {
-    return /iPad|Android.*Tablet|PlayBook|Silk/.test(userAgent) ||
-           (window.innerWidth >= 768 && /Android/.test(userAgent));
+    return (
+      /iPad|Android.*Tablet|PlayBook|Silk/.test(userAgent) ||
+      (window.innerWidth >= 768 && /Android/.test(userAgent))
+    );
   }
 
   private checkFeature(key: string, testFunction: () => boolean): boolean {
     if (this.featureCache.has(key)) {
       return this.featureCache.get(key)!;
     }
-    
+
     try {
       const result = testFunction();
       this.featureCache.set(key, result);

@@ -132,7 +132,7 @@ export default function PhotoGallery({
           <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
           <h3 className="text-lg font-semibold text-white mb-2">Photo Gallery Not Supported</h3>
           <p className="text-white/70 text-sm">
-            Your browser doesn't support photo gallery features. Please use a modern browser.
+            Your browser doesn&apos;t support photo gallery features. Please use a modern browser.
           </p>
         </CardContent>
       </Card>

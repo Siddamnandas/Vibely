@@ -26,14 +26,14 @@ export function usePhotoGallery() {
       try {
         const isSupported = photoGallery.isAvailable();
         let hasPermission = false;
-        
+
         if (isSupported) {
           // Add timeout for permission check
           const permissionPromise = photoGallery.requestPermission();
-          const timeout = new Promise<boolean>((resolve) => 
-            setTimeout(() => resolve(false), 1000) // 1 second timeout
+          const timeout = new Promise<boolean>(
+            (resolve) => setTimeout(() => resolve(false), 1000), // 1 second timeout
           );
-          
+
           hasPermission = await Promise.race([permissionPromise, timeout]);
         }
 

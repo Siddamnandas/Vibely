@@ -29,10 +29,10 @@ export function useAppleMusicAuth() {
     try {
       // Add timeout for auth check
       const authPromise = Promise.resolve(appleMusicService.isAuthenticated());
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth check timeout')), 2000)
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Auth check timeout")), 2000),
       );
-      
+
       const isAuth = await Promise.race([authPromise, timeout]);
 
       if (isAuth) {

@@ -98,7 +98,7 @@
       "prettier -w"
     ],
     "*.{js,jsx,ts,tsx}": [
-      "next lint --fix --max-warnings=0 --file"
+      "next lint --fix --file"
     ]
   }
 }

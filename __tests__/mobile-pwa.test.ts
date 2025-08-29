@@ -40,7 +40,7 @@ Object.defineProperty(navigator, "serviceWorker", {
 class MockBeforeInstallPromptEvent extends Event {
   prompt = jest.fn().mockResolvedValue({ outcome: "accepted" });
   userChoice = Promise.resolve({ outcome: "accepted", platform: "web" });
-  
+
   constructor() {
     super("beforeinstallprompt");
   }
@@ -57,7 +57,7 @@ describe("Mobile PWA Functionality", () => {
     jest.clearAllMocks();
     // Reset install prompt state
     (window as any).deferredPrompt = null;
-    
+
     // Reset online status
     Object.defineProperty(navigator, "onLine", { value: true });
   });
@@ -140,21 +140,21 @@ describe("Mobile PWA Functionality", () => {
         expect.objectContaining({
           scope: "/",
           updateViaCache: "none",
-        })
+        }),
       );
     });
 
     test("handles service worker registration failure", async () => {
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
       (navigator.serviceWorker.register as jest.Mock).mockRejectedValue(
-        new Error("Registration failed")
+        new Error("Registration failed"),
       );
 
       await serviceWorkerManager.register();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Service worker registration failed:",
-        expect.any(Error)
+        expect.any(Error),
       );
 
       consoleErrorSpy.mockRestore();
@@ -168,7 +168,7 @@ describe("Mobile PWA Functionality", () => {
 
     test("sends message to service worker", async () => {
       const message = { type: "SKIP_WAITING" };
-      
+
       await serviceWorkerManager.sendMessage(message);
 
       expect(mockRegistration.active.postMessage).toHaveBeenCalledWith(message);
@@ -193,7 +193,7 @@ describe("Mobile PWA Functionality", () => {
 
     test("caches resources for offline use", async () => {
       const resources = ["/", "/generator", "/stories"];
-      
+
       await serviceWorkerManager.precacheResources(resources);
 
       expect(mockRegistration.active.postMessage).toHaveBeenCalledWith({
@@ -219,13 +219,13 @@ describe("Mobile PWA Functionality", () => {
             name: "My Library",
             url: "/library?source=shortcut",
           }),
-        ])
+        ]),
       );
     });
 
     test("tracks shortcut usage when accessed via URL parameter", () => {
       const { track } = require("@/lib/analytics");
-      
+
       // Simulate accessing app via shortcut
       Object.defineProperty(window, "location", {
         value: {
@@ -259,7 +259,7 @@ describe("Mobile PWA Functionality", () => {
       appShortcutsService.recordShortcutUsage("my-library");
 
       const shortcuts = appShortcutsService.getRecommendedShortcuts();
-      
+
       // Should prioritize most-used shortcut
       expect(shortcuts[0].id).toBe("generate-cover");
     });
@@ -268,7 +268,7 @@ describe("Mobile PWA Functionality", () => {
   describe("Offline Capabilities", () => {
     test("detects offline state correctly", () => {
       Object.defineProperty(navigator, "onLine", { value: false });
-      
+
       expect(serviceWorkerManager.isOnline()).toBe(false);
     });
 
@@ -288,15 +288,15 @@ describe("Mobile PWA Functionality", () => {
 
     test("processes queued actions when coming online", async () => {
       const { track } = require("@/lib/analytics");
-      
+
       // Start offline
       Object.defineProperty(navigator, "onLine", { value: false });
-      
+
       const action = {
-        type: "SAVE_STORY", 
+        type: "SAVE_STORY",
         payload: { id: "test", title: "Test Story" },
       };
-      
+
       serviceWorkerManager.queueOfflineAction(action);
 
       // Come back online
@@ -311,9 +311,9 @@ describe("Mobile PWA Functionality", () => {
 
     test("shows offline notification to user", () => {
       Object.defineProperty(navigator, "onLine", { value: false });
-      
+
       const notification = serviceWorkerManager.getOfflineStatus();
-      
+
       expect(notification).toEqual({
         isOffline: true,
         message: "You're currently offline. Some features may be limited.",
@@ -366,11 +366,7 @@ describe("Mobile PWA Functionality", () => {
 
       expect(mockRegistration.active.postMessage).toHaveBeenCalledWith({
         type: "PRELOAD_RESOURCES",
-        resources: expect.arrayContaining([
-          "/generator",
-          "/stories", 
-          "/api/auth/spotify",
-        ]),
+        resources: expect.arrayContaining(["/generator", "/stories", "/api/auth/spotify"]),
       });
     });
   });
@@ -395,7 +391,7 @@ describe("Mobile PWA Functionality", () => {
       // This would be handled by the viewport meta tag and touch-action CSS
       // Test that viewport is configured correctly
       const viewport = document.querySelector('meta[name="viewport"]');
-      
+
       expect(viewport?.getAttribute("content")).toContain("user-scalable=yes");
       expect(viewport?.getAttribute("content")).toContain("maximum-scale=5");
     });
@@ -424,10 +420,10 @@ describe("Mobile PWA Functionality", () => {
   describe("Error Handling", () => {
     test("handles service worker errors gracefully", async () => {
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-      
+
       // Mock service worker error
       (navigator.serviceWorker.register as jest.Mock).mockRejectedValue(
-        new Error("Service Worker not supported")
+        new Error("Service Worker not supported"),
       );
 
       const result = await serviceWorkerManager.register();
@@ -466,7 +462,7 @@ describe("Mobile PWA Functionality", () => {
   describe("Performance Optimization", () => {
     test("lazy loads non-critical PWA features", async () => {
       const { track } = require("@/lib/analytics");
-      
+
       await serviceWorkerManager.initializeLazyFeatures();
 
       expect(track).toHaveBeenCalledWith("pwa_lazy_features_loaded", {

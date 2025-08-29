@@ -28,7 +28,7 @@ type HeroProps = {
 
 function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
   const deviceProfile = useDevicePerformance();
-  
+
   return (
     <AdaptiveMotion
       initial={{ opacity: 0, scale: 0.95 }}
@@ -42,7 +42,10 @@ function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
 
       {/* Name behind cut-out (two lines) */}
       <div className="absolute left-5 top-5 z-[1] select-none">
-        <div className="text-black font-black leading-none tracking-tight" style={{ fontSize: deviceProfile.isLowEndDevice ? 48 : 56 }}>
+        <div
+          className="text-black font-black leading-none tracking-tight"
+          style={{ fontSize: deviceProfile.isLowEndDevice ? 48 : 56 }}
+        >
           {nameTop}
         </div>
         <div
@@ -97,10 +100,10 @@ function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
 function TopSongCard() {
   const { playTrackAt } = usePlayback();
   const { tracks, isLoading, provider } = useMusicData();
-  
+
   // Get the user's top song (first in the list since tracks are sorted by relevance)
   const topSong = tracks && tracks.length > 0 ? tracks[0] : null;
-  
+
   const queue = (tracks.length > 0 ? tracks : demoSongs).map((s) => ({
     id: s.id,
     title: s.title,
@@ -108,7 +111,7 @@ function TopSongCard() {
     coverUrl: s.originalCoverUrl,
     available: true,
   }));
-  
+
   const onPlay = () => {
     if (topSong) {
       playTrackAt(0, queue);
@@ -121,10 +124,10 @@ function TopSongCard() {
         {isLoading ? (
           <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/5 animate-pulse" />
         ) : topSong ? (
-          <AdaptiveImage 
-            src={topSong.originalCoverUrl} 
-            alt={topSong.title} 
-            fill 
+          <AdaptiveImage
+            src={topSong.originalCoverUrl}
+            alt={topSong.title}
+            fill
             className="object-cover"
             fallbackSrc="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop"
           />
@@ -138,15 +141,19 @@ function TopSongCard() {
         <div className="text-[17px] font-bold truncate">
           {isLoading ? (
             <div className="h-5 bg-white/20 rounded animate-pulse w-32" />
+          ) : topSong ? (
+            topSong.title
           ) : (
-            topSong ? topSong.title : "Discover Music"
+            "Discover Music"
           )}
         </div>
         <div className="text-white/70 text-sm truncate">
           {isLoading ? (
             <div className="h-4 bg-white/10 rounded animate-pulse w-24 mt-1" />
+          ) : topSong ? (
+            topSong.artist
           ) : (
-            topSong ? topSong.artist : "Connect your music to see your top tracks"
+            "Connect your music to see your top tracks"
           )}
         </div>
         {!isLoading && topSong && (
@@ -179,65 +186,69 @@ function TopArtistCard() {
         name: "Top Artist",
         playCount: 0,
         isTopListener: false,
-        imageUrl: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop"
+        imageUrl:
+          "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
       };
     }
 
     // Count artist occurrences and track additional metrics
-    const artistCounts = new Map<string, { 
-      count: number; 
-      artist: string; 
-      imageUrl?: string;
-      totalEnergy: number;
-      genres: Set<string>;
-    }>();
-    
-    tracks.forEach(track => {
+    const artistCounts = new Map<
+      string,
+      {
+        count: number;
+        artist: string;
+        imageUrl?: string;
+        totalEnergy: number;
+        genres: Set<string>;
+      }
+    >();
+
+    tracks.forEach((track) => {
       const artistName = track.artist;
-      const current = artistCounts.get(artistName) || { 
-        count: 0, 
+      const current = artistCounts.get(artistName) || {
+        count: 0,
         artist: artistName,
         totalEnergy: 0,
-        genres: new Set<string>()
+        genres: new Set<string>(),
       };
-      
+
       artistCounts.set(artistName, {
         ...current,
         count: current.count + 1,
         imageUrl: current.imageUrl || track.originalCoverUrl,
         totalEnergy: current.totalEnergy + (track.energy || 0.5),
-        genres: track.genre ? current.genres.add(track.genre) : current.genres
+        genres: track.genre ? current.genres.add(track.genre) : current.genres,
       });
     });
 
     // Get top artist
-    const topArtist = Array.from(artistCounts.entries())
-      .sort((a, b) => b[1].count - a[1].count)[0];
+    const topArtist = Array.from(artistCounts.entries()).sort((a, b) => b[1].count - a[1].count)[0];
 
     if (!topArtist) {
       return {
         name: "Top Artist",
         playCount: 0,
         isTopListener: false,
-        imageUrl: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop"
+        imageUrl:
+          "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
       };
     }
 
     const [artistName, data] = topArtist;
     const playCount = data.count;
     const avgEnergy = data.totalEnergy / playCount;
-    
+
     // Calculate if user is a "top listener" based on multiple factors
     const totalTracks = tracks.length;
     const artistPercentage = (playCount / totalTracks) * 100;
     const isTopListener = playCount >= 3 && artistPercentage >= 20; // At least 3 songs and 20% of library
-    
+
     // Calculate listening tier based on play count relative to total library
     let listenerTier = "Fan";
     if (artistPercentage >= 40) listenerTier = "Top 1%";
     else if (artistPercentage >= 30) listenerTier = "Top 5%";
     else if (artistPercentage >= 20) listenerTier = "Top 10%";
-    
+
     return {
       name: artistName,
       playCount,
@@ -245,7 +256,9 @@ function TopArtistCard() {
       listenerTier,
       avgEnergy,
       genres: Array.from(data.genres),
-      imageUrl: data.imageUrl || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop"
+      imageUrl:
+        data.imageUrl ||
+        "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
     };
   }, [tracks]);
 
@@ -253,8 +266,8 @@ function TopArtistCard() {
     // Navigate to generator page with artist context
     const params = new URLSearchParams({
       artist: topArtistData.name,
-      genre: topArtistData.genres?.[0] || '',
-      source: 'home_top_artist'
+      genre: topArtistData.genres?.[0] || "",
+      source: "home_top_artist",
     });
     router.push(`/generator?${params.toString()}`);
   };
@@ -281,20 +294,20 @@ function TopArtistCard() {
             </Badge>
           ) : (
             <Badge className="bg-white/20 text-white font-bold border-white/30">
-              {topArtistData.playCount} song{topArtistData.playCount !== 1 ? 's' : ''}
+              {topArtistData.playCount} song{topArtistData.playCount !== 1 ? "s" : ""}
             </Badge>
           )}
           <div className="mt-2 text-lg font-semibold truncate">{topArtistData.name}</div>
           {provider && (
             <div className="text-white/70 text-sm capitalize">
-              From {provider.replace('-', ' ')}
+              From {provider.replace("-", " ")}
               {topArtistData.genres && topArtistData.genres.length > 0 && (
                 <span className="ml-2">• {topArtistData.genres[0]}</span>
               )}
             </div>
           )}
         </div>
-        <Button 
+        <Button
           className="rounded-full bg-white text-black hover:bg-white/90"
           onClick={handleGenerateCovers}
           disabled={isLoading}
@@ -312,17 +325,17 @@ export default function Home() {
   const { stats, updateFavoriteGenres } = useUserStats();
   const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard(false); // Disable auto-redirect for development
   const performanceMonitor = usePerformanceMonitor("HomePage");
-  
+
   // Debug logging for troubleshooting
-  console.log('📊 Home page state:', {
-    user: user?.displayName || 'No user',
+  console.log("📊 Home page state:", {
+    user: user?.displayName || "No user",
     tracksLength: tracks?.length || 0,
     provider,
     isLoading,
     onboardingComplete: isOnboardingComplete,
-    onboardingLoading
+    onboardingLoading,
   });
-  
+
   // Enable performance observation
   usePerformanceObserver();
 
@@ -333,7 +346,7 @@ export default function Home() {
   const photo =
     user?.photoURL ||
     "https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=840&auto=format&fit=crop";
-  
+
   const chips = useMemo(() => {
     return generateHeroChips(tracks || []);
   }, [tracks]);
@@ -342,7 +355,7 @@ export default function Home() {
   useEffect(() => {
     if (tracks && tracks.length > 0) {
       const genres = tracks
-        .map(t => t.genre)
+        .map((t) => t.genre)
         .filter(Boolean)
         .slice(0, 3) as string[];
       if (genres.length > 0) {
@@ -353,13 +366,13 @@ export default function Home() {
 
   // Show loading state while checking onboarding
   if (onboardingLoading) {
-    console.log('⏳ Onboarding still loading...');
+    console.log("⏳ Onboarding still loading...");
     return (
       <div className="min-h-screen bg-[#0E0F12] flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-[#9FFFA2]/20 border-t-[#9FFFA2] rounded-full animate-spin mx-auto mb-4"></div>
           <div className="text-white text-lg font-semibold">Setting up your vibe...</div>
-          <div className="text-white/60 text-sm mt-2">This shouldn't take long</div>
+          <div className="text-white/60 text-sm mt-2">This shouldn&apos;t take long</div>
         </div>
       </div>
     );
@@ -438,21 +451,21 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
   tracks.forEach((track) => {
     // Count genres (convert to hashtag format)
     if (track.genre) {
-      const genreTag = `#${track.genre.replace(/\s+/g, '')}`;
+      const genreTag = `#${track.genre.replace(/\s+/g, "")}`;
       genreCounts.set(genreTag, (genreCounts.get(genreTag) || 0) + 1);
     }
-    
+
     // Count moods (convert to hashtag format)
     if (track.mood) {
-      const moodTag = `#${track.mood.replace(/\s+/g, '')}`;
+      const moodTag = `#${track.mood.replace(/\s+/g, "")}`;
       moods.set(moodTag, (moods.get(moodTag) || 0) + 1);
     }
-    
+
     // Analyze energy levels
-    if (typeof track.energy === 'number') {
+    if (typeof track.energy === "number") {
       energyLevels.push(track.energy);
     }
-    
+
     // Categorize by tempo
     if (track.tempo) {
       const tempo = parseInt(track.tempo.toString());
@@ -461,16 +474,17 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
       else if (tempo < 120) tempoCategory = "#Mellow";
       else if (tempo < 140) tempoCategory = "#Upbeat";
       else tempoCategory = "#Energetic";
-      
+
       tempoRanges.set(tempoCategory, (tempoRanges.get(tempoCategory) || 0) + 1);
     }
   });
-  
+
   // Calculate average energy for activity suggestions
-  const avgEnergy = energyLevels.length > 0 
-    ? energyLevels.reduce((sum, energy) => sum + energy, 0) / energyLevels.length 
-    : 0.5;
-    
+  const avgEnergy =
+    energyLevels.length > 0
+      ? energyLevels.reduce((sum, energy) => sum + energy, 0) / energyLevels.length
+      : 0.5;
+
   // Generate activity-based hashtags
   if (avgEnergy > 0.7) {
     timeBasedMoods.set("#Workout", 3);
@@ -485,22 +499,22 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
 
   // Combine all hashtag sources
   const allTags = new Map<string, number>();
-  
+
   // Add genre tags (weighted higher for uniqueness)
   genreCounts.forEach((count, tag) => {
     allTags.set(tag, count * 2);
   });
-  
+
   // Add mood tags
   moods.forEach((count, tag) => {
     allTags.set(tag, (allTags.get(tag) || 0) + count);
   });
-  
+
   // Add tempo-based tags
   tempoRanges.forEach((count, tag) => {
     allTags.set(tag, (allTags.get(tag) || 0) + count);
   });
-  
+
   // Add activity tags (weighted lower)
   timeBasedMoods.forEach((count, tag) => {
     allTags.set(tag, (allTags.get(tag) || 0) + count * 0.5);
@@ -511,7 +525,7 @@ function generateHeroChips(tracks: VibelyTrack[]): string[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
     .map(([tag]) => tag);
-    
+
   // Ensure we have at least 4 hashtags
   const fallbackTags = ["#Vibes", "#Music", "#Mood", "#Creative"];
   while (sortedTags.length < 4) {

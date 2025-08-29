@@ -49,8 +49,7 @@ export async function POST(request: NextRequest) {
         grant_type: "authorization_code",
         code,
         redirect_uri:
-          process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
-          "http://localhost:3000/auth/callback",
+          process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || "http://localhost:3000/auth/callback",
       }),
     });
 

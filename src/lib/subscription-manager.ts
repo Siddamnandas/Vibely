@@ -1,6 +1,6 @@
 "use client";
 
-import { 
+import {
   getFirestore,
   doc,
   setDoc,
@@ -42,36 +42,36 @@ export interface UserSubscription {
   productId: string;
   subscriptionType: "premium_monthly" | "premium_yearly";
   status: "active" | "expired" | "cancelled" | "pending" | "grace_period";
-  
+
   // Purchase details
   transactionId: string;
   originalTransactionId?: string; // iOS only
   purchaseToken: string;
   orderId?: string; // Android only
-  
+
   // Timing
   purchaseDate: Date;
   startDate: Date;
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   expirationDate?: Date;
-  
+
   // Billing
   isAutoRenewing: boolean;
   cancelAtPeriodEnd?: boolean;
-  
+
   // Usage
   coversUsedThisMonth: number;
-  
+
   // Features
   features: string[];
-  
+
   // Metadata
   environment: "sandbox" | "production";
   receiptData?: string; // iOS only
   signature?: string; // Android only
   originalJson?: string; // Android only
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,28 +82,28 @@ export interface UserPurchase {
   platform: "ios" | "android" | "web";
   productId: string;
   productType: "consumable" | "non_consumable";
-  
+
   // Purchase details
   transactionId: string;
   purchaseToken: string;
   orderId?: string; // Android only
-  
+
   // Status
   status: "completed" | "pending" | "failed" | "refunded" | "consumed";
   isValid: boolean;
-  
+
   // Timing
   purchaseDate: Date;
-  
+
   // Benefits
   coverCredits?: number;
   features: string[];
-  
+
   // Metadata
   environment: "sandbox" | "production";
   signature?: string; // Android only
   originalJson?: string; // Android only
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,7 +114,7 @@ export interface UserPurchase {
  */
 export class SubscriptionManagementService {
   private static instance: SubscriptionManagementService;
-  
+
   static getInstance(): SubscriptionManagementService {
     if (!SubscriptionManagementService.instance) {
       SubscriptionManagementService.instance = new SubscriptionManagementService();
@@ -125,12 +125,14 @@ export class SubscriptionManagementService {
   /**
    * Create or update user subscription
    */
-  async saveSubscription(subscription: Omit<UserSubscription, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  async saveSubscription(
+    subscription: Omit<UserSubscription, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     try {
       // Check if subscription already exists for this transaction
       const existingSubscription = await this.findSubscriptionByTransaction(
-        subscription.transactionId, 
-        subscription.platform
+        subscription.transactionId,
+        subscription.platform,
       );
 
       if (existingSubscription) {
@@ -142,7 +144,9 @@ export class SubscriptionManagementService {
           startDate: Timestamp.fromDate(subscription.startDate),
           currentPeriodStart: Timestamp.fromDate(subscription.currentPeriodStart),
           currentPeriodEnd: Timestamp.fromDate(subscription.currentPeriodEnd),
-          expirationDate: subscription.expirationDate ? Timestamp.fromDate(subscription.expirationDate) : null,
+          expirationDate: subscription.expirationDate
+            ? Timestamp.fromDate(subscription.expirationDate)
+            : null,
           updatedAt: Timestamp.now(),
           createdAt: existingSubscription.createdAt, // Keep original creation date
         };
@@ -165,7 +169,9 @@ export class SubscriptionManagementService {
           startDate: Timestamp.fromDate(subscription.startDate),
           currentPeriodStart: Timestamp.fromDate(subscription.currentPeriodStart),
           currentPeriodEnd: Timestamp.fromDate(subscription.currentPeriodEnd),
-          expirationDate: subscription.expirationDate ? Timestamp.fromDate(subscription.expirationDate) : null,
+          expirationDate: subscription.expirationDate
+            ? Timestamp.fromDate(subscription.expirationDate)
+            : null,
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
         };
@@ -202,18 +208,18 @@ export class SubscriptionManagementService {
         subscriptionsRef,
         where("userId", "==", userId),
         where("status", "==", "active"),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         return null;
       }
 
       const doc = querySnapshot.docs[0];
       const data = doc.data();
-      
+
       return {
         id: doc.id,
         ...data,
@@ -265,7 +271,10 @@ export class SubscriptionManagementService {
   /**
    * Cancel subscription
    */
-  async cancelSubscription(subscriptionId: string, cancelImmediately: boolean = false): Promise<void> {
+  async cancelSubscription(
+    subscriptionId: string,
+    cancelImmediately: boolean = false,
+  ): Promise<void> {
     try {
       const updateData: any = {
         cancelAtPeriodEnd: !cancelImmediately,
@@ -292,7 +301,9 @@ export class SubscriptionManagementService {
   /**
    * Save user purchase (consumable/non-consumable)
    */
-  async savePurchase(purchase: Omit<UserPurchase, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  async savePurchase(
+    purchase: Omit<UserPurchase, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     try {
       const purchaseData = {
         ...purchase,
@@ -328,15 +339,11 @@ export class SubscriptionManagementService {
   async getUserPurchases(userId: string): Promise<UserPurchase[]> {
     try {
       const purchasesRef = collection(db, "user_purchases");
-      const q = query(
-        purchasesRef,
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-      );
+      const q = query(purchasesRef, where("userId", "==", userId), orderBy("createdAt", "desc"));
 
       const querySnapshot = await getDocs(q);
-      
-      return querySnapshot.docs.map(doc => {
+
+      return querySnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -355,25 +362,28 @@ export class SubscriptionManagementService {
   /**
    * Find subscription by transaction ID
    */
-  private async findSubscriptionByTransaction(transactionId: string, platform: string): Promise<{ id: string; createdAt: any } | null> {
+  private async findSubscriptionByTransaction(
+    transactionId: string,
+    platform: string,
+  ): Promise<{ id: string; createdAt: any } | null> {
     try {
       const subscriptionsRef = collection(db, "user_subscriptions");
       const q = query(
         subscriptionsRef,
         where("transactionId", "==", transactionId),
-        where("platform", "==", platform)
+        where("platform", "==", platform),
       );
 
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         return null;
       }
 
       const doc = querySnapshot.docs[0];
-      return { 
-        id: doc.id, 
-        createdAt: doc.data().createdAt 
+      return {
+        id: doc.id,
+        createdAt: doc.data().createdAt,
       };
     } catch (error) {
       console.error("Error finding subscription by transaction:", error);
@@ -388,7 +398,7 @@ export class SubscriptionManagementService {
     try {
       // This could be stored in a separate user_profiles collection
       // or integrated with your existing user management system
-      
+
       const userRef = doc(db, "user_profiles", userId);
       const userDoc = await getDoc(userRef);
 
@@ -430,7 +440,7 @@ export class SubscriptionManagementService {
       // Get user profile
       const userRef = doc(db, "user_profiles", userId);
       const userDoc = await getDoc(userRef);
-      const coverCredits = userDoc.exists() ? (userDoc.data().coverCredits || 0) : 0;
+      const coverCredits = userDoc.exists() ? userDoc.data().coverCredits || 0 : 0;
 
       // Get active subscription
       const activeSubscription = await this.getUserActiveSubscription(userId);
@@ -471,7 +481,9 @@ export class SubscriptionManagementService {
               purchaseDate: new Date(sub.purchaseDate),
               startDate: new Date(sub.startDate || sub.purchaseDate),
               currentPeriodStart: new Date(sub.currentPeriodStart || sub.purchaseDate),
-              currentPeriodEnd: new Date(sub.currentPeriodEnd || Date.now() + 30 * 24 * 60 * 60 * 1000),
+              currentPeriodEnd: new Date(
+                sub.currentPeriodEnd || Date.now() + 30 * 24 * 60 * 60 * 1000,
+              ),
               expirationDate: sub.expirationDate ? new Date(sub.expirationDate) : undefined,
             });
           }
@@ -490,7 +502,9 @@ export class SubscriptionManagementService {
               purchaseDate: new Date(sub.purchaseDate),
               startDate: new Date(sub.startDate || sub.purchaseDate),
               currentPeriodStart: new Date(sub.currentPeriodStart || sub.purchaseDate),
-              currentPeriodEnd: new Date(sub.currentPeriodEnd || Date.now() + 30 * 24 * 60 * 60 * 1000),
+              currentPeriodEnd: new Date(
+                sub.currentPeriodEnd || Date.now() + 30 * 24 * 60 * 60 * 1000,
+              ),
               expirationDate: sub.expirationDate ? new Date(sub.expirationDate) : undefined,
             });
           }

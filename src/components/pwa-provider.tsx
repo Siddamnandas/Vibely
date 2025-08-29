@@ -10,9 +10,7 @@ interface PWAProviderProps {
 
 export function PWAProvider({ children }: PWAProviderProps) {
   const [showInstallPrompt, setShowInstallPrompt] = React.useState(false);
-  const [installStatus, setInstallStatus] = React.useState(
-    pwaInstallService.getInstallStatus()
-  );
+  const [installStatus, setInstallStatus] = React.useState(pwaInstallService.getInstallStatus());
 
   React.useEffect(() => {
     // Subscribe to install status changes
@@ -38,13 +36,11 @@ export function PWAProvider({ children }: PWAProviderProps) {
   return (
     <>
       {children}
-      
+
       {/* Install prompt banner */}
       {showInstallPrompt && (
         <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
-          <PWAInstallPrompt
-            onDismiss={() => setShowInstallPrompt(false)}
-          />
+          <PWAInstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
         </div>
       )}
     </>
@@ -53,9 +49,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
 
 // Hook for manual PWA install triggers
 export function usePWAProvider() {
-  const [installStatus, setInstallStatus] = React.useState(
-    pwaInstallService.getInstallStatus()
-  );
+  const [installStatus, setInstallStatus] = React.useState(pwaInstallService.getInstallStatus());
 
   React.useEffect(() => {
     const unsubscribe = pwaInstallService.onStatusChange(setInstallStatus);

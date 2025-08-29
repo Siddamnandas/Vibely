@@ -3,13 +3,13 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useRegen } from "@/context/regen-context";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
-import { 
-  notifyRegenStarted, 
-  notifyRegenProgress, 
-  notifyRegenPaused, 
-  notifyRegenResumed, 
-  notifyRegenCanceled, 
-  notifyRegenComplete 
+import {
+  notifyRegenStarted,
+  notifyRegenProgress,
+  notifyRegenPaused,
+  notifyRegenResumed,
+  notifyRegenCanceled,
+  notifyRegenComplete,
 } from "@/lib/push-notifications";
 import { useMusicData } from "@/hooks/use-music-data";
 import { track as trackEvent } from "@/lib/analytics";
@@ -20,16 +20,19 @@ export function useRegenNotifications() {
   const { getPlaylists } = useMusicData();
 
   // Get playlist name helper
-  const getPlaylistName = useCallback(async (playlistId: string): Promise<string> => {
-    try {
-      const playlists = await getPlaylists();
-      const playlist = playlists.find(p => p.id === playlistId);
-      return playlist?.name || `Playlist ${playlistId.slice(0, 8)}`;
-    } catch (error) {
-      console.warn("Failed to get playlist name:", error);
-      return `Playlist ${playlistId.slice(0, 8)}`;
-    }
-  }, [getPlaylists]);
+  const getPlaylistName = useCallback(
+    async (playlistId: string): Promise<string> => {
+      try {
+        const playlists = await getPlaylists();
+        const playlist = playlists.find((p) => p.id === playlistId);
+        return playlist?.name || `Playlist ${playlistId.slice(0, 8)}`;
+      } catch (error) {
+        console.warn("Failed to get playlist name:", error);
+        return `Playlist ${playlistId.slice(0, 8)}`;
+      }
+    },
+    [getPlaylists],
+  );
 
   // Track previous job states to detect changes
   const previousJobs = React.useRef<Record<string, { status: string; completed: number }>>({});
@@ -61,11 +64,11 @@ export function useRegenNotifications() {
       if (prevJob && job.status === "running" && job.completed > prevJob.completed) {
         const percentage = Math.round((job.completed / job.total) * 100);
         const prevPercentage = Math.round((prevJob.completed / job.total) * 100);
-        
+
         // Send notification for milestone percentages (25%, 50%, 75%)
         const milestones = [25, 50, 75];
         const reachedMilestone = milestones.find(
-          milestone => percentage >= milestone && prevPercentage < milestone
+          (milestone) => percentage >= milestone && prevPercentage < milestone,
         );
 
         if (reachedMilestone) {
@@ -170,7 +173,7 @@ export function useRegenNotifications() {
     const handleNotificationClick = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { playlistId, action } = customEvent.detail;
-      
+
       switch (action) {
         case "view_progress":
         case "view_playlist":

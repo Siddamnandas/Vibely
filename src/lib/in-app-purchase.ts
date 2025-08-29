@@ -138,11 +138,11 @@ class InAppPurchaseService {
     try {
       // Try to initialize iOS StoreKit
       const isStoreKitReady = await iosStoreKitService.initialize();
-      
+
       if (isStoreKitReady) {
         // Load products from StoreKit
         const storeKitProducts = iosStoreKitService.getAvailableProducts();
-        
+
         // Map StoreKit products to our format
         storeKitProducts.forEach((skProduct) => {
           const vibelyProductId = this.mapAppStoreToVibelyProductId(skProduct.productIdentifier);
@@ -155,13 +155,16 @@ class InAppPurchaseService {
               currency: "USD", // Extract from priceLocale if needed
               priceAmount: skProduct.price,
               type: skProduct.subscriptionPeriod ? "subscription" : "consumable",
-              subscriptionPeriod: skProduct.subscriptionPeriod ? 
-                (skProduct.subscriptionPeriod.unit === "month" ? "monthly" : "yearly") : undefined,
+              subscriptionPeriod: skProduct.subscriptionPeriod
+                ? skProduct.subscriptionPeriod.unit === "month"
+                  ? "monthly"
+                  : "yearly"
+                : undefined,
             };
             this.products.set(product.id, product);
           }
         });
-        
+
         console.log("iOS StoreKit initialized successfully");
         return;
       }
@@ -180,11 +183,11 @@ class InAppPurchaseService {
     try {
       // Try to initialize Android Google Play Billing
       const isBillingReady = await androidPlayBillingService.initialize();
-      
+
       if (isBillingReady) {
         // Load products from Play Billing
         const playBillingProducts = androidPlayBillingService.getAvailableProducts();
-        
+
         // Map Play Billing products to our format
         playBillingProducts.forEach((pbProduct) => {
           const vibelyProductId = this.mapPlayBillingToVibelyProductId(pbProduct.productId);
@@ -197,18 +200,29 @@ class InAppPurchaseService {
               currency: pbProduct.priceCurrencyCode,
               priceAmount: pbProduct.priceAmountMicros / 1000000, // Convert micros to standard units
               type: pbProduct.productType === "subs" ? "subscription" : "consumable",
-              subscriptionPeriod: pbProduct.subscriptionOfferDetails?.[0]?.pricingPhases?.[0]?.billingPeriod?.includes("P1M") ? "monthly" :
-                                 pbProduct.subscriptionOfferDetails?.[0]?.pricingPhases?.[0]?.billingPeriod?.includes("P1Y") ? "yearly" : undefined,
+              subscriptionPeriod:
+                pbProduct.subscriptionOfferDetails?.[0]?.pricingPhases?.[0]?.billingPeriod?.includes(
+                  "P1M",
+                )
+                  ? "monthly"
+                  : pbProduct.subscriptionOfferDetails?.[0]?.pricingPhases?.[0]?.billingPeriod?.includes(
+                        "P1Y",
+                      )
+                    ? "yearly"
+                    : undefined,
             };
             this.products.set(product.id, product);
           }
         });
-        
+
         console.log("Android Google Play Billing initialized successfully");
         return;
       }
     } catch (error) {
-      console.warn("Failed to initialize Google Play Billing, falling back to web payments:", error);
+      console.warn(
+        "Failed to initialize Google Play Billing, falling back to web payments:",
+        error,
+      );
     }
 
     // Fallback to web payments if Google Play Billing fails
@@ -298,12 +312,12 @@ class InAppPurchaseService {
     try {
       trackEvent("ios_purchase_initiated", {
         product_id: product.id,
-        platform: "ios"
+        platform: "ios",
       });
 
       // Use iOS StoreKit service
       const transaction = await iosStoreKitService.purchaseProduct(product.id);
-      
+
       if (transaction && transaction.transactionState === "purchased") {
         const purchase: Purchase = {
           productId: product.id,
@@ -314,16 +328,16 @@ class InAppPurchaseService {
           isSubscription: product.type === "subscription",
           // expiryTime would be set based on subscription info if applicable
         };
-        
+
         // Store the purchase locally
         this.purchases.set(transaction.transactionIdentifier, purchase);
-        
+
         trackEvent("ios_purchase_success", {
           product_id: product.id,
           transaction_id: transaction.transactionIdentifier,
-          platform: "ios"
+          platform: "ios",
         });
-        
+
         return purchase;
       } else {
         throw new Error("Purchase transaction failed or was cancelled");
@@ -333,9 +347,9 @@ class InAppPurchaseService {
       trackEvent("ios_purchase_failed", {
         product_id: product.id,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "ios"
+        platform: "ios",
       });
-      
+
       // Fallback to web purchase if StoreKit fails
       console.log("iOS purchase failed, falling back to web");
       return await this.purchaseWebProduct(product);
@@ -349,12 +363,12 @@ class InAppPurchaseService {
     try {
       trackEvent("android_purchase_initiated", {
         product_id: product.id,
-        platform: "android"
+        platform: "android",
       });
 
       // Use Android Google Play Billing service
       const purchase = await androidPlayBillingService.purchaseProduct(product.id);
-      
+
       if (purchase && purchase.purchaseState === "purchased") {
         const processedPurchase: Purchase = {
           productId: product.id,
@@ -365,24 +379,24 @@ class InAppPurchaseService {
           isSubscription: product.type === "subscription",
           // expiryTime would be set based on subscription info if applicable
         };
-        
+
         // Store the purchase locally
         this.purchases.set(purchase.orderId, processedPurchase);
-        
+
         trackEvent("android_purchase_success", {
           product_id: product.id,
           order_id: purchase.orderId,
-          platform: "android"
+          platform: "android",
         });
-        
+
         return processedPurchase;
       } else if (purchase && purchase.purchaseState === "pending") {
         trackEvent("android_purchase_pending", {
           product_id: product.id,
           order_id: purchase.orderId,
-          platform: "android"
+          platform: "android",
         });
-        
+
         // Return null for pending purchases, they'll be processed when approved
         return null;
       } else {
@@ -393,9 +407,9 @@ class InAppPurchaseService {
       trackEvent("android_purchase_failed", {
         product_id: product.id,
         error: error instanceof Error ? error.message : "Unknown error",
-        platform: "android"
+        platform: "android",
       });
-      
+
       // Fallback to web purchase if Google Play Billing fails
       console.log("Android purchase failed, falling back to web");
       return await this.purchaseWebProduct(product);
@@ -429,14 +443,17 @@ class InAppPurchaseService {
   private async restoreIOSPurchases(): Promise<Purchase[]> {
     try {
       trackEvent("ios_restore_initiated", {
-        platform: "ios"
+        platform: "ios",
       });
 
       const transactions = await iosStoreKitService.restorePurchases();
       const restoredPurchases: Purchase[] = [];
-      
+
       transactions.forEach((transaction) => {
-        if (transaction.transactionState === "purchased" || transaction.transactionState === "restored") {
+        if (
+          transaction.transactionState === "purchased" ||
+          transaction.transactionState === "restored"
+        ) {
           const vibelyProductId = this.mapAppStoreToVibelyProductId(transaction.productIdentifier);
           if (vibelyProductId) {
             const purchase: Purchase = {
@@ -447,25 +464,25 @@ class InAppPurchaseService {
               isValid: true,
               isSubscription: this.products.get(vibelyProductId)?.type === "subscription",
             };
-            
+
             // Store the restored purchase
             this.purchases.set(transaction.transactionIdentifier, purchase);
             restoredPurchases.push(purchase);
           }
         }
       });
-      
+
       trackEvent("ios_restore_success", {
         platform: "ios",
-        restored_count: restoredPurchases.length
+        restored_count: restoredPurchases.length,
       });
-      
+
       return restoredPurchases;
     } catch (error) {
       console.error("iOS restore failed:", error);
       trackEvent("ios_restore_failed", {
         platform: "ios",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       return [];
     }
@@ -477,12 +494,12 @@ class InAppPurchaseService {
   private async restoreAndroidPurchases(): Promise<Purchase[]> {
     try {
       trackEvent("android_query_purchases", {
-        platform: "android"
+        platform: "android",
       });
 
       const playBillingPurchases = await androidPlayBillingService.queryPurchases();
       const restoredPurchases: Purchase[] = [];
-      
+
       playBillingPurchases.forEach((purchase) => {
         if (purchase.purchaseState === "purchased") {
           const vibelyProductId = this.mapPlayBillingToVibelyProductId(purchase.productId);
@@ -495,25 +512,25 @@ class InAppPurchaseService {
               isValid: true,
               isSubscription: this.products.get(vibelyProductId)?.type === "subscription",
             };
-            
+
             // Store the restored purchase
             this.purchases.set(purchase.orderId, processedPurchase);
             restoredPurchases.push(processedPurchase);
           }
         }
       });
-      
+
       trackEvent("android_query_purchases_success", {
         platform: "android",
-        purchases_found: restoredPurchases.length
+        purchases_found: restoredPurchases.length,
       });
-      
+
       return restoredPurchases;
     } catch (error) {
       console.error("Android purchases query failed:", error);
       trackEvent("android_query_purchases_failed", {
         platform: "android",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       return [];
     }

@@ -27,18 +27,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(false); // Changed from true to false for better UX
 
   useEffect(() => {
-    console.log('🔐 Auth provider initializing...');
-    
+    console.log("🔐 Auth provider initializing...");
+
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Auth timeout - proceeding without user');
+      console.log("⏰ Auth timeout - proceeding without user");
       setLoading(false);
     }, 1000); // Reduced from 3 seconds to 1 second
 
     // Subscribe to the Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       clearTimeout(timeoutId);
-      console.log('🔐 Auth state changed:', user ? 'User found' : 'No user');
+      console.log("🔐 Auth state changed:", user ? "User found" : "No user");
       setUser(user);
       setLoading(false);
     });

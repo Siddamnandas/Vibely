@@ -89,8 +89,8 @@ class MobileOrientationService {
     if (typeof window === "undefined") return;
 
     // Delay initialization to avoid SSR hydration issues
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
         this.setupListeners();
       });
     } else {
@@ -102,10 +102,7 @@ class MobileOrientationService {
   private setupListeners() {
     // Modern orientation API
     if ("screen" in window && "orientation" in window.screen) {
-      window.screen.orientation.addEventListener(
-        "change",
-        this.handleOrientationChange.bind(this)
-      );
+      window.screen.orientation.addEventListener("change", this.handleOrientationChange.bind(this));
     }
 
     // Fallback for older browsers
@@ -185,9 +182,7 @@ class MobileOrientationService {
   }
 
   private isOrientationSupported(): boolean {
-    return typeof window !== "undefined" && 
-           "screen" in window && 
-           "orientation" in window.screen;
+    return typeof window !== "undefined" && "screen" in window && "orientation" in window.screen;
   }
 
   private getSafeAreaInsets() {
@@ -196,16 +191,24 @@ class MobileOrientationService {
     }
 
     const computedStyle = window.getComputedStyle(document.documentElement);
-    
+
     return {
-      top: this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-top")) || 
-           this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-top)")) || 0,
-      right: this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-right")) || 
-             this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-right)")) || 0,
-      bottom: this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-bottom")) || 
-              this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-bottom)")) || 0,
-      left: this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-left")) || 
-            this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-left)")) || 0,
+      top:
+        this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-top")) ||
+        this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-top)")) ||
+        0,
+      right:
+        this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-right")) ||
+        this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-right)")) ||
+        0,
+      bottom:
+        this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-bottom")) ||
+        this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-bottom)")) ||
+        0,
+      left:
+        this.parseCSSValue(computedStyle.getPropertyValue("--safe-area-inset-left")) ||
+        this.parseCSSValue(computedStyle.getPropertyValue("env(safe-area-inset-left)")) ||
+        0,
     };
   }
 
@@ -233,18 +236,17 @@ class MobileOrientationService {
       root.style.setProperty("--mini-icon", "40px"); // Smaller icon
       root.style.setProperty("--nav-gap", "12px"); // Reduced gap
       root.style.setProperty("--mini-border-radius", "16px"); // Smaller radius
-      
+
       // Adjust positioning for landscape safe areas
       const landscapeBottom = Math.max(safeAreaInsets.bottom, 8);
       root.style.setProperty("--mini-landscape-offset", `${landscapeBottom}px`);
-      
     } else {
       // Portrait mode optimizations
       root.style.setProperty("--mini-height", "68px"); // Standard height
       root.style.setProperty("--mini-icon", "44px"); // Standard icon size
       root.style.setProperty("--nav-gap", "16px"); // Standard gap
       root.style.setProperty("--mini-border-radius", "20px"); // Standard radius
-      
+
       // Adjust positioning for portrait safe areas
       const portraitBottom = Math.max(safeAreaInsets.bottom, 12);
       root.style.setProperty("--mini-portrait-offset", `${portraitBottom}px`);
@@ -292,7 +294,7 @@ class MobileOrientationService {
   }
 
   private notifyCallbacks() {
-    this.callbacks.forEach(callback => {
+    this.callbacks.forEach((callback) => {
       try {
         callback(this.currentState);
       } catch (error) {
@@ -328,7 +330,7 @@ class MobileOrientationService {
 
   public onOrientationChange(callback: OrientationChangeCallback): () => void {
     this.callbacks.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.callbacks.delete(callback);
@@ -337,7 +339,7 @@ class MobileOrientationService {
 
   public updateConfig(newConfig: Partial<OrientationConfig>) {
     this.config = { ...this.config, ...newConfig };
-    
+
     if (newConfig.enableLayoutOptimization !== undefined) {
       this.applyLayoutOptimizations();
     }
@@ -352,7 +354,7 @@ class MobileOrientationService {
   // Utility methods for components
   public getOptimalMiniPlayerSize(): { width: number; height: number; iconSize: number } {
     const { orientation, availableWidth } = this.currentState;
-    
+
     if (orientation === "landscape") {
       return {
         width: Math.min(availableWidth - 24, 400), // Max width with margins
@@ -371,7 +373,7 @@ class MobileOrientationService {
   public getOrientationCSS(): Record<string, string> {
     const { orientation } = this.currentState;
     const size = this.getOptimalMiniPlayerSize();
-    
+
     return {
       "--mini-computed-height": `${size.height}px`,
       "--mini-computed-icon": `${size.iconSize}px`,

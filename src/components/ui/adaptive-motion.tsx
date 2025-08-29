@@ -44,11 +44,12 @@ export function AdaptiveMotion({
 }: AdaptiveMotionProps) {
   const deviceProfile = useDevicePerformance();
   const prefersReducedMotion = useReducedMotion();
-  
+
   // Determine if animations should be reduced or disabled
   const shouldReduceAnimations = !deviceProfile.shouldUseAnimations || !!prefersReducedMotion;
-  const shouldDisableComplexAnimations = deviceProfile.isLowEndDevice || deviceProfile.tier === "low";
-  
+  const shouldDisableComplexAnimations =
+    deviceProfile.isLowEndDevice || deviceProfile.tier === "low";
+
   // Adaptive animation settings
   const adaptiveProps = getAdaptiveAnimationProps({
     initial,
@@ -60,24 +61,19 @@ export function AdaptiveMotion({
     shouldReduceAnimations,
     shouldDisableComplexAnimations,
   });
-  
+
   // For very low-end devices, just render a plain div
   if (shouldReduceAnimations && shouldDisableComplexAnimations) {
     const Component = as as any;
     return (
-      <Component
-        className={className}
-        style={style}
-        onClick={onClick}
-        {...props}
-      >
+      <Component className={className} style={style} onClick={onClick} {...props}>
         {children}
       </Component>
     );
   }
-  
+
   const MotionComponent = motion[as as keyof typeof motion] as any;
-  
+
   return (
     <MotionComponent
       className={className}
@@ -109,14 +105,14 @@ export function AdaptiveAnimatePresence({
 }: AdaptiveAnimatePresenceProps) {
   const deviceProfile = useDevicePerformance();
   const prefersReducedMotion = useReducedMotion();
-  
+
   const shouldReduceAnimations = !deviceProfile.shouldUseAnimations || prefersReducedMotion;
-  
+
   // For low-end devices, just render children without AnimatePresence
   if (shouldReduceAnimations && deviceProfile.isLowEndDevice) {
     return <>{children}</>;
   }
-  
+
   return (
     <AnimatePresence mode={mode} initial={initial}>
       {children}
@@ -153,7 +149,7 @@ function getAdaptiveAnimationProps({
       whileTap: shouldDisableComplexAnimations ? undefined : { scale: 0.98 }, // Keep minimal tap feedback
     };
   }
-  
+
   if (shouldDisableComplexAnimations) {
     // Simplify animations for low-end devices
     return {
@@ -165,7 +161,7 @@ function getAdaptiveAnimationProps({
       whileTap: whileTap || { scale: 0.95 },
     };
   }
-  
+
   return {
     initial,
     animate,
@@ -178,27 +174,27 @@ function getAdaptiveAnimationProps({
 
 function simplifyAnimation(animation: any): any {
   if (!animation || typeof animation !== "object") return animation;
-  
+
   // Remove complex animations, keep only opacity and scale
   const simplified: any = {};
-  
+
   if ("opacity" in animation) {
     simplified.opacity = animation.opacity;
   }
-  
+
   if ("scale" in animation) {
     simplified.scale = animation.scale;
   }
-  
+
   // Convert complex transforms to simple ones
   if ("y" in animation) {
     simplified.y = typeof animation.y === "string" ? "0%" : 0;
   }
-  
+
   if ("x" in animation) {
     simplified.x = typeof animation.x === "string" ? "0%" : 0;
   }
-  
+
   return Object.keys(simplified).length > 0 ? simplified : false;
 }
 
@@ -206,7 +202,7 @@ function simplifyTransition(transition: any): any {
   if (!transition || typeof transition !== "object") {
     return { duration: 0.2, ease: "easeOut" };
   }
-  
+
   return {
     duration: Math.min(transition.duration || 0.2, 0.3), // Cap duration
     ease: "easeOut", // Use simple easing
@@ -218,10 +214,11 @@ function simplifyTransition(transition: any): any {
 export function useAdaptiveAnimations() {
   const deviceProfile = useDevicePerformance();
   const prefersReducedMotion = useReducedMotion();
-  
+
   return {
     shouldUseAnimations: deviceProfile.shouldUseAnimations && !prefersReducedMotion,
     shouldSimplifyAnimations: deviceProfile.isLowEndDevice,
-    maxAnimationDuration: deviceProfile.tier === "low" ? 200 : deviceProfile.tier === "medium" ? 300 : 500,
+    maxAnimationDuration:
+      deviceProfile.tier === "low" ? 200 : deviceProfile.tier === "medium" ? 300 : 500,
   };
 }

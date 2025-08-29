@@ -63,7 +63,7 @@ export function SwipeableCard({
         threshold: swipeThreshold,
         velocityThreshold: 0.3,
         preventScroll: true,
-      }
+      },
     );
 
     return cleanup;
@@ -131,7 +131,7 @@ export function SwipeableCard({
       setIsDragging(false);
       setDragOffset(0);
       setDragDirection(null);
-      
+
       // Hide actions after a delay
       setTimeout(() => {
         setShowLeftActions(false);
@@ -178,7 +178,7 @@ export function SwipeableCard({
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
                   "transform transition-all duration-200 animate-in slide-in-from-left-2",
-                  getActionColors(action.color)
+                  getActionColors(action.color),
                 )}
               >
                 {action.icon}
@@ -200,7 +200,7 @@ export function SwipeableCard({
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
                   "transform transition-all duration-200 animate-in slide-in-from-right-2",
-                  getActionColors(action.color)
+                  getActionColors(action.color),
                 )}
               >
                 {action.icon}
@@ -220,10 +220,12 @@ export function SwipeableCard({
           className,
           isDragging && "transition-none", // Disable transitions while dragging
           dragDirection === "left" && showRightActions && "transform -translate-x-2",
-          dragDirection === "right" && showLeftActions && "transform translate-x-2"
+          dragDirection === "right" && showLeftActions && "transform translate-x-2",
         )}
         style={{
-          transform: isDragging ? `translateX(${Math.max(-100, Math.min(100, dragOffset * 0.3))}px)` : undefined,
+          transform: isDragging
+            ? `translateX(${Math.max(-100, Math.min(100, dragOffset * 0.3))}px)`
+            : undefined,
         }}
       >
         {children}
@@ -262,25 +264,24 @@ export function SwipeableCard({
 export function useSwipeableCard() {
   const [isGestureEnabled, setIsGestureEnabled] = React.useState(false);
 
-  const enableGestures = React.useCallback((
-    element: HTMLElement,
-    onSwipeLeft?: () => void,
-    onSwipeRight?: () => void
-  ) => {
-    if (!element) return () => {};
+  const enableGestures = React.useCallback(
+    (element: HTMLElement, onSwipeLeft?: () => void, onSwipeRight?: () => void) => {
+      if (!element) return () => {};
 
-    const cleanup = mobileGestureService.enableGestures(element, {
-      onSwipeLeft: onSwipeLeft ? () => onSwipeLeft() : undefined,
-      onSwipeRight: onSwipeRight ? () => onSwipeRight() : undefined,
-    });
+      const cleanup = mobileGestureService.enableGestures(element, {
+        onSwipeLeft: onSwipeLeft ? () => onSwipeLeft() : undefined,
+        onSwipeRight: onSwipeRight ? () => onSwipeRight() : undefined,
+      });
 
-    setIsGestureEnabled(true);
+      setIsGestureEnabled(true);
 
-    return () => {
-      cleanup();
-      setIsGestureEnabled(false);
-    };
-  }, []);
+      return () => {
+        cleanup();
+        setIsGestureEnabled(false);
+      };
+    },
+    [],
+  );
 
   return {
     enableGestures,

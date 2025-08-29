@@ -53,4 +53,3 @@ class AppInstallService {
 }
 
 export const appInstallService = new AppInstallService();
-

@@ -68,7 +68,7 @@ Object.defineProperty(navigator, "vibrate", {
 // Helper functions for touch events
 function createTouchEvent(
   type: string,
-  touches: Array<{ clientX: number; clientY: number; identifier: number }>
+  touches: Array<{ clientX: number; clientY: number; identifier: number }>,
 ) {
   const touchList = touches.map((touch, index) => ({
     ...touch,
@@ -98,9 +98,11 @@ function simulateSwipe(
   startX: number,
   endX: number,
   startY: number = 100,
-  endY: number = 100
+  endY: number = 100,
 ) {
-  const touchStart = createTouchEvent("touchstart", [{ clientX: startX, clientY: startY, identifier: 0 }]);
+  const touchStart = createTouchEvent("touchstart", [
+    { clientX: startX, clientY: startY, identifier: 0 },
+  ]);
   const touchEnd = createTouchEvent("touchend", [{ clientX: endX, clientY: endY, identifier: 0 }]);
 
   element.dispatchEvent(touchStart);
@@ -183,13 +185,17 @@ describe("Mobile Navigation and Touch Interactions", () => {
           threshold: 50,
         });
 
-        return <div ref={swipeRef} data-testid="swipeable">Swipeable Content</div>;
+        return (
+          <div ref={swipeRef} data-testid="swipeable">
+            Swipeable Content
+          </div>
+        );
       };
 
       render(<TestComponent />);
 
       const swipeableElement = screen.getByTestId("swipeable");
-      
+
       // Simulate swipe left
       simulateSwipe(swipeableElement, 150, 50);
       expect(onSwipeLeft).toHaveBeenCalled();
@@ -208,18 +214,22 @@ describe("Mobile Navigation and Touch Interactions", () => {
           threshold: 100, // High threshold
         });
 
-        return <div ref={swipeRef} data-testid="swipeable">Content</div>;
+        return (
+          <div ref={swipeRef} data-testid="swipeable">
+            Content
+          </div>
+        );
       };
 
       render(<TestComponent />);
 
       const element = screen.getByTestId("swipeable");
-      
+
       // Small swipe (shouldn't trigger)
       simulateSwipe(element, 100, 70); // Only 30px
       expect(onSwipe).not.toHaveBeenCalled();
 
-      // Large swipe (should trigger) 
+      // Large swipe (should trigger)
       simulateSwipe(element, 150, 30); // 120px
       expect(onSwipe).toHaveBeenCalled();
     });
@@ -229,21 +239,25 @@ describe("Mobile Navigation and Touch Interactions", () => {
 
       const TestComponent = () => {
         const swipeRef = useSwipe({ onSwipeLeft: onSwipe });
-        return <div ref={swipeRef} data-testid="swipeable">Content</div>;
+        return (
+          <div ref={swipeRef} data-testid="swipeable">
+            Content
+          </div>
+        );
       };
 
       render(<TestComponent />);
 
       const element = screen.getByTestId("swipeable");
-      
+
       // Multi-touch event
       const multiTouchStart = createTouchEvent("touchstart", [
         { clientX: 100, clientY: 100, identifier: 0 },
         { clientX: 120, clientY: 100, identifier: 1 },
       ]);
-      
+
       element.dispatchEvent(multiTouchStart);
-      
+
       // Should handle gracefully without errors
       expect(() => {
         const touchEnd = createTouchEvent("touchend", [
@@ -259,16 +273,22 @@ describe("Mobile Navigation and Touch Interactions", () => {
           onSwipeLeft: jest.fn(),
           preventScroll: true,
         });
-        return <div ref={swipeRef} data-testid="swipeable">Content</div>;
+        return (
+          <div ref={swipeRef} data-testid="swipeable">
+            Content
+          </div>
+        );
       };
 
       render(<TestComponent />);
 
       const element = screen.getByTestId("swipeable");
-      const touchStart = createTouchEvent("touchstart", [{ clientX: 100, clientY: 100, identifier: 0 }]);
-      
+      const touchStart = createTouchEvent("touchstart", [
+        { clientX: 100, clientY: 100, identifier: 0 },
+      ]);
+
       element.dispatchEvent(touchStart);
-      
+
       expect(touchStart.preventDefault).toHaveBeenCalled();
     });
   });
@@ -295,7 +315,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
     test("handles swipe gestures for track control", () => {
       mockPlaybackContext.current = {
         id: "1",
-        title: "Test Song", 
+        title: "Test Song",
         artist: "Test Artist",
         coverUrl: "/test.jpg",
         available: true,
@@ -304,7 +324,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
       render(<MiniPlayer onExpand={jest.fn()} />);
 
       const miniPlayer = screen.getByRole("button", { name: /mini player/i });
-      
+
       // Swipe left for next track
       simulateSwipe(miniPlayer, 150, 50);
       expect(mockPlaybackContext.next).toHaveBeenCalled();
@@ -327,7 +347,8 @@ describe("Mobile Navigation and Touch Interactions", () => {
 
       const miniPlayer = screen.getByRole("button", { name: /mini player/i });
       expect(miniPlayer).toHaveStyle({
-        bottom: "calc(var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px))",
+        bottom:
+          "calc(var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px))",
       });
     });
   });
@@ -338,7 +359,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
       mockPlaybackContext.current = {
         id: "1",
         title: "Test Song",
-        artist: "Test Artist", 
+        artist: "Test Artist",
         coverUrl: "/test.jpg",
         available: true,
       };
@@ -346,7 +367,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
       render(<FullPlayer onClose={onClose} isVisible={true} />);
 
       const fullPlayer = screen.getByRole("dialog");
-      
+
       // Swipe down to close
       simulateSwipe(fullPlayer, 100, 100, 50, 200);
       expect(onClose).toHaveBeenCalled();
@@ -357,14 +378,14 @@ describe("Mobile Navigation and Touch Interactions", () => {
         id: "1",
         title: "Test Song",
         artist: "Test Artist",
-        coverUrl: "/test.jpg", 
+        coverUrl: "/test.jpg",
         available: true,
       };
 
       render(<FullPlayer onClose={jest.fn()} isVisible={true} />);
 
       const fullPlayer = screen.getByRole("dialog");
-      
+
       // Swipe left for next
       simulateSwipe(fullPlayer, 200, 50);
       expect(mockPlaybackContext.next).toHaveBeenCalled();
@@ -405,7 +426,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
 
       // Simulate tap
       simulateSwipe(element, 100, 105, 100, 105); // Small movement = tap
-      
+
       // Should provide haptic feedback
       expect(navigator.vibrate).toHaveBeenCalledWith(10);
 
@@ -416,9 +437,11 @@ describe("Mobile Navigation and Touch Interactions", () => {
       mobileGestureService.enableHapticFeedback(true);
 
       // Simulate different gesture types
-      document.dispatchEvent(new CustomEvent("gesture-performed", {
-        detail: { gestureType: "longpress" },
-      }));
+      document.dispatchEvent(
+        new CustomEvent("gesture-performed", {
+          detail: { gestureType: "longpress" },
+        }),
+      );
 
       expect(navigator.vibrate).toHaveBeenCalledWith([50, 30, 50]);
     });
@@ -437,9 +460,11 @@ describe("Mobile Navigation and Touch Interactions", () => {
       mobileGestureService.enableHapticFeedback(true);
 
       // Should not provide haptic feedback when reduced motion is preferred
-      document.dispatchEvent(new CustomEvent("gesture-performed", {
-        detail: { gestureType: "tap" },
-      }));
+      document.dispatchEvent(
+        new CustomEvent("gesture-performed", {
+          detail: { gestureType: "tap" },
+        }),
+      );
 
       expect(navigator.vibrate).not.toHaveBeenCalled();
     });
@@ -528,7 +553,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith(
         "touchstart",
         expect.any(Function),
-        expect.objectContaining({ passive: false }) // Can't be passive due to preventDefault needs
+        expect.objectContaining({ passive: false }), // Can't be passive due to preventDefault needs
       );
 
       cleanup();
@@ -546,10 +571,7 @@ describe("Mobile Navigation and Touch Interactions", () => {
       cleanup();
 
       // Should clean up all listeners
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
-        "touchstart",
-        expect.any(Function)
-      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith("touchstart", expect.any(Function));
 
       removeEventListenerSpy.mockRestore();
     });

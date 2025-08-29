@@ -28,7 +28,7 @@ jest.mock("next/image", () => ({
   __esModule: true,
   default: (props) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />;
+    return <img alt={props.alt || ""} {...props} />;
   },
 }));
 
@@ -48,31 +48,33 @@ jest.mock("lucide-react", () => {
 
 // Mock Canvas getContext to avoid jsdom not-implemented errors
 if (typeof HTMLCanvasElement !== "undefined") {
-  HTMLCanvasElement.prototype.getContext = HTMLCanvasElement.prototype.getContext || jest.fn(() => ({
-    fillRect: jest.fn(),
-    clearRect: jest.fn(),
-    getImageData: jest.fn(() => ({ data: [] })),
-    putImageData: jest.fn(),
-    createImageData: jest.fn(() => []),
-    setTransform: jest.fn(),
-    drawImage: jest.fn(),
-    save: jest.fn(),
-    fillText: jest.fn(),
-    restore: jest.fn(),
-    beginPath: jest.fn(),
-    moveTo: jest.fn(),
-    lineTo: jest.fn(),
-    closePath: jest.fn(),
-    stroke: jest.fn(),
-    translate: jest.fn(),
-    scale: jest.fn(),
-    rotate: jest.fn(),
-    arc: jest.fn(),
-    fill: jest.fn(),
-    measureText: jest.fn(() => ({ width: 0 })),
-    transform: jest.fn(),
-    resetTransform: jest.fn(),
-  }));
+  HTMLCanvasElement.prototype.getContext =
+    HTMLCanvasElement.prototype.getContext ||
+    jest.fn(() => ({
+      fillRect: jest.fn(),
+      clearRect: jest.fn(),
+      getImageData: jest.fn(() => ({ data: [] })),
+      putImageData: jest.fn(),
+      createImageData: jest.fn(() => []),
+      setTransform: jest.fn(),
+      drawImage: jest.fn(),
+      save: jest.fn(),
+      fillText: jest.fn(),
+      restore: jest.fn(),
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      closePath: jest.fn(),
+      stroke: jest.fn(),
+      translate: jest.fn(),
+      scale: jest.fn(),
+      rotate: jest.fn(),
+      arc: jest.fn(),
+      fill: jest.fn(),
+      measureText: jest.fn(() => ({ width: 0 })),
+      transform: jest.fn(),
+      resetTransform: jest.fn(),
+    }));
 }
 
 // Mock ResizeObserver
@@ -149,7 +151,7 @@ try {
     meta.setAttribute("name", "viewport");
     meta.setAttribute(
       "content",
-      "width=device-width, initial-scale=1, user-scalable=yes, maximum-scale=5"
+      "width=device-width, initial-scale=1, user-scalable=yes, maximum-scale=5",
     );
     document.head.appendChild(meta);
   }

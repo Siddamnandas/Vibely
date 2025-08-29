@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const purchases = await firebasePurchaseService.getUserPurchases(userId);
 
     // Transform to the expected format
-    const formattedPurchases = purchases.map(purchase => ({
+    const formattedPurchases = purchases.map((purchase) => ({
       productId: purchase.productId,
       transactionId: purchase.transactionId,
       purchaseToken: purchase.purchaseToken,

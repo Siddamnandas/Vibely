@@ -99,7 +99,9 @@ class FirebasePurchaseService {
   }
 
   // Purchase Records
-  async savePurchaseRecord(purchase: Omit<PurchaseRecord, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  async savePurchaseRecord(
+    purchase: Omit<PurchaseRecord, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     try {
       const purchaseData = {
         ...purchase,
@@ -124,7 +126,7 @@ class FirebasePurchaseService {
       return docRef.id;
     } catch (error) {
       console.error("Failed to save purchase record:", error);
-      
+
       trackEvent("purchase_record_save_failed", {
         user_id: purchase.userId,
         product_id: purchase.productId,
@@ -164,7 +166,7 @@ class FirebasePurchaseService {
       const q = query(
         collection(db, "purchase_records"),
         where("userId", "==", userId),
-        orderBy("purchaseTime", "desc")
+        orderBy("purchaseTime", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
@@ -189,10 +191,14 @@ class FirebasePurchaseService {
     }
   }
 
-  async updatePurchaseStatus(purchaseId: string, status: PurchaseRecord["status"], metadata?: Record<string, any>): Promise<void> {
+  async updatePurchaseStatus(
+    purchaseId: string,
+    status: PurchaseRecord["status"],
+    metadata?: Record<string, any>,
+  ): Promise<void> {
     try {
       const docRef = doc(db, "purchase_records", purchaseId);
-      
+
       const updateData: any = {
         status,
         updatedAt: Timestamp.now(),
@@ -215,7 +221,9 @@ class FirebasePurchaseService {
   }
 
   // Subscription Records
-  async saveSubscriptionRecord(subscription: Omit<SubscriptionRecord, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  async saveSubscriptionRecord(
+    subscription: Omit<SubscriptionRecord, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     try {
       const subscriptionData = {
         ...subscription,
@@ -239,7 +247,7 @@ class FirebasePurchaseService {
       return docRef.id;
     } catch (error) {
       console.error("Failed to save subscription record:", error);
-      
+
       trackEvent("subscription_record_save_failed", {
         user_id: subscription.userId,
         plan_id: subscription.planId,
@@ -256,7 +264,7 @@ class FirebasePurchaseService {
         collection(db, "subscription_records"),
         where("userId", "==", userId),
         where("status", "in", ["active", "grace_period"]),
-        orderBy("currentPeriodEnd", "desc")
+        orderBy("currentPeriodEnd", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
@@ -264,7 +272,7 @@ class FirebasePurchaseService {
       if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0];
         const data = doc.data();
-        
+
         return {
           id: doc.id,
           ...data,
@@ -283,7 +291,11 @@ class FirebasePurchaseService {
     }
   }
 
-  async updateSubscriptionUsage(subscriptionId: string, usageType: "cover_generated" | "hd_export", increment: number = 1): Promise<void> {
+  async updateSubscriptionUsage(
+    subscriptionId: string,
+    usageType: "cover_generated" | "hd_export",
+    increment: number = 1,
+  ): Promise<void> {
     try {
       const docRef = doc(db, "subscription_records", subscriptionId);
       const docSnap = await getDoc(docRef);
@@ -315,7 +327,7 @@ class FirebasePurchaseService {
   async resetMonthlyUsage(subscriptionId: string): Promise<void> {
     try {
       const docRef = doc(db, "subscription_records", subscriptionId);
-      
+
       await updateDoc(docRef, {
         coversUsedThisMonth: 0,
         updatedAt: Timestamp.now(),
@@ -330,10 +342,14 @@ class FirebasePurchaseService {
     }
   }
 
-  async cancelSubscription(subscriptionId: string, immediate: boolean = false, reason?: string): Promise<void> {
+  async cancelSubscription(
+    subscriptionId: string,
+    immediate: boolean = false,
+    reason?: string,
+  ): Promise<void> {
     try {
       const docRef = doc(db, "subscription_records", subscriptionId);
-      
+
       const updateData: any = {
         cancelAtPeriodEnd: !immediate,
         status: immediate ? "cancelled" : "active",
@@ -388,7 +404,7 @@ class FirebasePurchaseService {
         where("userId", "==", userId),
         where("timestamp", ">=", Timestamp.fromDate(startDate)),
         where("timestamp", "<=", Timestamp.fromDate(endDate)),
-        orderBy("timestamp", "desc")
+        orderBy("timestamp", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
@@ -411,16 +427,19 @@ class FirebasePurchaseService {
   }
 
   // Real-time subscriptions
-  subscribeToUserPurchases(userId: string, callback: (purchases: PurchaseRecord[]) => void): () => void {
+  subscribeToUserPurchases(
+    userId: string,
+    callback: (purchases: PurchaseRecord[]) => void,
+  ): () => void {
     const q = query(
       collection(db, "purchase_records"),
       where("userId", "==", userId),
-      orderBy("purchaseTime", "desc")
+      orderBy("purchaseTime", "desc"),
     );
 
     return onSnapshot(q, (snapshot) => {
       const purchases: PurchaseRecord[] = [];
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data();
         purchases.push({
@@ -437,19 +456,22 @@ class FirebasePurchaseService {
     });
   }
 
-  subscribeToUserSubscription(userId: string, callback: (subscription: SubscriptionRecord | null) => void): () => void {
+  subscribeToUserSubscription(
+    userId: string,
+    callback: (subscription: SubscriptionRecord | null) => void,
+  ): () => void {
     const q = query(
       collection(db, "subscription_records"),
       where("userId", "==", userId),
       where("status", "in", ["active", "grace_period"]),
-      orderBy("currentPeriodEnd", "desc")
+      orderBy("currentPeriodEnd", "desc"),
     );
 
     return onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
         const data = doc.data();
-        
+
         const subscription: SubscriptionRecord = {
           id: doc.id,
           ...data,
@@ -476,7 +498,7 @@ class FirebasePurchaseService {
 
       if (localSubscription) {
         const subscriptionData = JSON.parse(localSubscription);
-        
+
         // Convert to Firebase format and save
         const subscriptionRecord: Omit<SubscriptionRecord, "id" | "createdAt" | "updatedAt"> = {
           userId,
@@ -496,7 +518,7 @@ class FirebasePurchaseService {
 
       if (localPurchases) {
         const purchasesData = JSON.parse(localPurchases);
-        
+
         for (const purchase of purchasesData) {
           const purchaseRecord: Omit<PurchaseRecord, "id" | "createdAt" | "updatedAt"> = {
             userId,
@@ -528,10 +550,9 @@ class FirebasePurchaseService {
         had_subscription: !!localSubscription,
         purchase_count: localPurchases ? JSON.parse(localPurchases).length : 0,
       });
-
     } catch (error) {
       console.error("Failed to migrate from localStorage:", error);
-      
+
       trackEvent("local_storage_migration_failed", {
         user_id: userId,
         error: error instanceof Error ? error.message : "Unknown error",

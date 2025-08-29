@@ -197,7 +197,7 @@ export default function Generator() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              AI will pick the best photo to match the song's mood.
+              AI will pick the best photo to match the song&apos;s mood.
             </p>
           </section>
 

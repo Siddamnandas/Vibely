@@ -6,11 +6,7 @@ import { GoogleAuth } from "google-auth-library";
 interface AndroidPublisherAPI {
   purchases: {
     products: {
-      get: (params: {
-        packageName: string;
-        productId: string;
-        token: string;
-      }) => Promise<{
+      get: (params: { packageName: string; productId: string; token: string }) => Promise<{
         kind: string;
         purchaseTimeMillis: string;
         purchaseState: number;
@@ -28,11 +24,7 @@ interface AndroidPublisherAPI {
       }>;
     };
     subscriptions: {
-      get: (params: {
-        packageName: string;
-        subscriptionId: string;
-        token: string;
-      }) => Promise<{
+      get: (params: { packageName: string; subscriptionId: string; token: string }) => Promise<{
         kind: string;
         startTimeMillis: string;
         expiryTimeMillis?: string;
@@ -71,7 +63,7 @@ const ANDROID_PACKAGE_NAME = process.env.ANDROID_PACKAGE_NAME || "com.vibely.app
 // Service account key file path or JSON
 const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,11 +71,11 @@ export async function POST(request: NextRequest) {
 
     if (!productId || !purchaseToken || !signature || !originalJson) {
       return NextResponse.json(
-        { 
-          isValid: false, 
-          error: "Missing required fields: productId, purchaseToken, signature, originalJson" 
+        {
+          isValid: false,
+          error: "Missing required fields: productId, purchaseToken, signature, originalJson",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Validate with Google Play Developer API (server-to-server)
     const googleValidation = await validateWithGooglePlay(productId, purchaseToken);
-    
+
     if (!googleValidation.isValid) {
       trackEvent("android_google_validation_failed", {
         product_id: productId,
@@ -128,20 +120,19 @@ export async function POST(request: NextRequest) {
       isValid: true,
       purchaseInfo: googleValidation.purchaseInfo,
     });
-
   } catch (error) {
     console.error("Android purchase validation error:", error);
-    
+
     trackEvent("android_validation_error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
     return NextResponse.json(
-      { 
-        isValid: false, 
-        error: "Internal server error during purchase validation" 
+      {
+        isValid: false,
+        error: "Internal server error during purchase validation",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -149,12 +140,15 @@ export async function POST(request: NextRequest) {
 /**
  * Validate purchase signature using Google Play's public key
  */
-async function validatePurchaseSignature(originalJson: string, signature: string): Promise<boolean> {
+async function validatePurchaseSignature(
+  originalJson: string,
+  signature: string,
+): Promise<boolean> {
   try {
     // In a real implementation, you would:
     // 1. Get your app's public key from Google Play Console
     // 2. Use it to verify the RSA signature of the originalJson
-    
+
     // For now, we'll do basic validation
     if (!originalJson || !signature) {
       return false;
@@ -162,7 +156,7 @@ async function validatePurchaseSignature(originalJson: string, signature: string
 
     // Parse the original JSON to ensure it's valid
     const purchaseData = JSON.parse(originalJson);
-    
+
     // Basic validation checks
     if (!purchaseData.productId || !purchaseData.purchaseToken || !purchaseData.orderId) {
       return false;
@@ -186,7 +180,10 @@ async function validatePurchaseSignature(originalJson: string, signature: string
 /**
  * Validate purchase with Google Play Developer API
  */
-async function validateWithGooglePlay(productId: string, purchaseToken: string): Promise<{
+async function validateWithGooglePlay(
+  productId: string,
+  purchaseToken: string,
+): Promise<{
   isValid: boolean;
   error?: string;
   purchaseInfo?: any;
@@ -203,7 +200,7 @@ async function validateWithGooglePlay(productId: string, purchaseToken: string):
           orderId: `mock_${Date.now()}`,
           purchaseState: 1, // Purchased
           purchaseTime: new Date(),
-        }
+        },
       };
     }
 
@@ -213,45 +210,46 @@ async function validateWithGooglePlay(productId: string, purchaseToken: string):
         client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: GOOGLE_PRIVATE_KEY,
       },
-      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
     });
 
     const authClient = await auth.getClient();
-    
+
     // Determine if this is a subscription or in-app product
-    const isSubscription = productId.includes('premium');
-    
+    const isSubscription = productId.includes("premium");
+
     let purchaseInfo;
-    
+
     if (isSubscription) {
       // Validate subscription
       const subscriptionUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`;
-      
+
       const response = await authClient.request({
         url: subscriptionUrl,
-        method: 'GET',
+        method: "GET",
       });
 
       const subscriptionData = response.data as any; // Type assertion for Google Play API response
-      
+
       purchaseInfo = {
         productId,
         purchaseToken,
         orderId: subscriptionData.orderId,
         purchaseState: subscriptionData.paymentState === 1 ? 1 : 0, // 1 = purchased, 0 = pending
         purchaseTime: new Date(parseInt(subscriptionData.startTimeMillis)),
-        expiryTime: subscriptionData.expiryTimeMillis ? 
-          new Date(parseInt(subscriptionData.expiryTimeMillis)) : null,
+        expiryTime: subscriptionData.expiryTimeMillis
+          ? new Date(parseInt(subscriptionData.expiryTimeMillis))
+          : null,
         autoRenewing: subscriptionData.autoRenewing,
         isSubscription: true,
       };
     } else {
       // Validate in-app product
       const productUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/products/${productId}/tokens/${purchaseToken}`;
-      
+
       const response = await authClient.request({
         url: productUrl,
-        method: 'GET',
+        method: "GET",
       });
 
       const productData = response.data as any; // Type assertion for Google Play API response
@@ -274,17 +272,16 @@ async function validateWithGooglePlay(productId: string, purchaseToken: string):
     return {
       isValid,
       purchaseInfo,
-      error: isValid ? undefined : "Purchase not in valid state"
+      error: isValid ? undefined : "Purchase not in valid state",
     };
-
   } catch (error) {
     console.error("Google Play API validation error:", error);
-    
+
     // If API validation fails, we might still accept the purchase if signature validation passed
     // This prevents issues if the Google Play API is temporarily unavailable
     return {
       isValid: false,
-      error: `Google Play API validation failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      error: `Google Play API validation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }

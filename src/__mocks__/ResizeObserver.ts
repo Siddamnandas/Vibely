@@ -5,4 +5,3 @@ export class ResizeObserver {
 }
 
 export default ResizeObserver;
-

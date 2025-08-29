@@ -222,9 +222,9 @@ export class AnalyticsService {
    */
   async initialize(arg?: unknown): Promise<void> {
     if (this.isInitialized) return;
-    if (arg && typeof arg === 'object' && (arg as any).providers) {
+    if (arg && typeof arg === "object" && (arg as any).providers) {
       this.config = arg as AnalyticsConfig;
-    } else if (typeof arg === 'string') {
+    } else if (typeof arg === "string") {
       this.userId = arg as string;
     }
 
@@ -585,7 +585,9 @@ export class AnalyticsService {
       "payment_",
       "subscription_",
     ];
-    return prefixes.some((p) => event.startsWith(p)) || event === "page_view" || event === "test_event";
+    return (
+      prefixes.some((p) => event.startsWith(p)) || event === "page_view" || event === "test_event"
+    );
   }
 
   private generateSessionId(): string {

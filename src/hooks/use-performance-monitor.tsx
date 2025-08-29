@@ -30,13 +30,17 @@ export function usePerformanceMonitor(componentName: string) {
     requestAnimationFrame(() => {
       const renderTime = Date.now() - startTime.current;
       metrics.current.renderTime = renderTime;
-      
+
       // Report performance metrics for analytics
-      reportPerformanceMetrics(componentName, {
-        ...metrics.current,
-        loadTime,
-        renderTime,
-      }, deviceProfile);
+      reportPerformanceMetrics(
+        componentName,
+        {
+          ...metrics.current,
+          loadTime,
+          renderTime,
+        },
+        deviceProfile,
+      );
     });
   }, [componentName, deviceProfile]);
 
@@ -60,7 +64,7 @@ export function usePerformanceMonitor(componentName: string) {
   // Functions to track specific performance events
   const trackImageLoad = (loadTime: number, src: string, wasAdaptive: boolean) => {
     metrics.current.imageLoadCount = (metrics.current.imageLoadCount || 0) + 1;
-    
+
     trackEvent("adaptive_image_loaded", {
       component: componentName,
       load_time: loadTime,
@@ -72,9 +76,9 @@ export function usePerformanceMonitor(componentName: string) {
 
   const trackAnimationStart = (animationType: string) => {
     if (!deviceProfile.shouldUseAnimations) return;
-    
+
     metrics.current.animationCount = (metrics.current.animationCount || 0) + 1;
-    
+
     trackEvent("adaptive_animation_started", {
       component: componentName,
       animation_type: animationType,
@@ -105,7 +109,7 @@ export function usePerformanceMonitor(componentName: string) {
 function reportPerformanceMetrics(
   componentName: string,
   metrics: Partial<PerformanceMetrics>,
-  deviceProfile: any
+  deviceProfile: any,
 ) {
   // Only report if metrics are meaningful
   if (!metrics.loadTime || !metrics.renderTime) return;

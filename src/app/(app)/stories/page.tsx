@@ -50,7 +50,7 @@ export default function StoriesPage() {
       };
       img.src = story.generatedCoverUrl;
     });
-    
+
     return () => clearTimeout(mountTimeout);
   }, []);
 
@@ -85,7 +85,7 @@ export default function StoriesPage() {
             </div>
             <Button
               className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full"
-              onClick={() => router.push('/generator?source=stories_header')}
+              onClick={() => router.push("/generator?source=stories_header")}
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New
@@ -156,7 +156,7 @@ export default function StoriesPage() {
               </p>
               <Button
                 className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full px-8 py-3"
-                onClick={() => router.push('/generator?source=stories_empty_state')}
+                onClick={() => router.push("/generator?source=stories_empty_state")}
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Cover

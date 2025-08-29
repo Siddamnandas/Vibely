@@ -130,7 +130,10 @@ class AppShortcutsService {
     }
   }
 
-  private handleShortcutUsage(pathname: string, params: { mode?: string | null; view?: string | null }) {
+  private handleShortcutUsage(
+    pathname: string,
+    params: { mode?: string | null; view?: string | null },
+  ) {
     let shortcutId: string | null = null;
 
     // Determine which shortcut was used based on URL
@@ -153,7 +156,7 @@ class AppShortcutsService {
   }
 
   getShortcutsByCategory(category: AppShortcut["category"]): AppShortcut[] {
-    return this.shortcuts.filter(shortcut => shortcut.category === category);
+    return this.shortcuts.filter((shortcut) => shortcut.category === category);
   }
 
   getUsageStats(): ShortcutUsageStats {
@@ -173,7 +176,7 @@ class AppShortcutsService {
   }
 
   recordShortcutUsage(shortcutId: string): void {
-    const shortcut = this.shortcuts.find(s => s.id === shortcutId);
+    const shortcut = this.shortcuts.find((s) => s.id === shortcutId);
     if (!shortcut) {
       console.warn("Unknown shortcut ID:", shortcutId);
       return;
@@ -182,13 +185,14 @@ class AppShortcutsService {
     // Update usage stats
     this.usageStats.totalUsage++;
     this.usageStats.lastUsed = new Date();
-    this.usageStats.usageByShortcut[shortcutId] = 
+    this.usageStats.usageByShortcut[shortcutId] =
       (this.usageStats.usageByShortcut[shortcutId] || 0) + 1;
 
     // Update favorite shortcut
-    const mostUsedShortcut = Object.entries(this.usageStats.usageByShortcut)
-      .sort(([, a], [, b]) => b - a)[0];
-    
+    const mostUsedShortcut = Object.entries(this.usageStats.usageByShortcut).sort(
+      ([, a], [, b]) => b - a,
+    )[0];
+
     if (mostUsedShortcut) {
       this.usageStats.favoriteShortcut = mostUsedShortcut[0];
     }
@@ -209,14 +213,14 @@ class AppShortcutsService {
 
   // Programmatic shortcut navigation
   navigateToShortcut(shortcutId: string): void {
-    const shortcut = this.shortcuts.find(s => s.id === shortcutId);
+    const shortcut = this.shortcuts.find((s) => s.id === shortcutId);
     if (!shortcut) {
       console.warn("Unknown shortcut ID:", shortcutId);
       return;
     }
 
     this.recordShortcutUsage(shortcutId);
-    
+
     // Navigate to the shortcut URL
     if (typeof window !== "undefined") {
       window.location.href = shortcut.url;
@@ -227,9 +231,9 @@ class AppShortcutsService {
   createDynamicShortcut(shortcut: Omit<AppShortcut, "id">): string {
     const id = `dynamic-${Date.now()}`;
     const newShortcut: AppShortcut = { id, ...shortcut };
-    
+
     this.shortcuts.push(newShortcut);
-    
+
     trackEvent("dynamic_shortcut_created", {
       shortcut_id: id,
       shortcut_name: shortcut.name,
@@ -242,18 +246,20 @@ class AppShortcutsService {
   // Shortcut availability checking
   isShortcutSupported(): boolean {
     // Check if PWA shortcuts are supported
-    return "serviceWorker" in navigator && 
-           window.matchMedia && 
-           window.matchMedia("(display-mode: standalone)").matches;
+    return (
+      "serviceWorker" in navigator &&
+      window.matchMedia &&
+      window.matchMedia("(display-mode: standalone)").matches
+    );
   }
 
   // Get personalized shortcut recommendations
   getRecommendedShortcuts(limit: number = 3): AppShortcut[] {
     const { usageByShortcut, favoriteShortcut } = this.usageStats;
-    
+
     // Sort shortcuts by usage frequency
     const sortedShortcuts = this.shortcuts
-      .map(shortcut => ({
+      .map((shortcut) => ({
         ...shortcut,
         usageCount: usageByShortcut[shortcut.id] || 0,
         isFavorite: shortcut.id === favoriteShortcut,
@@ -262,7 +268,7 @@ class AppShortcutsService {
         // Prioritize favorite shortcut
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
-        
+
         // Then sort by usage count
         return b.usageCount - a.usageCount;
       });
@@ -282,7 +288,7 @@ class AppShortcutsService {
     };
 
     trackEvent("shortcut_analytics_generated", analytics);
-    
+
     return analytics;
   }
 
@@ -294,9 +300,9 @@ class AppShortcutsService {
       favoriteShortcut: null,
       usageByShortcut: {},
     };
-    
+
     this.saveUsageStats();
-    
+
     trackEvent("shortcut_usage_stats_cleared");
   }
 }

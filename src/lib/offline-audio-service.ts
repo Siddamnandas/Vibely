@@ -85,9 +85,9 @@ class OfflineAudioService {
 
         // Playback history store
         if (!db.objectStoreNames.contains("offlinePlayback")) {
-          const playbackStore = db.createObjectStore("offlinePlayback", { 
-            keyPath: "id", 
-            autoIncrement: true 
+          const playbackStore = db.createObjectStore("offlinePlayback", {
+            keyPath: "id",
+            autoIncrement: true,
           });
           playbackStore.createIndex("trackId", "trackId");
           playbackStore.createIndex("timestamp", "timestamp");
@@ -99,7 +99,7 @@ class OfflineAudioService {
   private setupNetworkListeners() {
     const updateNetworkStatus = () => {
       this.isOfflineMode = !navigator.onLine;
-      
+
       if (this.isOfflineMode) {
         console.log("📴 Entering offline audio mode");
         this.handleOfflineMode();
@@ -107,13 +107,13 @@ class OfflineAudioService {
         console.log("🌐 Back online - audio streaming available");
         this.handleOnlineMode();
       }
-      
+
       this.notifyStatusListeners();
     };
 
     window.addEventListener("online", updateNetworkStatus);
     window.addEventListener("offline", updateNetworkStatus);
-    
+
     // Initial check
     updateNetworkStatus();
   }
@@ -148,7 +148,7 @@ class OfflineAudioService {
           cacheTimestamp: new Date(audioData.lastCached),
         });
       }
-      
+
       console.log(`🎵 Preloaded ${cachedAudio.length} cached audio tracks`);
     } catch (error) {
       console.error("Failed to preload cached audio:", error);
@@ -202,7 +202,7 @@ class OfflineAudioService {
       return true;
     } catch (error) {
       console.error(`Failed to cache track ${track.title}:`, error);
-      
+
       trackEvent("audio_cache_failed", {
         track_id: track.id,
         track_title: track.title,
@@ -251,7 +251,7 @@ class OfflineAudioService {
       return true;
     } catch (error) {
       console.error(`Failed to play offline track ${trackId}:`, error);
-      
+
       trackEvent("offline_playback_failed", {
         track_id: trackId,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -287,8 +287,10 @@ class OfflineAudioService {
 
   async getOfflineAudioStatus(): Promise<OfflineAudioStatus> {
     const cachedTracksCount = this.audioCache.size;
-    const totalAudioCacheSize = Array.from(this.audioCache.values())
-      .reduce((total, cache) => total + (cache.track.cacheSize || 0), 0);
+    const totalAudioCacheSize = Array.from(this.audioCache.values()).reduce(
+      (total, cache) => total + (cache.track.cacheSize || 0),
+      0,
+    );
 
     return {
       isAudioAvailableOffline: cachedTracksCount > 0,
@@ -300,7 +302,7 @@ class OfflineAudioService {
   }
 
   async getCachedTracks(): Promise<CachedAudioTrack[]> {
-    return Array.from(this.audioCache.values()).map(cache => cache.track);
+    return Array.from(this.audioCache.values()).map((cache) => cache.track);
   }
 
   async isTrackCached(trackId: string): Promise<boolean> {
@@ -316,7 +318,7 @@ class OfflineAudioService {
 
   resumeCurrentTrack(): void {
     if (this.currentAudio) {
-      this.currentAudio.play().catch(error => {
+      this.currentAudio.play().catch((error) => {
         console.error("Failed to resume playback:", error);
       });
     }
@@ -369,7 +371,7 @@ class OfflineAudioService {
     window.dispatchEvent(
       new CustomEvent("offline-track-ended", {
         detail: { track },
-      })
+      }),
     );
   }
 
@@ -384,13 +386,13 @@ class OfflineAudioService {
     window.dispatchEvent(
       new CustomEvent("offline-playback-error", {
         detail: { track, error },
-      })
+      }),
     );
   }
 
   private async handleOfflineMode() {
     console.log("📴 Switched to offline audio mode");
-    
+
     trackEvent("offline_audio_mode_entered", {
       cached_tracks: this.audioCache.size,
     });
@@ -398,7 +400,7 @@ class OfflineAudioService {
 
   private async handleOnlineMode() {
     console.log("🌐 Switched to online audio mode");
-    
+
     trackEvent("online_audio_mode_entered", {
       cached_tracks: this.audioCache.size,
     });
@@ -417,24 +419,29 @@ class OfflineAudioService {
 
   private async handleCachePlaylistAudio(data: any) {
     const { playlistId, tracks } = data;
-    
+
     console.log(`🎵 Caching audio for playlist ${playlistId}: ${tracks.length} tracks`);
-    
+
     let successCount = 0;
     for (const track of tracks) {
       const success = await this.cacheTrackForOffline(track);
       if (success) successCount++;
     }
-    
-    console.log(`✅ Cached ${successCount}/${tracks.length} audio tracks for playlist ${playlistId}`);
+
+    console.log(
+      `✅ Cached ${successCount}/${tracks.length} audio tracks for playlist ${playlistId}`,
+    );
   }
 
-  private async storeAudioInDB(trackId: string, audioData: { track: CachedAudioTrack; audioBlob: Blob; lastCached: Date }) {
+  private async storeAudioInDB(
+    trackId: string,
+    audioData: { track: CachedAudioTrack; audioBlob: Blob; lastCached: Date },
+  ) {
     if (!this.db) return;
 
     const transaction = this.db.transaction(["audioCache"], "readwrite");
     const store = transaction.objectStore("audioCache");
-    
+
     await store.put({
       trackId,
       track: audioData.track,
@@ -467,7 +474,7 @@ class OfflineAudioService {
     try {
       const transaction = this.db.transaction(["offlinePlayback"], "readwrite");
       const store = transaction.objectStore("offlinePlayback");
-      
+
       await store.add({
         trackId: track.id,
         trackTitle: track.title,
@@ -483,7 +490,7 @@ class OfflineAudioService {
   // Status listener management
   onStatusChange(listener: (status: OfflineAudioStatus) => void): () => void {
     this.statusListeners.push(listener);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.statusListeners.indexOf(listener);
@@ -495,7 +502,7 @@ class OfflineAudioService {
 
   private async notifyStatusListeners(): Promise<void> {
     const status = await this.getOfflineAudioStatus();
-    this.statusListeners.forEach(listener => {
+    this.statusListeners.forEach((listener) => {
       try {
         listener(status);
       } catch (error) {

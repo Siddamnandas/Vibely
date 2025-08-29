@@ -84,9 +84,9 @@ class OfflinePlaylistService {
 
         // Offline queue store
         if (!db.objectStoreNames.contains("offlineQueue")) {
-          const queueStore = db.createObjectStore("offlineQueue", { 
-            keyPath: "id", 
-            autoIncrement: true 
+          const queueStore = db.createObjectStore("offlineQueue", {
+            keyPath: "id",
+            autoIncrement: true,
           });
           queueStore.createIndex("action", "action");
           queueStore.createIndex("timestamp", "timestamp");
@@ -140,7 +140,7 @@ class OfflinePlaylistService {
       console.log("🌐 Back online - syncing offline changes");
       await this.syncOfflineChanges();
       await this.updateCachedPlaylists();
-      
+
       trackEvent("device_back_online", {
         cached_playlists: await this.getCachedPlaylistsCount(),
         cached_tracks: await this.getCachedTracksCount(),
@@ -152,7 +152,7 @@ class OfflinePlaylistService {
 
   private async handleGoOffline() {
     console.log("📴 Gone offline - switching to cached data");
-    
+
     trackEvent("device_gone_offline", {
       cached_playlists: await this.getCachedPlaylistsCount(),
       cached_tracks: await this.getCachedTracksCount(),
@@ -214,7 +214,7 @@ class OfflinePlaylistService {
       return true;
     } catch (error) {
       console.error("Failed to cache playlist for offline:", error);
-      
+
       trackEvent("playlist_cache_failed", {
         playlist_id: playlistId,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -229,7 +229,7 @@ class OfflinePlaylistService {
 
     try {
       const transaction = this.db.transaction(["playlists", "tracks"], "readwrite");
-      
+
       // Remove playlist
       const playlistStore = transaction.objectStore("playlists");
       await playlistStore.delete(playlistId);
@@ -238,7 +238,7 @@ class OfflinePlaylistService {
       const trackStore = transaction.objectStore("tracks");
       const trackIndex = trackStore.index("playlistId");
       const trackCursor = await trackIndex.openCursor(playlistId);
-      
+
       while (trackCursor) {
         await trackCursor.delete();
         await trackCursor.continue();
@@ -285,7 +285,7 @@ class OfflinePlaylistService {
     try {
       const transaction = this.db.transaction(["offlineQueue"], "readwrite");
       const store = transaction.objectStore("offlineQueue");
-      
+
       await store.add({
         action,
         data,
@@ -308,7 +308,7 @@ class OfflinePlaylistService {
 
       request.onsuccess = async () => {
         const queuedActions = request.result;
-        
+
         for (const item of queuedActions) {
           try {
             await this.processOfflineAction(item);
@@ -440,7 +440,7 @@ class OfflinePlaylistService {
 
   private async updateCachedPlaylists(): Promise<void> {
     const cachedPlaylists = await this.getCachedPlaylists();
-    
+
     for (const playlist of cachedPlaylists) {
       try {
         const response = await fetch(`/api/playlists/${playlist.id}`);
@@ -461,7 +461,7 @@ class OfflinePlaylistService {
   // Status listener management
   onStatusChange(listener: (status: OfflineStatus) => void): () => void {
     this.statusListeners.push(listener);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.statusListeners.indexOf(listener);
@@ -473,7 +473,7 @@ class OfflinePlaylistService {
 
   private async notifyStatusListeners(): Promise<void> {
     const status = await this.getOfflineStatus();
-    this.statusListeners.forEach(listener => {
+    this.statusListeners.forEach((listener) => {
       try {
         listener(status);
       } catch (error) {

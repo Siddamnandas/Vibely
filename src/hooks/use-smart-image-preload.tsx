@@ -22,16 +22,16 @@ interface SmartPreloadOptions {
 export function useSmartImagePreload(
   images: PreloadableImage[],
   currentIndex: number = 0,
-  options: SmartPreloadOptions = {}
+  options: SmartPreloadOptions = {},
 ) {
   const { preloadImages } = useOptimizedImageCache();
   const deviceProfile = useDevicePerformance();
   const { batteryStatus, audioSettings } = useBatteryAwareAudio();
-  
+
   const preloadQueueRef = useRef<Set<string>>(new Set());
   const isPreloadingRef = useRef(false);
   const preloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const {
     preloadDistance = 3,
     prioritizeVisible = true,
@@ -65,19 +65,19 @@ export function useSmartImagePreload(
     if (adaptiveDistance === 0) return;
 
     isPreloadingRef.current = true;
-    
+
     try {
       // Get images to preload
       const imagesToPreload = getImagesToPreload(
         images,
         currentIndex,
         adaptiveDistance,
-        prioritizeVisible
+        prioritizeVisible,
       );
 
       // Filter out already preloaded images
       const newImagesToPreload = imagesToPreload.filter(
-        img => !preloadQueueRef.current.has(img.url)
+        (img) => !preloadQueueRef.current.has(img.url),
       );
 
       if (newImagesToPreload.length === 0) {
@@ -96,11 +96,10 @@ export function useSmartImagePreload(
       });
 
       // Add to preload queue
-      newImagesToPreload.forEach(img => preloadQueueRef.current.add(img.url));
+      newImagesToPreload.forEach((img) => preloadQueueRef.current.add(img.url));
 
       // Preload in batches to avoid overwhelming the network
       await preloadInBatches(newImagesToPreload, maxConcurrent);
-
     } catch (error) {
       console.warn("Smart preload failed:", error);
       trackEvent("image_preload_failed", {
@@ -125,7 +124,7 @@ export function useSmartImagePreload(
   // Preload images in batches to control network load
   const preloadInBatches = async (imagesToPreload: PreloadableImage[], batchSize: number) => {
     const batches = chunkArray(imagesToPreload, batchSize);
-    
+
     for (const batch of batches) {
       const batchPromises = batch.map(async (img) => {
         try {
@@ -141,24 +140,30 @@ export function useSmartImagePreload(
       });
 
       await Promise.allSettled(batchPromises);
-      
+
       // Small delay between batches to avoid overwhelming the network
       if (batches.indexOf(batch) < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
     }
   };
 
   // Get quality setting based on priority
-  const getQualityForPriority = (priority: "high" | "medium" | "low"): "high" | "medium" | "low" => {
+  const getQualityForPriority = (
+    priority: "high" | "medium" | "low",
+  ): "high" | "medium" | "low" => {
     if (deviceProfile.connectionType === "slow") return "low";
     if (audioSettings.shouldReduceQuality) return "low";
-    
+
     switch (priority) {
-      case "high": return deviceProfile.maxImageQuality;
-      case "medium": return deviceProfile.maxImageQuality === "high" ? "medium" : "low";
-      case "low": return "low";
-      default: return "medium";
+      case "high":
+        return deviceProfile.maxImageQuality;
+      case "medium":
+        return deviceProfile.maxImageQuality === "high" ? "medium" : "low";
+      case "low":
+        return "low";
+      default:
+        return "medium";
     }
   };
 
@@ -167,7 +172,7 @@ export function useSmartImagePreload(
     if (preloadTimeoutRef.current) {
       clearTimeout(preloadTimeoutRef.current);
     }
-    
+
     preloadTimeoutRef.current = setTimeout(() => {
       smartPreload();
     }, delayMs);
@@ -176,7 +181,7 @@ export function useSmartImagePreload(
   // Effect to trigger preload when current index changes
   useEffect(() => {
     triggerPreload();
-    
+
     return () => {
       if (preloadTimeoutRef.current) {
         clearTimeout(preloadTimeoutRef.current);
@@ -187,8 +192,8 @@ export function useSmartImagePreload(
   // Clean up preload queue when images change
   useEffect(() => {
     // Remove URLs that are no longer in the images array
-    const currentUrls = new Set(images.map(img => img.url));
-    preloadQueueRef.current.forEach(url => {
+    const currentUrls = new Set(images.map((img) => img.url));
+    preloadQueueRef.current.forEach((url) => {
       if (!currentUrls.has(url)) {
         preloadQueueRef.current.delete(url);
       }
@@ -196,20 +201,23 @@ export function useSmartImagePreload(
   }, [images]);
 
   // Manual preload trigger for specific images
-  const preloadSpecific = useCallback(async (urls: string[], priority: "high" | "medium" | "low" = "medium") => {
-    if (!shouldPreload()) return;
+  const preloadSpecific = useCallback(
+    async (urls: string[], priority: "high" | "medium" | "low" = "medium") => {
+      if (!shouldPreload()) return;
 
-    try {
-      await preloadImages(urls, {
-        priority,
-        quality: getQualityForPriority(priority),
-      });
-      
-      urls.forEach(url => preloadQueueRef.current.add(url));
-    } catch (error) {
-      console.warn("Manual preload failed:", error);
-    }
-  }, [shouldPreload, preloadImages]);
+      try {
+        await preloadImages(urls, {
+          priority,
+          quality: getQualityForPriority(priority),
+        });
+
+        urls.forEach((url) => preloadQueueRef.current.add(url));
+      } catch (error) {
+        console.warn("Manual preload failed:", error);
+      }
+    },
+    [shouldPreload, preloadImages],
+  );
 
   // Cleanup function
   const clearPreloadQueue = useCallback(() => {
@@ -232,10 +240,10 @@ function getImagesToPreload(
   images: PreloadableImage[],
   currentIndex: number,
   distance: number,
-  prioritizeVisible: boolean
+  prioritizeVisible: boolean,
 ): PreloadableImage[] {
   const result: PreloadableImage[] = [];
-  
+
   // Preload upcoming images
   for (let i = 1; i <= distance; i++) {
     const nextIndex = currentIndex + i;
@@ -248,7 +256,7 @@ function getImagesToPreload(
       });
     }
   }
-  
+
   // If prioritizing visible images, also preload previous images
   if (prioritizeVisible) {
     const prevIndex = currentIndex - 1;
@@ -260,7 +268,7 @@ function getImagesToPreload(
       });
     }
   }
-  
+
   return result;
 }
 

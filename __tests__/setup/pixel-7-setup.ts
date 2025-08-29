@@ -5,7 +5,8 @@
 
 // Pixel 7 specific configuration
 const PIXEL_7_CONFIG = {
-  userAgent: "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36",
+  userAgent:
+    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36",
   viewport: { width: 393, height: 852 },
   pixelRatio: 2.75,
   safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -130,15 +131,15 @@ CSS.supports = jest.fn((property: string, value?: string) => {
     "scroll-snap-type": true,
     "overscroll-behavior": true,
   };
-  
+
   if (value === undefined && property in androidSpecificSupport) {
     return androidSpecificSupport[property];
   }
-  
+
   if (typeof originalCSSSupports === "function") {
     return originalCSSSupports(property, value);
   }
-  
+
   return true; // Default to supported for modern Chrome
 });
 
@@ -167,7 +168,7 @@ Object.defineProperty(window, "matchMedia", {
           return false;
       }
     })();
-    
+
     return {
       matches,
       media: query,
@@ -302,7 +303,7 @@ Object.defineProperty(navigator, "mediaDevices", {
         groupId: "group1",
       },
       {
-        deviceId: "mic1", 
+        deviceId: "mic1",
         kind: "audioinput",
         label: "Pixel 7 Microphone",
         groupId: "group1",

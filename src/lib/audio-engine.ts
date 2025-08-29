@@ -194,12 +194,11 @@ export class AudioEngine {
           const item = this.appleMusicPlayer.nowPlayingItem;
           return {
             isPlaying:
-              this.appleMusicPlayer.playbackState === (globalThis as any).MusicKit?.PlaybackStates?.playing,
+              this.appleMusicPlayer.playbackState ===
+              (globalThis as any).MusicKit?.PlaybackStates?.playing,
             position: this.appleMusicPlayer.currentPlaybackTime ?? this.state.position,
             duration: (item?.playbackDuration ?? 0) / 1, // already in seconds in our state
-            currentTrack: item
-              ? { id: item.id, title: item.title, artist: item.artistName }
-              : null,
+            currentTrack: item ? { id: item.id, title: item.title, artist: item.artistName } : null,
           };
         }
         break;
@@ -533,7 +532,7 @@ export class AudioEngine {
    */
   async playTrack(track: AudioEngineTrack): Promise<boolean> {
     await this.ensureInitialized();
-    
+
     try {
       this.currentProvider = track.provider;
 
@@ -810,31 +809,31 @@ export class AudioEngine {
     this.batteryAwareSettings = settings;
     this.state.batteryOptimized = settings.shouldReduceQuality;
     this.state.currentQuality = settings.audioBitrate;
-    
+
     // Apply volume limit if specified
     if (settings.volumeLimit < 1.0 && this.state.volume > settings.volumeLimit) {
       this.setVolume(settings.volumeLimit);
     }
-    
+
     // Configure HTML audio element settings
     if (this.audioElement && this.currentProvider === "preview") {
       this.applyAudioElementOptimizations(settings);
     }
-    
+
     // Clear preloaded tracks if battery saving is enabled
     if (settings.shouldReduceQuality || !settings.preloadNext) {
       this.clearPreloadedTracks();
     }
-    
+
     this.listeners.stateChange?.(this.state);
   }
-  
+
   /**
    * Apply optimizations to HTML audio element
    */
   private applyAudioElementOptimizations(settings: BatteryAwareAudioSettings): void {
     if (!this.audioElement) return;
-    
+
     // Set preload behavior based on battery settings
     if (settings.shouldReduceQuality) {
       this.audioElement.preload = "none";
@@ -843,14 +842,14 @@ export class AudioEngine {
     } else {
       this.audioElement.preload = "metadata";
     }
-    
+
     // Adjust buffer size by controlling the audio element's loading strategy
     if (settings.bufferSize === "small") {
       // For small buffer, we'll load in smaller chunks
       this.audioElement.preload = "none";
     }
   }
-  
+
   /**
    * Preload next track based on battery settings
    */
@@ -858,13 +857,13 @@ export class AudioEngine {
     if (!this.batteryAwareSettings?.preloadNext || this.batteryAwareSettings.shouldReduceQuality) {
       return; // Skip preloading to save battery
     }
-    
+
     if (track.provider === "preview" && track.preview_url) {
       const audio = new Audio();
       audio.preload = "metadata";
       audio.src = this.getOptimizedAudioUrl(track.preview_url);
       this.preloadedTracks.set(track.id, audio);
-      
+
       // Limit number of preloaded tracks to manage memory
       if (this.preloadedTracks.size > 3) {
         const oldestKey = this.preloadedTracks.keys().next().value;
@@ -878,30 +877,30 @@ export class AudioEngine {
       }
     }
   }
-  
+
   /**
    * Get optimized audio URL based on current quality settings
    */
   private getOptimizedAudioUrl(originalUrl: string): string {
     if (!this.batteryAwareSettings) return originalUrl;
-    
+
     // For preview URLs, we might modify quality parameters if the service supports it
     try {
       const url = new URL(originalUrl);
-      
+
       // Add quality parameters based on battery settings
       if (this.batteryAwareSettings.audioBitrate === "low") {
         url.searchParams.set("bitrate", "128");
       } else if (this.batteryAwareSettings.audioBitrate === "medium") {
         url.searchParams.set("bitrate", "256");
       }
-      
+
       return url.toString();
     } catch {
       return originalUrl;
     }
   }
-  
+
   /**
    * Clear preloaded tracks to free memory
    */
@@ -911,7 +910,7 @@ export class AudioEngine {
     });
     this.preloadedTracks.clear();
   }
-  
+
   /**
    * Get battery optimization status
    */
@@ -967,5 +966,5 @@ export const getAudioEngine = (): AudioEngine => {
 export const audioEngine = {
   get instance() {
     return getAudioEngine();
-  }
+  },
 };

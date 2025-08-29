@@ -84,17 +84,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error(`Error processing webhook ${event.type}:`, error);
-    
+
     trackEvent("stripe_webhook_processing_failed", {
       event_type: event.type,
       event_id: event.id,
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 }
 
@@ -143,7 +140,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       currency: session.currency,
       is_subscription: session.mode === "subscription",
     });
-
   } catch (error) {
     console.error("Error handling checkout session completed:", error);
     throw error;
@@ -154,7 +150,9 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   try {
     if (!(invoice as any).subscription) return;
 
-    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+    const subscription = await stripe.subscriptions.retrieve(
+      (invoice as any).subscription as string,
+    );
     const userId = subscription.metadata?.userId;
 
     if (!userId) {
@@ -164,7 +162,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
     // Find existing subscription record
     const activeSubscription = await firebasePurchaseService.getUserActiveSubscription(userId);
-    
+
     if (activeSubscription) {
       // Update subscription period for renewal
       const currentPeriodStart = new Date((subscription as any).current_period_start * 1000);
@@ -190,7 +188,6 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       currency: invoice.currency,
       billing_reason: invoice.billing_reason,
     });
-
   } catch (error) {
     console.error("Error handling invoice payment succeeded:", error);
     throw error;
@@ -201,17 +198,19 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   try {
     if (!(invoice as any).subscription) return;
 
-    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+    const subscription = await stripe.subscriptions.retrieve(
+      (invoice as any).subscription as string,
+    );
     const userId = subscription.metadata?.userId;
 
     if (!userId) return;
 
     const activeSubscription = await firebasePurchaseService.getUserActiveSubscription(userId);
-    
+
     if (activeSubscription) {
       // Update subscription status to grace period or on hold
       const newStatus = subscription.status === "past_due" ? "grace_period" : "on_hold";
-      
+
       await firebasePurchaseService.saveSubscriptionRecord({
         ...activeSubscription,
         status: newStatus,
@@ -225,7 +224,6 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       currency: invoice.currency,
       attempt_count: invoice.attempt_count,
     });
-
   } catch (error) {
     console.error("Error handling invoice payment failed:", error);
     throw error;
@@ -246,7 +244,6 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       current_period_start: (subscription as any).current_period_start,
       current_period_end: (subscription as any).current_period_end,
     });
-
   } catch (error) {
     console.error("Error handling subscription created:", error);
     throw error;
@@ -259,10 +256,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     if (!userId) return;
 
     const activeSubscription = await firebasePurchaseService.getUserActiveSubscription(userId);
-    
+
     if (activeSubscription) {
       let newStatus: "active" | "cancelled" | "expired" | "grace_period" | "on_hold";
-      
+
       switch (subscription.status) {
         case "active":
           newStatus = "active";
@@ -295,7 +292,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       status: subscription.status,
       cancel_at_period_end: subscription.cancel_at_period_end,
     });
-
   } catch (error) {
     console.error("Error handling subscription updated:", error);
     throw error;
@@ -308,7 +304,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     if (!userId) return;
 
     const activeSubscription = await firebasePurchaseService.getUserActiveSubscription(userId);
-    
+
     if (activeSubscription) {
       await firebasePurchaseService.saveSubscriptionRecord({
         ...activeSubscription,
@@ -321,7 +317,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       subscription_id: subscription.id,
       ended_at: subscription.ended_at,
     });
-
   } catch (error) {
     console.error("Error handling subscription deleted:", error);
     throw error;
@@ -339,11 +334,10 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
       user_id: userId,
       subscription_id: subscription.id,
       trial_end: subscription.trial_end,
-      days_until_end: subscription.trial_end 
+      days_until_end: subscription.trial_end
         ? Math.ceil((subscription.trial_end * 1000 - Date.now()) / (1000 * 60 * 60 * 24))
         : 0,
     });
-
   } catch (error) {
     console.error("Error handling trial will end:", error);
     throw error;
@@ -354,19 +348,15 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   try {
     // Update purchase record status if it exists
     const purchaseRecords = await firebasePurchaseService.getUserPurchases(
-      paymentIntent.metadata?.userId || ""
-    );
-    
-    const matchingPurchase = purchaseRecords.find(
-      p => p.transactionId === paymentIntent.id
+      paymentIntent.metadata?.userId || "",
     );
 
+    const matchingPurchase = purchaseRecords.find((p) => p.transactionId === paymentIntent.id);
+
     if (matchingPurchase) {
-      await firebasePurchaseService.updatePurchaseStatus(
-        matchingPurchase.id!,
-        "completed",
-        { paymentIntentSucceeded: true }
-      );
+      await firebasePurchaseService.updatePurchaseStatus(matchingPurchase.id!, "completed", {
+        paymentIntentSucceeded: true,
+      });
     }
 
     trackEvent("payment_intent_succeeded", {
@@ -375,7 +365,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       amount: paymentIntent.amount / 100,
       currency: paymentIntent.currency,
     });
-
   } catch (error) {
     console.error("Error handling payment intent succeeded:", error);
     throw error;
@@ -386,22 +375,16 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   try {
     // Update purchase record status if it exists
     const purchaseRecords = await firebasePurchaseService.getUserPurchases(
-      paymentIntent.metadata?.userId || ""
-    );
-    
-    const matchingPurchase = purchaseRecords.find(
-      p => p.transactionId === paymentIntent.id
+      paymentIntent.metadata?.userId || "",
     );
 
+    const matchingPurchase = purchaseRecords.find((p) => p.transactionId === paymentIntent.id);
+
     if (matchingPurchase) {
-      await firebasePurchaseService.updatePurchaseStatus(
-        matchingPurchase.id!,
-        "failed",
-        { 
-          paymentIntentFailed: true,
-          lastPaymentError: paymentIntent.last_payment_error?.message 
-        }
-      );
+      await firebasePurchaseService.updatePurchaseStatus(matchingPurchase.id!, "failed", {
+        paymentIntentFailed: true,
+        lastPaymentError: paymentIntent.last_payment_error?.message,
+      });
     }
 
     trackEvent("payment_intent_failed", {
@@ -412,7 +395,6 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       error_code: paymentIntent.last_payment_error?.code,
       error_message: paymentIntent.last_payment_error?.message,
     });
-
   } catch (error) {
     console.error("Error handling payment intent failed:", error);
     throw error;
@@ -426,23 +408,21 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
 
     // Find and update the purchase record
     const purchaseRecords = await firebasePurchaseService.getUserPurchases(
-      charge.metadata?.userId || ""
+      charge.metadata?.userId || "",
     );
-    
-    const matchingPurchase = purchaseRecords.find(
-      p => p.transactionId === paymentIntent
-    );
+
+    const matchingPurchase = purchaseRecords.find((p) => p.transactionId === paymentIntent);
 
     if (matchingPurchase) {
       await firebasePurchaseService.updatePurchaseStatus(
         matchingPurchase.id!,
         "refunded", // Treat dispute as refunded for now
-        { 
+        {
           disputeCreated: true,
           disputeId: dispute.id,
           disputeReason: dispute.reason,
           disputeAmount: dispute.amount / 100,
-        }
+        },
       );
     }
 
@@ -454,7 +434,6 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
       currency: dispute.currency,
       reason: dispute.reason,
     });
-
   } catch (error) {
     console.error("Error handling charge dispute created:", error);
     throw error;
@@ -465,7 +444,7 @@ async function createSubscriptionRecord(
   userId: string,
   purchaseRecordId: string,
   productId: string,
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ) {
   const billingCycle = productId.includes("yearly") ? "yearly" : "monthly";
   const tier = productId.includes("premium") ? "premium" : "freemium";
@@ -487,7 +466,7 @@ async function createSubscriptionRecord(
 
 function calculateExpiryTime(productId: string): Date {
   const now = new Date();
-  
+
   if (productId.includes("yearly")) {
     return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
   } else {

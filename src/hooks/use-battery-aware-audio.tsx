@@ -50,7 +50,7 @@ export function useBatteryAwareAudio() {
     isCriticalBattery: false,
     isSupported: false,
   });
-  
+
   const [audioSettings, setAudioSettings] = useState<BatteryAwareAudioSettings>({
     audioBitrate: "high",
     bufferSize: "large",
@@ -66,12 +66,12 @@ export function useBatteryAwareAudio() {
   // Battery status monitoring
   useEffect(() => {
     let battery: BatteryManager | null = null;
-    
+
     const updateBatteryStatus = (batteryManager: BatteryManager) => {
       const level = batteryManager.level;
       const isLowBattery = level <= 0.2; // 20% or below
       const isCriticalBattery = level <= 0.1; // 10% or below
-      
+
       const newStatus: BatteryStatus = {
         level,
         charging: batteryManager.charging,
@@ -81,9 +81,9 @@ export function useBatteryAwareAudio() {
         isCriticalBattery,
         isSupported: true,
       };
-      
+
       setBatteryStatus(newStatus);
-      
+
       // Track battery changes for analytics
       trackEvent("battery_status_change", {
         battery_level: Math.round(level * 100),
@@ -99,7 +99,7 @@ export function useBatteryAwareAudio() {
         if (nav.getBattery) {
           battery = await nav.getBattery();
           updateBatteryStatus(battery);
-          
+
           // Set up event listeners
           const handleBatteryChange = () => updateBatteryStatus(battery!);
           battery.addEventListener("chargingchange", handleBatteryChange);
@@ -126,21 +126,20 @@ export function useBatteryAwareAudio() {
 
   // Calculate adaptive audio settings based on battery and device performance
   useEffect(() => {
-    const newSettings = calculateAdaptiveAudioSettings(
-      batteryStatus,
-      deviceProfile,
-      audioSettings
-    );
-    
+    const newSettings = calculateAdaptiveAudioSettings(batteryStatus, deviceProfile, audioSettings);
+
     if (settingsChanged(audioSettings, newSettings)) {
       setAudioSettings(newSettings);
-      
+
       // Track audio quality adjustments
       trackEvent("audio_quality_adjusted", {
-        reason: batteryStatus.isCriticalBattery ? "critical_battery" 
-               : batteryStatus.isLowBattery ? "low_battery"
-               : deviceProfile.isLowEndDevice ? "low_end_device"
-               : "optimization",
+        reason: batteryStatus.isCriticalBattery
+          ? "critical_battery"
+          : batteryStatus.isLowBattery
+            ? "low_battery"
+            : deviceProfile.isLowEndDevice
+              ? "low_end_device"
+              : "optimization",
         old_bitrate: audioSettings.audioBitrate,
         new_bitrate: newSettings.audioBitrate,
         battery_level: Math.round(batteryStatus.level * 100),
@@ -163,9 +162,9 @@ export function useBatteryAwareAudio() {
       volumeLimit: 0.7,
       shouldReduceQuality: true,
     };
-    
+
     setAudioSettings(batterySaveSettings);
-    
+
     trackEvent("battery_save_mode_enabled", {
       battery_level: Math.round(batteryStatus.level * 100),
       manual_activation: true,
@@ -177,11 +176,11 @@ export function useBatteryAwareAudio() {
     const normalSettings = calculateAdaptiveAudioSettings(
       { ...batteryStatus, isLowBattery: false, isCriticalBattery: false },
       deviceProfile,
-      audioSettings
+      audioSettings,
     );
-    
+
     setAudioSettings({ ...normalSettings, autoSaveMode: false });
-    
+
     trackEvent("battery_save_mode_disabled", {
       battery_level: Math.round(batteryStatus.level * 100),
       manual_deactivation: true,
@@ -211,7 +210,7 @@ export function useBatteryAwareAudio() {
 function calculateAdaptiveAudioSettings(
   batteryStatus: BatteryStatus,
   deviceProfile: any,
-  currentSettings: BatteryAwareAudioSettings
+  currentSettings: BatteryAwareAudioSettings,
 ): BatteryAwareAudioSettings {
   // Start with high-quality defaults
   let settings: BatteryAwareAudioSettings = {
@@ -279,7 +278,7 @@ function calculateAdaptiveAudioSettings(
 
 function settingsChanged(
   oldSettings: BatteryAwareAudioSettings,
-  newSettings: BatteryAwareAudioSettings
+  newSettings: BatteryAwareAudioSettings,
 ): boolean {
   return (
     oldSettings.audioBitrate !== newSettings.audioBitrate ||

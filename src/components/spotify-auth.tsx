@@ -44,7 +44,7 @@ export function SpotifyAuth() {
             Connect Spotify Account
           </Button>
           <p className="text-xs text-white/50 mt-3 text-center">
-            We'll redirect you to Spotify to authorize access
+            We&apos;ll redirect you to Spotify to authorize access
           </p>
         </CardContent>
       </Card>

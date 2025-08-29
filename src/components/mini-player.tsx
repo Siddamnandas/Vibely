@@ -6,16 +6,13 @@ import { usePlayback } from "@/context/playback-context";
 import { useRegen } from "@/context/regen-context";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { 
-  mobileOrientationService,
-  OrientationState 
-} from "@/lib/mobile-orientation-service";
+import { mobileOrientationService, OrientationState } from "@/lib/mobile-orientation-service";
 
 export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
   const { current, isPlaying, togglePlay } = usePlayback();
   const { jobs } = useRegen();
   const hasActiveRegen = Object.values(jobs || {}).some((j) => j.status === "running");
-  
+
   // Initialize with default state to prevent hydration mismatch
   const [orientationState, setOrientationState] = useState<OrientationState>({
     orientation: "portrait",
@@ -25,7 +22,7 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
     screenHeight: 812,
     availableWidth: 375,
     availableHeight: 812,
-    safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 }
+    safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
   });
   const [isClient, setIsClient] = useState(false);
 
@@ -72,7 +69,7 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
     if (!isClient || typeof window === "undefined") return;
     const root = document.documentElement;
     const orientationCSS = mobileOrientationService.getOrientationCSS();
-    
+
     Object.entries(orientationCSS).forEach(([property, value]) => {
       root.style.setProperty(property, value);
     });
@@ -82,11 +79,13 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
 
   // Use consistent default values during SSR and initial client render to prevent hydration mismatch
   const isLandscape = isClient && orientationState.orientation === "landscape";
-  const optimalSize = isClient ? mobileOrientationService.getOptimalMiniPlayerSize() : {
-    width: 343,
-    height: 68,
-    iconSize: 44
-  };
+  const optimalSize = isClient
+    ? mobileOrientationService.getOptimalMiniPlayerSize()
+    : {
+        width: 343,
+        height: 68,
+        iconSize: 44,
+      };
 
   return (
     <AnimatePresence>
@@ -98,7 +97,7 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
         className={cn(
           "fixed z-[58]",
           // Use consistent positioning during SSR to prevent hydration mismatch
-          !isClient ? "left-4 right-4" : (isLandscape ? "left-3 right-3" : "left-4 right-4")
+          !isClient ? "left-4 right-4" : isLandscape ? "left-3 right-3" : "left-4 right-4",
         )}
         // Mini Player offset derives from CSS vars to avoid hardcoded spacing. Safe area included.
         style={{
@@ -122,9 +121,9 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
             "backdrop-blur-xl border border-white/10 shadow-2xl cursor-pointer transition-all duration-200 flex items-center justify-center bg-black/90 hover:bg-black/95",
             isPlaying && "mini--playing",
             // Orientation-specific styling
-            isLandscape ? "rounded-2xl" : "rounded-2xl"
+            isLandscape ? "rounded-2xl" : "rounded-2xl",
           )}
-          style={{ 
+          style={{
             height: `var(--mini-height, ${optimalSize.height}px)`,
             borderRadius: `var(--mini-border-radius, 20px)`, // Use consistent default
           }}
@@ -139,35 +138,31 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
             aria-label={isPlaying ? "Pause" : "Play"}
             role="button"
             className="bg-white text-black rounded-full flex items-center justify-center hover:bg-white/90 transition-colors relative"
-            style={{ 
-              width: `var(--mini-icon, ${optimalSize.iconSize}px)`, 
-              height: `var(--mini-icon, ${optimalSize.iconSize}px)` 
+            style={{
+              width: `var(--mini-icon, ${optimalSize.iconSize}px)`,
+              height: `var(--mini-icon, ${optimalSize.iconSize}px)`,
             }}
           >
-            {isPlaying ? (
-              <Pause size={18} />
-            ) : (
-              <Play size={18} />
-            )}
+            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
 
             {hasActiveRegen && (
-              <div 
-                className="absolute" 
-                style={{ 
-                  top: "-6px", 
-                  right: "-6px" 
+              <div
+                className="absolute"
+                style={{
+                  top: "-6px",
+                  right: "-6px",
                 }}
               >
                 <span className="relative inline-flex">
-                  <span 
-                    className="absolute inline-flex rounded-full bg-[#9FFFA2]/70 opacity-75 animate-ping" 
+                  <span
+                    className="absolute inline-flex rounded-full bg-[#9FFFA2]/70 opacity-75 animate-ping"
                     style={{
                       width: "12px",
                       height: "12px",
                     }}
                   />
-                  <span 
-                    className="relative inline-flex rounded-full bg-[#9FFFA2] shadow-[0_0_0_1px_rgba(255,255,255,0.25)]" 
+                  <span
+                    className="relative inline-flex rounded-full bg-[#9FFFA2] shadow-[0_0_0_1px_rgba(255,255,255,0.25)]"
                     style={{
                       width: "12px",
                       height: "12px",

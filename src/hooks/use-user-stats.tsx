@@ -36,11 +36,11 @@ function getDefaultStats(): UserStats {
 
 function loadStatsFromStorage(): UserStats {
   if (typeof window === "undefined") return getDefaultStats();
-  
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return getDefaultStats();
-    
+
     const parsed = JSON.parse(stored);
     return {
       ...getDefaultStats(),
@@ -55,7 +55,7 @@ function loadStatsFromStorage(): UserStats {
 
 function saveStatsToStorage(stats: UserStats): void {
   if (typeof window === "undefined") return;
-  
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
   } catch (error) {
@@ -73,7 +73,7 @@ export function useUserStats() {
 
   // Load stats on mount
   useEffect(() => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       stats: loadStatsFromStorage(),
       isLoading: false,
@@ -82,31 +82,31 @@ export function useUserStats() {
 
   // Increment cover count when a new cover is generated
   const incrementCoverCount = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
-      
+
       // Check if we need to reset monthly count
       let coversThisMonth = prev.stats.coversThisMonth;
       if (prev.stats.lastGeneratedAt) {
         const lastMonth = prev.stats.lastGeneratedAt.getMonth();
         const lastYear = prev.stats.lastGeneratedAt.getFullYear();
-        
+
         if (currentMonth !== lastMonth || currentYear !== lastYear) {
           coversThisMonth = 0;
         }
       }
-      
+
       const newStats = {
         ...prev.stats,
         coversCreated: prev.stats.coversCreated + 1,
         coversThisMonth: coversThisMonth + 1,
         lastGeneratedAt: now,
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -116,18 +116,19 @@ export function useUserStats() {
 
   // Update match rate based on user satisfaction
   const updateMatchRate = useCallback((satisfaction: number) => {
-    setState(prev => {
+    setState((prev) => {
       // Simple weighted average with previous match rate
       const currentWeight = 0.8;
-      const newMatchRate = (prev.stats.matchRate * currentWeight) + (satisfaction * (1 - currentWeight));
-      
+      const newMatchRate =
+        prev.stats.matchRate * currentWeight + satisfaction * (1 - currentWeight);
+
       const newStats = {
         ...prev.stats,
         matchRate: Math.min(100, Math.max(0, newMatchRate)),
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -137,14 +138,14 @@ export function useUserStats() {
 
   // Increment view count when covers are viewed/shared
   const incrementViewCount = useCallback((count: number = 1) => {
-    setState(prev => {
+    setState((prev) => {
       const newStats = {
         ...prev.stats,
         totalViews: prev.stats.totalViews + count,
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -154,14 +155,14 @@ export function useUserStats() {
 
   // Update favorite genres based on user's music data
   const updateFavoriteGenres = useCallback((genres: string[]) => {
-    setState(prev => {
+    setState((prev) => {
       const newStats = {
         ...prev.stats,
         favoriteGenres: genres.slice(0, 3), // Keep top 3 genres
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -171,14 +172,14 @@ export function useUserStats() {
 
   // Update listening hours from music service data
   const updateListeningHours = useCallback((hours: number) => {
-    setState(prev => {
+    setState((prev) => {
       const newStats = {
         ...prev.stats,
         topListeningHours: hours,
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -188,21 +189,23 @@ export function useUserStats() {
 
   // Calculate streak days based on generation activity
   const updateStreak = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       let streakDays = prev.stats.streakDays;
-      
+
       if (prev.stats.lastGeneratedAt) {
         const lastGenerated = new Date(
           prev.stats.lastGeneratedAt.getFullYear(),
           prev.stats.lastGeneratedAt.getMonth(),
-          prev.stats.lastGeneratedAt.getDate()
+          prev.stats.lastGeneratedAt.getDate(),
         );
-        
-        const diffDays = Math.floor((today.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60 * 24));
-        
+
+        const diffDays = Math.floor(
+          (today.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
         if (diffDays === 1) {
           // Consecutive day
           streakDays += 1;
@@ -215,14 +218,14 @@ export function useUserStats() {
         // First generation
         streakDays = 1;
       }
-      
+
       const newStats = {
         ...prev.stats,
         streakDays,
       };
-      
+
       saveStatsToStorage(newStats);
-      
+
       return {
         ...prev,
         stats: newStats,
@@ -234,8 +237,8 @@ export function useUserStats() {
   const resetStats = useCallback(() => {
     const defaultStats = getDefaultStats();
     saveStatsToStorage(defaultStats);
-    
-    setState(prev => ({
+
+    setState((prev) => ({
       ...prev,
       stats: defaultStats,
     }));

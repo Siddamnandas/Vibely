@@ -61,7 +61,10 @@ const simulateDeviceEnvironment = (platform: "iOS" | "Android", device: string) 
   // Mock viewport
   Object.defineProperty(window, "innerWidth", { value: config.viewport.width, writable: true });
   Object.defineProperty(window, "innerHeight", { value: config.viewport.height, writable: true });
-  Object.defineProperty(window, "devicePixelRatio", { value: config.pixelRatio, configurable: true });
+  Object.defineProperty(window, "devicePixelRatio", {
+    value: config.pixelRatio,
+    configurable: true,
+  });
 };
 
 describe("Cross-Platform Integration Tests", () => {
@@ -82,7 +85,7 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("detects platform and device correctly", () => {
       const deviceInfo = deviceCompatibilityService.getDeviceInfo();
-      
+
       expect(deviceInfo.platform).toBe(platform);
       expect(deviceInfo.isMobile).toBe(true);
       expect(deviceInfo.isTablet).toBe(device.includes("iPad"));
@@ -90,13 +93,13 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("mobile detection hook works correctly", () => {
       const { result } = renderHook(() => useIsMobile());
-      
+
       expect(result.current).toBe(true);
     });
 
     test("PWA features are supported appropriately", () => {
       const pwaSupport = deviceCompatibilityService.checkPWASupport();
-      
+
       if (platform === "iOS") {
         expect(pwaSupport.canInstall).toBe(true);
       } else if (platform === "Android") {
@@ -107,22 +110,22 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("service worker registration works", async () => {
       const swSupport = deviceCompatibilityService.checkServiceWorkerSupport();
-      
+
       expect(swSupport.registration).toBeDefined();
       expect(swSupport.caching).toBeDefined();
-      
+
       // Mock service worker registration
       const mockRegistration = {
         update: jest.fn(),
         unregister: jest.fn(),
         active: { postMessage: jest.fn() },
       };
-      
+
       (navigator.serviceWorker as any) = {
         register: jest.fn().mockResolvedValue(mockRegistration),
         ready: Promise.resolve(mockRegistration),
       };
-      
+
       // Service worker should be mockable
       expect(navigator.serviceWorker.register).toBeDefined();
     });
@@ -130,13 +133,13 @@ describe("Cross-Platform Integration Tests", () => {
     test("handles orientation changes", async () => {
       const orientationCallback = jest.fn();
       mobileOrientationService.onOrientationChange(orientationCallback);
-      
+
       // Simulate orientation change
       Object.defineProperty(window.screen, "orientation", {
         value: { type: "landscape-primary", angle: 90 },
         configurable: true,
       });
-      
+
       // Mock orientation change dimensions
       Object.defineProperty(window, "innerWidth", {
         value: device.includes("iPad") ? 1180 : 844,
@@ -146,9 +149,9 @@ describe("Cross-Platform Integration Tests", () => {
         value: device.includes("iPad") ? 820 : 390,
         writable: true,
       });
-      
+
       window.dispatchEvent(new Event("orientationchange"));
-      
+
       await waitFor(() => {
         expect(orientationCallback).toHaveBeenCalled();
       });
@@ -156,12 +159,12 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("API support is consistent with platform capabilities", () => {
       const apiSupport = deviceCompatibilityService.checkAPISupport();
-      
+
       // Core APIs should be supported on all modern devices
       expect(apiSupport.fetch).toBe(true);
       expect(apiSupport.localStorage).toBe(true);
       expect(apiSupport.websockets).toBe(true);
-      
+
       // Platform-specific APIs
       if (platform === "iOS") {
         expect(apiSupport.notifications).toBe(true);
@@ -174,11 +177,11 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("performance profile adapts to device capabilities", () => {
       const performanceProfile = deviceCompatibilityService.getPerformanceProfile();
-      
+
       expect(performanceProfile.tier).toMatch(/^(low|mid|high)$/);
       expect(performanceProfile.maxConcurrentRequests).toBeGreaterThan(0);
       expect(performanceProfile.recommendedImageQuality).toMatch(/^(low|medium|high)$/);
-      
+
       // High-end devices should get better settings
       if (device.includes("iPad") || device.includes("12") || device === "Pixel 7") {
         expect(performanceProfile.enableAdvancedFeatures).toBe(true);
@@ -187,11 +190,11 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("accessibility features are properly supported", () => {
       const a11ySupport = deviceCompatibilityService.checkAccessibilitySupport();
-      
+
       expect(a11ySupport.screenReader).toBe(true);
       expect(a11ySupport.focusManagement).toBe(true);
       expect(a11ySupport.colorContrast).toBeDefined();
-      
+
       // Platform-specific accessibility
       if (platform === "iOS") {
         expect(a11ySupport.voiceOver).toBe(true);
@@ -210,9 +213,9 @@ describe("Cross-Platform Integration Tests", () => {
         },
         configurable: true,
       });
-      
+
       const adaptations = deviceCompatibilityService.getNetworkAdaptations();
-      
+
       expect(adaptations.enablePreloading).toBe(true);
       expect(adaptations.highQualityImages).toBe(true);
       expect(adaptations.enableDataSaver).toBe(false);
@@ -220,11 +223,11 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("handles feature fallbacks gracefully", () => {
       const fallbacks = deviceCompatibilityService.getFallbackStrategies();
-      
+
       expect(fallbacks.animationFallback).toBeDefined();
       expect(fallbacks.fetchFallback).toBeDefined();
       expect(fallbacks.serviceWorkerFallback).toBeDefined();
-      
+
       // Should not throw errors when APIs are missing
       expect(() => {
         deviceCompatibilityService.getDegradationStrategy();
@@ -233,12 +236,12 @@ describe("Cross-Platform Integration Tests", () => {
 
     test("CSS features are supported appropriately for platform", () => {
       const cssSupport = deviceCompatibilityService.checkCSSSupport();
-      
+
       // Modern CSS should be supported
       expect(cssSupport.flexbox).toBe(true);
       expect(cssSupport.grid).toBe(true);
       expect(cssSupport.customProperties).toBe(true);
-      
+
       // Platform-specific CSS features
       if (platform === "iOS") {
         // iOS Safari might have different support levels
@@ -253,17 +256,17 @@ describe("Cross-Platform Integration Tests", () => {
   describe("Cross-Platform Consistency", () => {
     test("core functionality works identically across platforms", () => {
       const results: Record<string, any> = {};
-      
+
       testDevices.forEach(({ platform, device }) => {
         simulateDeviceEnvironment(platform, device);
-        
+
         results[`${platform}-${device}`] = {
           deviceInfo: deviceCompatibilityService.getDeviceInfo(),
           apiSupport: deviceCompatibilityService.checkAPISupport(),
           performanceProfile: deviceCompatibilityService.getPerformanceProfile(),
         };
       });
-      
+
       // All devices should support core features
       Object.values(results).forEach((result: any) => {
         expect(result.deviceInfo.isMobile).toBe(true);
@@ -276,13 +279,13 @@ describe("Cross-Platform Integration Tests", () => {
     test("responsive breakpoints work consistently", () => {
       testDevices.forEach(({ platform, device }) => {
         simulateDeviceEnvironment(platform, device);
-        
+
         const { result } = renderHook(() => useOrientation());
-        
+
         expect(result.current.orientation).toBe("portrait");
         expect(result.current.isLandscape).toBe(false);
         expect(result.current.isPortrait).toBe(true);
-        
+
         // All devices should provide optimal mini-player size
         const miniPlayerSize = result.current.getOptimalMiniPlayerSize();
         expect(miniPlayerSize.height).toBeGreaterThan(0);
@@ -293,16 +296,16 @@ describe("Cross-Platform Integration Tests", () => {
     test("touch interactions work consistently", () => {
       testDevices.forEach(({ platform, device }) => {
         simulateDeviceEnvironment(platform, device);
-        
+
         const element = document.createElement("div");
         const gestureCallbacks = {
           onTap: jest.fn(),
           onSwipeLeft: jest.fn(),
           onSwipeRight: jest.fn(),
         };
-        
+
         const cleanup = mobileGestureService.enableGestures(element, gestureCallbacks);
-        
+
         // Simulate consistent touch events
         const touchStart = new TouchEvent("touchstart", {
           touches: [{ clientX: 100, clientY: 100 } as Touch],
@@ -310,10 +313,10 @@ describe("Cross-Platform Integration Tests", () => {
         const touchEnd = new TouchEvent("touchend", {
           changedTouches: [{ clientX: 100, clientY: 100 } as Touch],
         });
-        
+
         element.dispatchEvent(touchStart);
         element.dispatchEvent(touchEnd);
-        
+
         expect(gestureCallbacks.onTap).toHaveBeenCalled();
         cleanup();
       });
@@ -324,16 +327,16 @@ describe("Cross-Platform Integration Tests", () => {
     test("service initialization time is acceptable", async () => {
       testDevices.forEach(({ platform, device }) => {
         simulateDeviceEnvironment(platform, device);
-        
+
         const startTime = performance.now();
-        
+
         // Initialize core services
         deviceCompatibilityService.getDeviceInfo();
         mobileOrientationService.forceRefresh();
-        
+
         const endTime = performance.now();
         const initTime = endTime - startTime;
-        
+
         // Should initialize quickly (under 50ms)
         expect(initTime).toBeLessThan(50);
       });
@@ -342,13 +345,13 @@ describe("Cross-Platform Integration Tests", () => {
     test("memory usage stays within acceptable bounds", () => {
       testDevices.forEach(({ platform, device }) => {
         simulateDeviceEnvironment(platform, device);
-        
+
         // Simulate multiple service calls
         for (let i = 0; i < 100; i++) {
           deviceCompatibilityService.getDeviceInfo();
           deviceCompatibilityService.checkAPISupport();
         }
-        
+
         // Should not create memory leaks (simplified check)
         expect(deviceCompatibilityService).toBeDefined();
       });

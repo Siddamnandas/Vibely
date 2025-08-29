@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
   // Safe handling for when subscription/plan might be undefined
   const [subscriptionData, setSubscriptionData] = useState<UserSubscription | null>(null);
-  
+
   useEffect(() => {
     const loadSubscription = async () => {
       try {
@@ -62,7 +62,7 @@ export default function ProfilePage() {
         // Set default subscription
         setSubscriptionData({
           plan: { tier: "freemium" },
-          coversUsedThisMonth: 0
+          coversUsedThisMonth: 0,
         });
       }
     };
@@ -229,7 +229,9 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Crown className={`${subscriptionData?.plan?.tier === "premium" ? "text-[#FFD36E]" : "text-white/50"}`} />
+                    <Crown
+                      className={`${subscriptionData?.plan?.tier === "premium" ? "text-[#FFD36E]" : "text-white/50"}`}
+                    />
                     Subscription
                   </div>
                   <Badge

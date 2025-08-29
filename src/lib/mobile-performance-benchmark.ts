@@ -3,7 +3,7 @@
  * Measures and analyzes performance metrics across different mobile devices
  */
 
-import { deviceCompatibilityService } from './device-compatibility-service';
+import { deviceCompatibilityService } from "./device-compatibility-service";
 
 export interface PerformanceMetrics {
   deviceInfo: {
@@ -72,7 +72,7 @@ export interface BenchmarkConfig {
   testRoutes: string[];
   testImages: string[];
   testInteractions: Array<{
-    type: 'tap' | 'swipe' | 'pinch' | 'scroll';
+    type: "tap" | "swipe" | "pinch" | "scroll";
     target: string;
     duration: number;
   }>;
@@ -98,15 +98,15 @@ class MobilePerformanceBenchmark {
    */
   async runBenchmark(config: BenchmarkConfig): Promise<PerformanceMetrics> {
     if (this.isRunning) {
-      throw new Error('Benchmark already running');
+      throw new Error("Benchmark already running");
     }
 
     this.isRunning = true;
     this.startTime = performance.now();
-    
+
     try {
-      console.log('🏁 Starting mobile performance benchmark...');
-      
+      console.log("🏁 Starting mobile performance benchmark...");
+
       // Initialize metrics
       this.metrics = {
         deviceInfo: this.getDeviceInfo(),
@@ -125,7 +125,7 @@ class MobilePerformanceBenchmark {
           garbageCollections: 0,
         },
         networkPerformance: {
-          connectionType: '',
+          connectionType: "",
           downloadSpeed: 0,
           latency: 0,
           resourceLoadTimes: {},
@@ -170,7 +170,7 @@ class MobilePerformanceBenchmark {
 
       // Check for failed benchmarks
       results.forEach((result, index) => {
-        if (result.status === 'rejected') {
+        if (result.status === "rejected") {
           console.warn(`Benchmark ${index} failed:`, result.reason);
         }
       });
@@ -181,9 +181,8 @@ class MobilePerformanceBenchmark {
       // Calculate final scores
       this.calculateScores();
 
-      console.log('✅ Performance benchmark completed');
+      console.log("✅ Performance benchmark completed");
       return this.metrics as PerformanceMetrics;
-
     } finally {
       this.stopPerformanceObservers();
       this.isRunning = false;
@@ -224,14 +223,14 @@ class MobilePerformanceBenchmark {
       const frameObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (entry.entryType === 'frame') {
+          if (entry.entryType === "frame") {
             this.updateRenderingMetrics(entry as any);
           }
         });
       });
-      
-      if ('frame' in PerformanceObserver.supportedEntryTypes) {
-        frameObserver.observe({ entryTypes: ['frame'] });
+
+      if ("frame" in PerformanceObserver.supportedEntryTypes) {
+        frameObserver.observe({ entryTypes: ["frame"] });
         this.observers.push(frameObserver);
       }
 
@@ -239,31 +238,30 @@ class MobilePerformanceBenchmark {
       const paintObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (entry.name === 'first-contentful-paint') {
+          if (entry.name === "first-contentful-paint") {
             this.metrics.loadTimes!.initialLoad = entry.startTime;
           }
         });
       });
-      
-      paintObserver.observe({ entryTypes: ['paint'] });
+
+      paintObserver.observe({ entryTypes: ["paint"] });
       this.observers.push(paintObserver);
 
       // Navigation observer
       const navObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (entry.entryType === 'navigation') {
+          if (entry.entryType === "navigation") {
             const navEntry = entry as PerformanceNavigationTiming;
             this.metrics.loadTimes!.initialLoad = navEntry.loadEventEnd - navEntry.fetchStart;
           }
         });
       });
-      
-      navObserver.observe({ entryTypes: ['navigation'] });
-      this.observers.push(navObserver);
 
+      navObserver.observe({ entryTypes: ["navigation"] });
+      this.observers.push(navObserver);
     } catch (error) {
-      console.warn('Failed to start some performance observers:', error);
+      console.warn("Failed to start some performance observers:", error);
     }
   }
 
@@ -271,11 +269,11 @@ class MobilePerformanceBenchmark {
    * Stop performance observers
    */
   private stopPerformanceObservers() {
-    this.observers.forEach(observer => {
+    this.observers.forEach((observer) => {
       try {
         observer.disconnect();
       } catch (error) {
-        console.warn('Failed to disconnect observer:', error);
+        console.warn("Failed to disconnect observer:", error);
       }
     });
     this.observers = [];
@@ -288,13 +286,13 @@ class MobilePerformanceBenchmark {
     if (!this.metrics.renderingPerformance) return;
 
     const frameTime = entry.duration || 16.67; // 60fps baseline
-    this.metrics.renderingPerformance.averageFrameTime = 
+    this.metrics.renderingPerformance.averageFrameTime =
       (this.metrics.renderingPerformance.averageFrameTime + frameTime) / 2;
-    
+
     if (frameTime > 16.67) {
       this.metrics.renderingPerformance.jankFrames++;
     }
-    
+
     this.metrics.renderingPerformance.frameRate = Math.round(1000 / frameTime);
   }
 
@@ -306,42 +304,38 @@ class MobilePerformanceBenchmark {
       let frameCount = 0;
       let totalFrameTime = 0;
       let jankFrames = 0;
-      
+
       const measureFrame = () => {
         const frameStart = performance.now();
-        
+
         // Simulate rendering work with error handling
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        
+
         try {
-          const ctx = canvas.getContext('2d');
-          
+          const ctx = canvas.getContext("2d");
+
           if (ctx) {
             // Draw complex shapes to stress test
             for (let i = 0; i < 100; i++) {
               ctx.fillStyle = `hsl(${Math.random() * 360}, 50%, 50%)`;
-              ctx.fillRect(
-                Math.random() * canvas.width,
-                Math.random() * canvas.height,
-                50, 50
-              );
+              ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 50, 50);
             }
           }
         } catch (error) {
           // Canvas not available in test environment
           console.error(error);
         }
-        
+
         const frameTime = performance.now() - frameStart;
         totalFrameTime += frameTime;
         frameCount++;
-        
+
         if (frameTime > 16.67) {
           jankFrames++;
         }
-        
+
         if (frameCount < config.iterations) {
           requestAnimationFrame(measureFrame);
         } else {
@@ -355,7 +349,7 @@ class MobilePerformanceBenchmark {
           resolve();
         }
       };
-      
+
       requestAnimationFrame(measureFrame);
     });
   }
@@ -367,36 +361,36 @@ class MobilePerformanceBenchmark {
     const initialMemory = this.getMemoryUsage();
     let peakMemory = initialMemory;
     let garbageCollections = 0;
-    
+
     // Create memory pressure
     const memoryStressTest = () => {
       const arrays: number[][] = [];
-      
+
       for (let i = 0; i < 1000; i++) {
         arrays.push(new Array(1000).fill(Math.random()));
       }
-      
+
       const currentMemory = this.getMemoryUsage();
       peakMemory = Math.max(peakMemory, currentMemory);
-      
+
       // Force garbage collection if available
       if ((window as any).gc) {
         (window as any).gc();
         garbageCollections++;
       }
-      
+
       // Clean up
       arrays.length = 0;
     };
-    
+
     return new Promise((resolve) => {
       let iterations = 0;
       const maxIterations = 10;
-      
+
       const runTest = () => {
         memoryStressTest();
         iterations++;
-        
+
         if (iterations < maxIterations) {
           setTimeout(runTest, 100);
         } else {
@@ -410,7 +404,7 @@ class MobilePerformanceBenchmark {
           resolve();
         }
       };
-      
+
       runTest();
     });
   }
@@ -419,7 +413,7 @@ class MobilePerformanceBenchmark {
    * Get current memory usage
    */
   private getMemoryUsage(): number {
-    if ('memory' in performance) {
+    if ("memory" in performance) {
       return (performance as any).memory.usedJSHeapSize || 0;
     }
     return 0;
@@ -430,19 +424,19 @@ class MobilePerformanceBenchmark {
    */
   private async benchmarkNetwork(config: BenchmarkConfig): Promise<void> {
     const connection = (navigator as any).connection;
-    const connectionType = connection?.effectiveType || 'unknown';
-    
+    const connectionType = connection?.effectiveType || "unknown";
+
     // Test resource loading
     const resourceLoadTimes: Record<string, number> = {};
-    
+
     for (const imageUrl of config.testImages) {
       const loadTime = await this.measureImageLoadTime(imageUrl);
       resourceLoadTimes[imageUrl] = loadTime;
     }
-    
+
     // Measure latency with a ping test
     const latency = await this.measureLatency();
-    
+
     this.metrics.networkPerformance = {
       connectionType,
       downloadSpeed: connection?.downlink || 0,
@@ -460,17 +454,17 @@ class MobilePerformanceBenchmark {
     return new Promise((resolve) => {
       const startTime = performance.now();
       const img = new Image();
-      
+
       img.onload = () => {
         resolve(performance.now() - startTime);
       };
-      
+
       img.onerror = () => {
         resolve(-1); // Error loading
       };
-      
+
       img.src = url;
-      
+
       // Timeout after 10 seconds
       setTimeout(() => resolve(-1), 10000);
     });
@@ -482,7 +476,7 @@ class MobilePerformanceBenchmark {
   private async measureLatency(): Promise<number> {
     try {
       const startTime = performance.now();
-      await fetch('/api/ping', { method: 'HEAD' });
+      await fetch("/api/ping", { method: "HEAD" });
       return performance.now() - startTime;
     } catch {
       return -1;
@@ -497,9 +491,9 @@ class MobilePerformanceBenchmark {
       let touchLatency = 0;
       let scrollPerformance = 0;
       let testCount = 0;
-      
+
       // Create test element
-      const testElement = document.createElement('div');
+      const testElement = document.createElement("div");
       testElement.style.cssText = `
         position: fixed;
         top: 50%;
@@ -511,16 +505,16 @@ class MobilePerformanceBenchmark {
         z-index: 9999;
       `;
       document.body.appendChild(testElement);
-      
+
       // Test touch latency
       const testTouch = () => {
         const startTime = performance.now();
-        
+
         const handler = () => {
           touchLatency += performance.now() - startTime;
           testCount++;
-          testElement.removeEventListener('touchstart', handler);
-          
+          testElement.removeEventListener("touchstart", handler);
+
           if (testCount < 5) {
             setTimeout(testTouch, 100);
           } else {
@@ -535,16 +529,16 @@ class MobilePerformanceBenchmark {
             resolve();
           }
         };
-        
-        testElement.addEventListener('touchstart', handler);
-        
+
+        testElement.addEventListener("touchstart", handler);
+
         // Simulate touch
-        const touchEvent = new TouchEvent('touchstart', {
+        const touchEvent = new TouchEvent("touchstart", {
           touches: [{ clientX: 50, clientY: 50 } as Touch],
         });
         testElement.dispatchEvent(touchEvent);
       };
-      
+
       testTouch();
     });
   }
@@ -555,10 +549,10 @@ class MobilePerformanceBenchmark {
   private async benchmarkLoadTimes(config: BenchmarkConfig): Promise<void> {
     // Component mount time
     const componentMountTime = await this.measureComponentMount();
-    
+
     // Route transition time (simulated)
     const routeTransitionTime = await this.measureRouteTransition();
-    
+
     this.metrics.loadTimes = {
       ...this.metrics.loadTimes!,
       componentMount: componentMountTime,
@@ -572,19 +566,19 @@ class MobilePerformanceBenchmark {
   private async measureComponentMount(): Promise<number> {
     return new Promise((resolve) => {
       const startTime = performance.now();
-      
+
       // Create and mount a complex component
-      const testComponent = document.createElement('div');
+      const testComponent = document.createElement("div");
       testComponent.innerHTML = `
         <div>
-          ${Array.from({ length: 100 }, (_, i) => 
-            `<div class="item-${i}">Item ${i}</div>`
-          ).join('')}
+          ${Array.from({ length: 100 }, (_, i) => `<div class="item-${i}">Item ${i}</div>`).join(
+            "",
+          )}
         </div>
       `;
-      
+
       document.body.appendChild(testComponent);
-      
+
       // Use requestAnimationFrame to measure after render
       requestAnimationFrame(() => {
         const mountTime = performance.now() - startTime;
@@ -600,11 +594,14 @@ class MobilePerformanceBenchmark {
   private async measureRouteTransition(): Promise<number> {
     return new Promise((resolve) => {
       const startTime = performance.now();
-      
+
       // Simulate route change work
-      setTimeout(() => {
-        resolve(performance.now() - startTime);
-      }, Math.random() * 100 + 50); // Random transition time
+      setTimeout(
+        () => {
+          resolve(performance.now() - startTime);
+        },
+        Math.random() * 100 + 50,
+      ); // Random transition time
     });
   }
 
@@ -614,43 +611,46 @@ class MobilePerformanceBenchmark {
   private async benchmarkBattery(config: BenchmarkConfig): Promise<void> {
     let cpuUsage = 0;
     let estimatedBatteryDrain = 0;
-    
+
     // CPU intensive task to measure impact
     const cpuIntensiveTask = () => {
       const startTime = performance.now();
-      
+
       // Simulate CPU work
       let result = 0;
       for (let i = 0; i < 1000000; i++) {
         result += Math.sqrt(i * Math.random());
       }
-      
+
       const duration = performance.now() - startTime;
       cpuUsage = duration;
-      
+
       // Estimate battery drain (very rough approximation)
       estimatedBatteryDrain = duration * 0.1; // Placeholder formula
     };
-    
+
     return new Promise((resolve) => {
       cpuIntensiveTask();
-      
+
       // Check battery API if available
-      if ('getBattery' in navigator) {
-        (navigator as any).getBattery().then((battery: any) => {
-          this.metrics.batteryImpact = {
-            cpuUsage,
-            estimatedBatteryDrain,
-            thermalState: 'normal', // Would need actual thermal API
-          };
-          resolve();
-        }).catch(() => {
-          this.metrics.batteryImpact = {
-            cpuUsage,
-            estimatedBatteryDrain,
-          };
-          resolve();
-        });
+      if ("getBattery" in navigator) {
+        (navigator as any)
+          .getBattery()
+          .then((battery: any) => {
+            this.metrics.batteryImpact = {
+              cpuUsage,
+              estimatedBatteryDrain,
+              thermalState: "normal", // Would need actual thermal API
+            };
+            resolve();
+          })
+          .catch(() => {
+            this.metrics.batteryImpact = {
+              cpuUsage,
+              estimatedBatteryDrain,
+            };
+            resolve();
+          });
       } else {
         this.metrics.batteryImpact = {
           cpuUsage,
@@ -666,41 +666,35 @@ class MobilePerformanceBenchmark {
    */
   private calculateScores() {
     const metrics = this.metrics as PerformanceMetrics;
-    
+
     // Rendering score (0-100)
-    const renderingScore = Math.min(100, Math.max(0, 
-      100 - (metrics.renderingPerformance.averageFrameTime - 16.67) * 2
-    ));
-    
+    const renderingScore = Math.min(
+      100,
+      Math.max(0, 100 - (metrics.renderingPerformance.averageFrameTime - 16.67) * 2),
+    );
+
     // Memory score (0-100)
-    const memoryScore = Math.min(100, Math.max(0,
-      100 - (metrics.memoryUsage.memoryLeaks / 1000000) * 10
-    ));
-    
-    // Network score (0-100)  
-    const networkScore = Math.min(100, Math.max(0,
-      100 - (metrics.networkPerformance.latency / 10)
-    ));
-    
+    const memoryScore = Math.min(
+      100,
+      Math.max(0, 100 - (metrics.memoryUsage.memoryLeaks / 1000000) * 10),
+    );
+
+    // Network score (0-100)
+    const networkScore = Math.min(100, Math.max(0, 100 - metrics.networkPerformance.latency / 10));
+
     // Interaction score (0-100)
-    const interactionScore = Math.min(100, Math.max(0,
-      100 - metrics.interactionMetrics.touchLatency
-    ));
-    
+    const interactionScore = Math.min(
+      100,
+      Math.max(0, 100 - metrics.interactionMetrics.touchLatency),
+    );
+
     // Battery score (0-100)
-    const batteryScore = Math.min(100, Math.max(0,
-      100 - (metrics.batteryImpact.cpuUsage / 100)
-    ));
-    
+    const batteryScore = Math.min(100, Math.max(0, 100 - metrics.batteryImpact.cpuUsage / 100));
+
     // Overall score
-    const overallScore = (
-      renderingScore +
-      memoryScore +
-      networkScore +
-      interactionScore +
-      batteryScore
-    ) / 5;
-    
+    const overallScore =
+      (renderingScore + memoryScore + networkScore + interactionScore + batteryScore) / 5;
+
     metrics.score = {
       overall: Math.round(overallScore),
       rendering: Math.round(renderingScore),

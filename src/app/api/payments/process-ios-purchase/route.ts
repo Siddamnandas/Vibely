@@ -37,7 +37,7 @@ const PRODUCT_CONFIG = {
     coverLimit: null,
   },
   "com.vibely.premium.yearly": {
-    vibelyId: "premium_yearly", 
+    vibelyId: "premium_yearly",
     type: "subscription",
     features: ["unlimited_covers", "premium_quality", "priority_support"],
     coverLimit: null,
@@ -52,21 +52,21 @@ const PRODUCT_CONFIG = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      transactionId, 
-      productId, 
-      transactionDate, 
+    const {
+      transactionId,
+      productId,
+      transactionDate,
       receiptData,
-      userId 
+      userId,
     }: ProcessPurchaseRequest = await request.json();
 
     if (!transactionId || !productId || !transactionDate || !receiptData) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Missing required fields: transactionId, productId, transactionDate, receiptData" 
+        {
+          success: false,
+          error: "Missing required fields: transactionId, productId, transactionDate, receiptData",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -74,26 +74,29 @@ export async function POST(request: NextRequest) {
     const productConfig = PRODUCT_CONFIG[productId as keyof typeof PRODUCT_CONFIG];
     if (!productConfig) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Unknown product ID: ${productId}` 
+        {
+          success: false,
+          error: `Unknown product ID: ${productId}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Re-validate the receipt to ensure it's still valid
-    const validationResponse = await fetch(`${request.nextUrl.origin}/api/payments/validate-ios-receipt`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const validationResponse = await fetch(
+      `${request.nextUrl.origin}/api/payments/validate-ios-receipt`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receiptData,
+          transactionId,
+          productId,
+        }),
       },
-      body: JSON.stringify({
-        receiptData,
-        transactionId,
-        productId,
-      }),
-    });
+    );
 
     const validation = await validationResponse.json();
     if (!validation.isValid) {
@@ -104,11 +107,11 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Receipt validation failed" 
+        {
+          success: false,
+          error: "Receipt validation failed",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -135,13 +138,13 @@ export async function POST(request: NextRequest) {
       purchaseResult = await processSubscriptionPurchase(
         validation.purchaseInfo,
         productConfig,
-        userId
+        userId,
       );
     } else if (productConfig.type === "consumable") {
       purchaseResult = await processConsumablePurchase(
         validation.purchaseInfo,
         productConfig,
-        userId
+        userId,
       );
     } else {
       throw new Error(`Unsupported product type: ${productConfig.type}`);
@@ -168,20 +171,19 @@ export async function POST(request: NextRequest) {
       },
       userBenefits: purchaseResult.userBenefits,
     });
-
   } catch (error) {
     console.error("iOS purchase processing error:", error);
-    
+
     trackEvent("ios_purchase_processing_error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Internal server error during purchase processing" 
+      {
+        success: false,
+        error: "Internal server error during purchase processing",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -192,9 +194,8 @@ export async function POST(request: NextRequest) {
 async function processSubscriptionPurchase(
   purchaseInfo: any,
   productConfig: any,
-  userId?: string
+  userId?: string,
 ): Promise<{ purchaseId: string; userBenefits: any }> {
-  
   const subscriptionData: SubscriptionData = {
     userId: userId || "anonymous",
     platform: "ios",
@@ -231,9 +232,8 @@ async function processSubscriptionPurchase(
 async function processConsumablePurchase(
   purchaseInfo: any,
   productConfig: any,
-  userId?: string
+  userId?: string,
 ): Promise<{ purchaseId: string; userBenefits: any }> {
-  
   // Store the purchase record
   const purchaseRecord = {
     userId: userId || "anonymous",
@@ -244,7 +244,8 @@ async function processConsumablePurchase(
     type: "consumable" as const,
     status: "completed" as const,
     purchaseDate: purchaseInfo.purchaseDate,
-    environment: purchaseInfo.environment === "Sandbox" ? "sandbox" as const : "production" as const,
+    environment:
+      purchaseInfo.environment === "Sandbox" ? ("sandbox" as const) : ("production" as const),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -277,7 +278,7 @@ async function findExistingPurchase(transactionId: string): Promise<{ id: string
       return { id: querySnapshot.docs[0].id };
     }
     */
-    
+
     // For now, return null (no duplicate checking)
     // TODO: Implement actual database lookup
     return null;
@@ -290,7 +291,10 @@ async function findExistingPurchase(transactionId: string): Promise<{ id: string
 /**
  * Store subscription in database
  */
-async function storeSubscription(subscriptionData: SubscriptionData, productConfig: any): Promise<string> {
+async function storeSubscription(
+  subscriptionData: SubscriptionData,
+  productConfig: any,
+): Promise<string> {
   try {
     // Use the subscription manager instead of localStorage
     const subscriptionId = await subscriptionManager.saveSubscription({
@@ -305,7 +309,8 @@ async function storeSubscription(subscriptionData: SubscriptionData, productConf
       purchaseDate: subscriptionData.purchaseDate,
       startDate: subscriptionData.purchaseDate,
       currentPeriodStart: subscriptionData.purchaseDate,
-      currentPeriodEnd: subscriptionData.expirationDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      currentPeriodEnd:
+        subscriptionData.expirationDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       expirationDate: subscriptionData.expirationDate,
       isAutoRenewing: subscriptionData.isAutoRenewing,
       coversUsedThisMonth: 0,
@@ -313,7 +318,7 @@ async function storeSubscription(subscriptionData: SubscriptionData, productConf
       environment: subscriptionData.environment as "sandbox" | "production",
       receiptData: subscriptionData.receiptData,
     });
-    
+
     return subscriptionId;
   } catch (error) {
     console.error("Error storing subscription:", error);
@@ -341,7 +346,7 @@ async function storePurchase(purchaseRecord: any, productConfig: any): Promise<s
       features: productConfig.features,
       environment: purchaseRecord.environment as "sandbox" | "production",
     });
-    
+
     return purchaseId;
   } catch (error) {
     console.error("Error storing purchase:", error);
@@ -353,8 +358,8 @@ async function storePurchase(purchaseRecord: any, productConfig: any): Promise<s
  * Update user subscription status
  */
 async function updateUserSubscriptionStatus(
-  userId: string | undefined, 
-  benefits: any
+  userId: string | undefined,
+  benefits: any,
 ): Promise<any> {
   try {
     // The subscription is already stored via storeSubscription
@@ -362,7 +367,7 @@ async function updateUserSubscriptionStatus(
     if (userId) {
       await subscriptionManager.migrateFromLocalStorage(userId);
     }
-    
+
     return benefits;
   } catch (error) {
     console.error("Error updating user subscription status:", error);
@@ -373,16 +378,13 @@ async function updateUserSubscriptionStatus(
 /**
  * Add consumable benefits to user account
  */
-async function addConsumableBenefits(
-  userId: string | undefined,
-  benefits: any
-): Promise<any> {
+async function addConsumableBenefits(userId: string | undefined, benefits: any): Promise<any> {
   try {
     // Use subscription manager to update user credits
     if (userId && benefits.coverCredits > 0) {
       await subscriptionManager.updateUserCredits(userId, benefits.coverCredits);
     }
-    
+
     return benefits;
   } catch (error) {
     console.error("Error adding consumable benefits:", error);

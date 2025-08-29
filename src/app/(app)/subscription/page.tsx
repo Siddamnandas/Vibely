@@ -433,7 +433,7 @@ export default function SubscriptionPage() {
                 ) : (
                   <div className="text-center p-4 bg-[#9FFFA2]/10 rounded-2xl">
                     <Crown className="w-8 h-8 mx-auto mb-2 text-[#FFD36E]" />
-                    <p className="text-[#9FFFA2] font-semibold">You're a Pro member!</p>
+                    <p className="text-[#9FFFA2] font-semibold">You&apos;re a Pro member!</p>
                     <p className="text-white/60 text-sm mt-1">
                       Enjoying unlimited covers and premium features
                     </p>

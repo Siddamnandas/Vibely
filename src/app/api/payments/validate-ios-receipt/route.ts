@@ -66,17 +66,17 @@ export async function POST(request: NextRequest) {
 
     if (!receiptData || !transactionId || !productId) {
       return NextResponse.json(
-        { 
-          isValid: false, 
-          error: "Missing required fields: receiptData, transactionId, productId" 
+        {
+          isValid: false,
+          error: "Missing required fields: receiptData, transactionId, productId",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate receipt with Apple's servers
     const validationResult = await validateReceiptWithApple(receiptData);
-    
+
     if (!validationResult.isValid) {
       trackEvent("ios_receipt_validation_failed", {
         transaction_id: transactionId,
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     const purchaseInfo = findTransactionInReceipt(
       validationResult.receiptData!,
       transactionId,
-      productId
+      productId,
     );
 
     if (!purchaseInfo) {
@@ -128,28 +128,28 @@ export async function POST(request: NextRequest) {
         originalTransactionId: purchaseInfo.original_transaction_id,
         productId: purchaseInfo.product_id,
         purchaseDate: new Date(parseInt(purchaseInfo.purchase_date_ms)),
-        expiresDate: purchaseInfo.expires_date_ms ? 
-          new Date(parseInt(purchaseInfo.expires_date_ms)) : null,
+        expiresDate: purchaseInfo.expires_date_ms
+          ? new Date(parseInt(purchaseInfo.expires_date_ms))
+          : null,
         isActive,
         isTrialPeriod: purchaseInfo.is_trial_period === "true",
         isIntroOfferPeriod: purchaseInfo.is_in_intro_offer_period === "true",
         environment: validationResult.environment,
       },
     });
-
   } catch (error) {
     console.error("iOS receipt validation error:", error);
-    
+
     trackEvent("ios_receipt_validation_error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
     return NextResponse.json(
-      { 
-        isValid: false, 
-        error: "Internal server error during receipt validation" 
+      {
+        isValid: false,
+        error: "Internal server error during receipt validation",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -213,7 +213,6 @@ async function validateReceiptWithApple(receiptData: string): Promise<{
         error: getAppleReceiptErrorMessage(validationResponse.status),
       };
     }
-
   } catch (error) {
     console.error("Apple receipt validation network error:", error);
     return {
@@ -229,12 +228,11 @@ async function validateReceiptWithApple(receiptData: string): Promise<{
 function findTransactionInReceipt(
   receipt: AppStoreReceiptValidationResponse["receipt"],
   transactionId: string,
-  productId: string
+  productId: string,
 ) {
   return receipt.in_app?.find(
     (transaction) =>
-      transaction.transaction_id === transactionId &&
-      transaction.product_id === productId
+      transaction.transaction_id === transactionId && transaction.product_id === productId,
   );
 }
 

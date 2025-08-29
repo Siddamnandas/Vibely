@@ -68,35 +68,35 @@ export default function GeneratorPage() {
   useEffect(() => {
     if (!searchParams || tracks.length === 0) return;
 
-    const artist = searchParams.get('artist');
-    const genre = searchParams.get('genre');
-    const source = searchParams.get('source');
+    const artist = searchParams.get("artist");
+    const genre = searchParams.get("genre");
+    const source = searchParams.get("source");
 
     // Find track by artist if specified
     if (artist && tracks.length > 0) {
-      const trackIndex = tracks.findIndex(track => 
-        track.artist.toLowerCase().includes(artist.toLowerCase())
+      const trackIndex = tracks.findIndex((track) =>
+        track.artist.toLowerCase().includes(artist.toLowerCase()),
       );
       if (trackIndex !== -1 && trackIndex !== state.currentTrackIndex) {
-        setState(prev => ({ ...prev, currentTrackIndex: trackIndex }));
+        setState((prev) => ({ ...prev, currentTrackIndex: trackIndex }));
       }
     }
 
     // Show contextual welcome message
     if (source && !state.hasShownWelcome) {
       const welcomeMessages = {
-        'home_top_artist': `Ready to create covers for ${artist || 'your top artist'}!`,
-        'stories_header': 'Create a new AI-generated album cover for your collection!',
-        'stories_empty_state': 'Let\'s create your first AI album cover!',
+        home_top_artist: `Ready to create covers for ${artist || "your top artist"}!`,
+        stories_header: "Create a new AI-generated album cover for your collection!",
+        stories_empty_state: "Let's create your first AI album cover!",
       };
-      
+
       const message = welcomeMessages[source as keyof typeof welcomeMessages];
       if (message) {
         toast({
           title: "Welcome to the Generator!",
           description: message,
         });
-        setState(prev => ({ ...prev, hasShownWelcome: true }));
+        setState((prev) => ({ ...prev, hasShownWelcome: true }));
       }
     }
   }, [tracks, searchParams, state.currentTrackIndex, state.hasShownWelcome, toast]);

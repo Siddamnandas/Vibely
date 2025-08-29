@@ -34,16 +34,19 @@ interface GestureCallbacks {
 class MobileGestureService {
   private static instance: MobileGestureService;
   private activeElements = new Map<HTMLElement, GestureCallbacks>();
-  private touchState = new Map<number, {
-    startTime: number;
-    startX: number;
-    startY: number;
-    currentX: number;
-    currentY: number;
-    element: HTMLElement;
-    callbacks: GestureCallbacks;
-    config: SwipeConfig;
-  }>();
+  private touchState = new Map<
+    number,
+    {
+      startTime: number;
+      startX: number;
+      startY: number;
+      currentX: number;
+      currentY: number;
+      element: HTMLElement;
+      callbacks: GestureCallbacks;
+      config: SwipeConfig;
+    }
+  >();
 
   private defaultConfig: SwipeConfig = {
     threshold: 50, // 50px minimum swipe distance
@@ -79,16 +82,16 @@ class MobileGestureService {
 
   // Public API methods
   enableGestures(
-    element: HTMLElement, 
-    callbacks: GestureCallbacks, 
-    config: Partial<SwipeConfig> = {}
+    element: HTMLElement,
+    callbacks: GestureCallbacks,
+    config: Partial<SwipeConfig> = {},
   ): () => void {
     const fullConfig = { ...this.defaultConfig, ...config };
     this.activeElements.set(element, callbacks);
-    
+
     // Store config on element for touch handlers
     (element as any).__gestureConfig = fullConfig;
-    
+
     // Add visual feedback classes
     element.classList.add("gesture-enabled");
     element.style.userSelect = "none";
@@ -119,14 +122,17 @@ class MobileGestureService {
   private handleTouchStart(event: TouchEvent) {
     const touch = event.touches[0];
     // Fallback to event.target in environments where Touch.target isn't populated
-    const targetEl = (touch && (touch as any).target) ? (touch as any).target as HTMLElement : (event.target as HTMLElement);
+    const targetEl =
+      touch && (touch as any).target
+        ? ((touch as any).target as HTMLElement)
+        : (event.target as HTMLElement);
     const element = this.findGestureElement(targetEl);
-    
+
     if (!element) return;
 
     const callbacks = this.activeElements.get(element);
     const config = (element as any).__gestureConfig || this.defaultConfig;
-    
+
     if (!callbacks) return;
 
     // Prevent default if configured
@@ -153,7 +159,7 @@ class MobileGestureService {
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
       const state = this.touchState.get(touch.identifier);
-      
+
       if (!state) continue;
 
       state.currentX = touch.clientX;
@@ -180,11 +186,11 @@ class MobileGestureService {
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
       const state = this.touchState.get(touch.identifier);
-      
+
       if (!state) continue;
 
       this.processGesture(state, touch);
-      
+
       // Cleanup
       state.element.classList.remove("gesture-active");
       this.touchState.delete(touch.identifier);
@@ -195,7 +201,7 @@ class MobileGestureService {
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
       const state = this.touchState.get(touch.identifier);
-      
+
       if (state) {
         state.element.classList.remove("gesture-active");
         this.touchState.delete(touch.identifier);
@@ -210,7 +216,7 @@ class MobileGestureService {
 
     const callbacks = this.activeElements.get(element);
     const config = (element as any).__gestureConfig || this.defaultConfig;
-    
+
     if (!callbacks) return;
 
     this.touchState.set(-1, {
@@ -245,7 +251,7 @@ class MobileGestureService {
     if (!state) return;
 
     this.processGesture(state, { clientX: event.clientX, clientY: event.clientY } as Touch);
-    
+
     state.element.classList.remove("gesture-active");
     this.touchState.delete(-1);
   }
@@ -277,7 +283,7 @@ class MobileGestureService {
       // Swipe gesture
       const direction = this.getSwipeDirection(deltaX, deltaY);
       const gestureEvent = this.createGestureEvent(state, "swipe", direction);
-      
+
       switch (direction) {
         case "left":
           if (state.callbacks.onSwipeLeft) {
@@ -307,7 +313,11 @@ class MobileGestureService {
     }
   }
 
-  private createGestureEvent(state: any, type: GestureEvent["type"], direction?: string): GestureEvent {
+  private createGestureEvent(
+    state: any,
+    type: GestureEvent["type"],
+    direction?: string,
+  ): GestureEvent {
     const duration = Date.now() - state.startTime;
     const deltaX = state.currentX - state.startX;
     const deltaY = state.currentY - state.startY;
@@ -360,18 +370,22 @@ class MobileGestureService {
   static createSwipeableCard(
     element: HTMLElement,
     onSwipeLeft?: () => void,
-    onSwipeRight?: () => void
+    onSwipeRight?: () => void,
   ): () => void {
     const service = MobileGestureService.getInstance();
-    
-    return service.enableGestures(element, {
-      onSwipeLeft: onSwipeLeft ? () => onSwipeLeft() : undefined,
-      onSwipeRight: onSwipeRight ? () => onSwipeRight() : undefined,
-    }, {
-      threshold: 80,
-      velocityThreshold: 0.4,
-      preventScroll: true,
-    });
+
+    return service.enableGestures(
+      element,
+      {
+        onSwipeLeft: onSwipeLeft ? () => onSwipeLeft() : undefined,
+        onSwipeRight: onSwipeRight ? () => onSwipeRight() : undefined,
+      },
+      {
+        threshold: 80,
+        velocityThreshold: 0.4,
+        preventScroll: true,
+      },
+    );
   }
 
   static enableHapticFeedback(enabled: boolean = true) {
@@ -380,7 +394,7 @@ class MobileGestureService {
     // Add haptic feedback to common gestures
     document.addEventListener("gesture-performed", (event: any) => {
       const { gestureType } = event.detail;
-      
+
       switch (gestureType) {
         case "tap":
           navigator.vibrate(10);

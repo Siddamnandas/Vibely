@@ -12,10 +12,7 @@ const customJestConfig = {
   testMatch: ["**/__tests__/**/*.(ts|tsx|js|jsx)", "**/*.(test|spec).(ts|tsx|js|jsx)"],
   // Restrict Jest to our source and tests only to avoid picking up vendor suites
   roots: ["<rootDir>/src", "<rootDir>/__tests__"],
-  testPathIgnorePatterns: [
-    "/node_modules/",
-    "^<rootDir>/(?:@[^/]+|node_modules)/",
-  ],
+  testPathIgnorePatterns: ["/node_modules/", "^<rootDir>/(?:@[^/]+|node_modules)/"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },

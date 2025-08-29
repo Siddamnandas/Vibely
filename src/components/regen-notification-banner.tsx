@@ -29,7 +29,7 @@ export function RegenNotificationBanner() {
     try {
       const playlists = await getPlaylists();
       const nameMap: Record<string, string> = {};
-      playlists.forEach(playlist => {
+      playlists.forEach((playlist) => {
         nameMap[playlist.id] = playlist.name;
       });
       setPlaylistNames(nameMap);
@@ -46,21 +46,21 @@ export function RegenNotificationBanner() {
   // Track completed jobs
   useEffect(() => {
     const completed = Object.values(jobs)
-      .filter(job => job.status === "completed")
-      .map(job => ({
+      .filter((job) => job.status === "completed")
+      .map((job) => ({
         playlistId: job.playlistId,
         playlistName: playlistNames[job.playlistId] || `Playlist ${job.playlistId.slice(0, 8)}`,
         totalSongs: job.total,
         completedAt: Date.now(),
       }))
-      .filter(job => !dismissedJobs.has(job.playlistId))
+      .filter((job) => !dismissedJobs.has(job.playlistId))
       .sort((a, b) => b.completedAt - a.completedAt); // Most recent first
 
     setCompletedJobs(completed);
   }, [jobs, dismissedJobs, playlistNames]);
 
   const handleDismiss = (playlistId: string) => {
-    setDismissedJobs(prev => new Set([...prev, playlistId]));
+    setDismissedJobs((prev) => new Set([...prev, playlistId]));
     trackEvent("regen_notification_dismissed", { playlist_id: playlistId });
   };
 
@@ -90,15 +90,15 @@ export function RegenNotificationBanner() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-sm">
-                  New covers are ready! ✨
-                </h3>
+                <h3 className="font-bold text-white text-sm">New covers are ready! ✨</h3>
                 <p className="text-white/80 text-xs">
-                  {currentJob.totalSongs} song{currentJob.totalSongs !== 1 ? 's' : ''} updated for "{currentJob.playlistName}"
+                  {currentJob.totalSongs} song{currentJob.totalSongs !== 1 ? "s" : ""} updated for
+                  &quot;
+                  {currentJob.playlistName}&quot;
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -131,8 +131,8 @@ export function useRegenNotificationAutoDismiss() {
   const [dismissTimer, setDismissTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const hasCompleted = Object.values(jobs).some(job => job.status === "completed");
-    
+    const hasCompleted = Object.values(jobs).some((job) => job.status === "completed");
+
     if (hasCompleted && !dismissTimer) {
       const timer = setTimeout(() => {
         // Auto-dismiss logic could be implemented here

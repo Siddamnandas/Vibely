@@ -27,8 +27,8 @@ const MockBottomNav = () => (
 
 // Mock MiniPlayer component for testing
 const MockMiniPlayer = ({ onExpand }: { onExpand: () => void }) => (
-  <div 
-    data-testid="mini-player" 
+  <div
+    data-testid="mini-player"
     onClick={onExpand}
     className="fixed bottom-[calc(var(--nav-height,80px)+var(--nav-gap,16px))]"
   >
@@ -52,10 +52,10 @@ const mockViewport = (width: number, height: number, orientation: "portrait" | "
 describe("Mobile Viewport and Responsive Behavior", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset to default mobile portrait
     mockViewport(375, 667, "portrait");
-    
+
     // Mock document.documentElement.style.setProperty
     Object.defineProperty(document.documentElement, "style", {
       value: {
@@ -71,7 +71,7 @@ describe("Mobile Viewport and Responsive Behavior", () => {
         getPropertyValue: jest.fn().mockImplementation((prop) => {
           const values: Record<string, string> = {
             "--safe-area-inset-top": "0px",
-            "--safe-area-inset-right": "0px", 
+            "--safe-area-inset-right": "0px",
             "--safe-area-inset-bottom": "34px",
             "--safe-area-inset-left": "0px",
             "--nav-height": "80px",
@@ -95,9 +95,9 @@ describe("Mobile Viewport and Responsive Behavior", () => {
     test("handles different device pixel ratios", () => {
       // Mock high DPI device
       Object.defineProperty(window, "devicePixelRatio", { value: 3 });
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.devicePixelRatio).toBe(3);
       expect(result.current.isHighDPI).toBe(true);
     });
@@ -106,35 +106,35 @@ describe("Mobile Viewport and Responsive Behavior", () => {
   describe("Screen Size Detection", () => {
     test("detects mobile portrait correctly", () => {
       mockViewport(375, 667, "portrait");
-      
+
       const { result } = renderHook(() => useIsMobile());
-      
+
       expect(result.current).toBe(true);
     });
 
     test("detects mobile landscape correctly", () => {
       mockViewport(667, 375, "landscape");
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.isMobile).toBe(true);
       expect(result.current.breakpoint).toBe("sm-landscape");
     });
 
     test("detects tablet portrait correctly", () => {
       mockViewport(768, 1024, "portrait");
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.isTablet).toBe(true);
       expect(result.current.isMobile).toBe(false);
     });
 
     test("detects desktop correctly", () => {
       mockViewport(1920, 1080, "landscape");
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.isDesktop).toBe(true);
       expect(result.current.isTablet).toBe(false);
       expect(result.current.isMobile).toBe(false);
@@ -150,9 +150,9 @@ describe("Mobile Viewport and Responsive Behavior", () => {
 
       edgeCases.forEach(({ width, height, device, expected }) => {
         mockViewport(width, height, "portrait");
-        
+
         const { result } = renderHook(() => useResponsiveDesign());
-        
+
         expect(result.current.breakpoint).toBe(expected);
       });
     });
@@ -161,13 +161,13 @@ describe("Mobile Viewport and Responsive Behavior", () => {
   describe("Orientation Changes", () => {
     test("handles portrait to landscape transition", async () => {
       const { result, rerender } = renderHook(() => useOrientation());
-      
+
       expect(result.current.orientation).toBe("portrait");
-      
+
       // Simulate orientation change
       mockViewport(667, 375, "landscape");
       window.dispatchEvent(new Event("orientationchange"));
-      
+
       await waitFor(() => {
         expect(result.current.orientation).toBe("landscape");
       });
@@ -176,30 +176,30 @@ describe("Mobile Viewport and Responsive Behavior", () => {
     test("updates CSS variables on orientation change", () => {
       mockViewport(375, 667, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-        "--current-orientation", 
-        "portrait"
+        "--current-orientation",
+        "portrait",
       );
-      
+
       mockViewport(667, 375, "landscape");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-        "--current-orientation", 
-        "landscape"
+        "--current-orientation",
+        "landscape",
       );
     });
 
     test("applies orientation-specific CSS classes", () => {
       mockViewport(375, 667, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.body.classList.add).toHaveBeenCalledWith("orientation-portrait");
-      
+
       mockViewport(667, 375, "landscape");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.body.classList.remove).toHaveBeenCalledWith("orientation-portrait");
       expect(document.body.classList.add).toHaveBeenCalledWith("orientation-landscape");
     });
@@ -213,23 +213,23 @@ describe("Mobile Viewport and Responsive Behavior", () => {
           const iphoneSafeAreas: Record<string, string> = {
             "--safe-area-inset-top": "47px",
             "--safe-area-inset-right": "0px",
-            "--safe-area-inset-bottom": "34px", 
+            "--safe-area-inset-bottom": "34px",
             "--safe-area-inset-left": "0px",
           };
           return iphoneSafeAreas[prop] || "";
         }),
       });
-      
+
       mobileOrientationService.forceRefresh();
       const state = mobileOrientationService.getState();
-      
+
       expect(state.safeAreaInsets.top).toBe(47);
       expect(state.safeAreaInsets.bottom).toBe(34);
     });
 
     test("handles landscape safe area changes", () => {
       mockViewport(844, 390, "landscape"); // iPhone 14 Pro landscape
-      
+
       (window.getComputedStyle as jest.Mock).mockReturnValue({
         getPropertyValue: jest.fn().mockImplementation((prop) => {
           const landscapeSafeAreas: Record<string, string> = {
@@ -241,10 +241,10 @@ describe("Mobile Viewport and Responsive Behavior", () => {
           return landscapeSafeAreas[prop] || "";
         }),
       });
-      
+
       mobileOrientationService.forceRefresh();
       const state = mobileOrientationService.getState();
-      
+
       expect(state.safeAreaInsets.left).toBe(47);
       expect(state.safeAreaInsets.right).toBe(47);
     });
@@ -253,20 +253,20 @@ describe("Mobile Viewport and Responsive Behavior", () => {
   describe("Component Layout Adaptation", () => {
     test("adapts mini-player size for portrait", () => {
       mockViewport(375, 667, "portrait");
-      
+
       const { result } = renderHook(() => useOrientation());
       const size = result.current.getOptimalMiniPlayerSize();
-      
+
       expect(size.height).toBe(68);
       expect(size.iconSize).toBe(44);
     });
 
     test("adapts mini-player size for landscape", () => {
       mockViewport(667, 375, "landscape");
-      
+
       const { result } = renderHook(() => useOrientation());
       const size = result.current.getOptimalMiniPlayerSize();
-      
+
       expect(size.height).toBe(56);
       expect(size.iconSize).toBe(40);
     });
@@ -275,19 +275,19 @@ describe("Mobile Viewport and Responsive Behavior", () => {
       // Small screen
       mockViewport(320, 568, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
         "--content-padding",
-        "16px"
+        "16px",
       );
-      
+
       // Large screen
       mockViewport(414, 896, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-        "--content-padding", 
-        "20px"
+        "--content-padding",
+        "20px",
       );
     });
   });
@@ -295,7 +295,7 @@ describe("Mobile Viewport and Responsive Behavior", () => {
   describe("Responsive Design Utilities", () => {
     test("provides correct spacing calculations", () => {
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       // Base spacing should be adjusted for mobile
       expect(result.current.getSpacing(16)).toBeLessThanOrEqual(16);
       expect(result.current.getSpacing(24)).toBeLessThanOrEqual(24);
@@ -303,7 +303,7 @@ describe("Mobile Viewport and Responsive Behavior", () => {
 
     test("provides responsive font size calculations", () => {
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       const fontSize = result.current.getResponsiveFontSize("lg");
       expect(typeof fontSize).toBe("string");
       expect(fontSize).toMatch(/\d+(\.\d+)?(px|rem)/);
@@ -313,9 +313,9 @@ describe("Mobile Viewport and Responsive Behavior", () => {
       // Mock touch device
       Object.defineProperty(window, "ontouchstart", { value: null });
       Object.defineProperty(navigator, "maxTouchPoints", { value: 5 });
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.isTouchDevice).toBe(true);
     });
   });
@@ -324,14 +324,14 @@ describe("Mobile Viewport and Responsive Behavior", () => {
     test("debounces orientation change events", async () => {
       const callback = jest.fn();
       mobileOrientationService.onOrientationChange(callback);
-      
+
       // Rapid orientation changes
       mockViewport(667, 375, "landscape");
       window.dispatchEvent(new Event("orientationchange"));
-      
-      mockViewport(375, 667, "portrait"); 
+
+      mockViewport(375, 667, "portrait");
       window.dispatchEvent(new Event("orientationchange"));
-      
+
       // Should debounce and only call once after delay
       await waitFor(() => {
         expect(callback).toHaveBeenCalledTimes(1);
@@ -340,10 +340,10 @@ describe("Mobile Viewport and Responsive Behavior", () => {
 
     test("optimizes reflow operations", () => {
       const setPropertySpy = jest.spyOn(document.documentElement.style, "setProperty");
-      
+
       mockViewport(375, 667, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       // Should batch style updates to minimize reflows
       expect(setPropertySpy).toHaveBeenCalled();
     });
@@ -360,15 +360,15 @@ describe("Mobile Viewport and Responsive Behavior", () => {
           return { matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() };
         }),
       });
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.prefersReducedMotion).toBe(true);
     });
 
     test("ensures minimum touch target sizes", () => {
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       const minTouchSize = result.current.getMinimumTouchTarget();
       expect(minTouchSize.width).toBeGreaterThanOrEqual(44);
       expect(minTouchSize.height).toBeGreaterThanOrEqual(44);
@@ -383,9 +383,9 @@ describe("Mobile Viewport and Responsive Behavior", () => {
           return { matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() };
         }),
       });
-      
+
       const { result } = renderHook(() => useResponsiveDesign());
-      
+
       expect(result.current.prefersHighContrast).toBe(true);
     });
   });
@@ -394,22 +394,22 @@ describe("Mobile Viewport and Responsive Behavior", () => {
     test("handles missing orientation API gracefully", () => {
       // Remove orientation API
       delete (window.screen as any).orientation;
-      
+
       expect(() => {
         mobileOrientationService.forceRefresh();
       }).not.toThrow();
-      
+
       const state = mobileOrientationService.getState();
       expect(state.isSupported).toBe(false);
     });
 
     test("handles invalid viewport dimensions", () => {
       mockViewport(0, 0, "portrait");
-      
+
       expect(() => {
         mobileOrientationService.forceRefresh();
       }).not.toThrow();
-      
+
       const state = mobileOrientationService.getState();
       expect(state.availableWidth).toBeGreaterThan(0);
       expect(state.availableHeight).toBeGreaterThan(0);
@@ -419,10 +419,10 @@ describe("Mobile Viewport and Responsive Behavior", () => {
       (window.getComputedStyle as jest.Mock).mockReturnValue({
         getPropertyValue: jest.fn().mockReturnValue(""),
       });
-      
+
       mobileOrientationService.forceRefresh();
       const state = mobileOrientationService.getState();
-      
+
       // Should use fallback values
       expect(state.safeAreaInsets.top).toBe(0);
       expect(state.safeAreaInsets.bottom).toBe(0);
@@ -432,27 +432,27 @@ describe("Mobile Viewport and Responsive Behavior", () => {
   describe("Integration with UI Components", () => {
     test("coordinates with bottom navigation positioning", () => {
       render(<MockBottomNav />);
-      
+
       mockViewport(375, 667, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
         "--nav-height",
-        expect.stringMatching(/\d+px/)
+        expect.stringMatching(/\d+px/),
       );
     });
 
     test("coordinates with mini-player positioning", () => {
       const onExpand = jest.fn();
       render(<MockMiniPlayer onExpand={onExpand} />);
-      
+
       mockViewport(375, 667, "portrait");
       mobileOrientationService.forceRefresh();
-      
+
       // Mini-player should position relative to navigation
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
         "--mini-height",
-        "68px"
+        "68px",
       );
     });
 
@@ -464,14 +464,13 @@ describe("Mobile Viewport and Responsive Behavior", () => {
           return "0px";
         }),
       });
-      
+
       mobileOrientationService.forceRefresh();
-      
+
       expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
         "--safe-area-top",
-        "47px"
+        "47px",
       );
     });
   });
 });
-

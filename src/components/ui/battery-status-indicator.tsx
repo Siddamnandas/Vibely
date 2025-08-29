@@ -5,28 +5,23 @@ import { Battery, BatteryLow, Zap, Volume2, VolumeX } from "lucide-react";
 import { usePlayback } from "@/context/playback-context";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface BatteryStatusIndicatorProps {
   className?: string;
   showDetails?: boolean;
 }
 
-export function BatteryStatusIndicator({ 
-  className, 
-  showDetails = false 
+export function BatteryStatusIndicator({
+  className,
+  showDetails = false,
 }: BatteryStatusIndicatorProps) {
-  const { 
-    batteryStatus, 
-    audioSettings, 
-    isBatterySaveMode, 
-    enableBatterySaveMode, 
-    disableBatterySaveMode 
+  const {
+    batteryStatus,
+    audioSettings,
+    isBatterySaveMode,
+    enableBatterySaveMode,
+    disableBatterySaveMode,
   } = usePlayback();
 
   if (!batteryStatus.isSupported) {
@@ -55,10 +50,14 @@ export function BatteryStatusIndicator({
 
   const getAudioQualityText = () => {
     switch (audioSettings.audioBitrate) {
-      case "high": return "High Quality";
-      case "medium": return "Medium Quality";
-      case "low": return "Battery Saver";
-      default: return "Standard";
+      case "high":
+        return "High Quality";
+      case "medium":
+        return "Medium Quality";
+      case "low":
+        return "Battery Saver";
+      default:
+        return "Standard";
     }
   };
 
@@ -70,9 +69,7 @@ export function BatteryStatusIndicator({
           <TooltipTrigger asChild>
             <div className={`flex items-center gap-1 ${className}`}>
               {getBatteryIcon()}
-              {isBatterySaveMode && (
-                <Zap className="h-3 w-3 text-yellow-400 animate-pulse" />
-              )}
+              {isBatterySaveMode && <Zap className="h-3 w-3 text-yellow-400 animate-pulse" />}
             </div>
           </TooltipTrigger>
           <TooltipContent>
@@ -94,14 +91,10 @@ export function BatteryStatusIndicator({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {getBatteryIcon()}
-          <span className="text-sm font-medium">
-            Battery {batteryPercentage}%
-          </span>
-          {batteryStatus.charging && (
-            <Zap className="h-4 w-4 text-blue-400" />
-          )}
+          <span className="text-sm font-medium">Battery {batteryPercentage}%</span>
+          {batteryStatus.charging && <Zap className="h-4 w-4 text-blue-400" />}
         </div>
-        
+
         {(isLowBattery || isBatterySaveMode) && (
           <Button
             size="sm"
@@ -116,8 +109,8 @@ export function BatteryStatusIndicator({
 
       {/* Battery level progress bar */}
       <div className="space-y-1">
-        <Progress 
-          value={batteryPercentage} 
+        <Progress
+          value={batteryPercentage}
           className="h-2"
           style={{
             background: "rgba(255, 255, 255, 0.1)",
@@ -139,7 +132,7 @@ export function BatteryStatusIndicator({
           )}
           <span className="text-sm">{getAudioQualityText()}</span>
         </div>
-        
+
         {isBatterySaveMode && (
           <div className="flex items-center gap-1 text-xs text-yellow-400">
             <Zap className="h-3 w-3" />
@@ -157,7 +150,9 @@ export function BatteryStatusIndicator({
             {!audioSettings.preloadNext && <li>Disabled track preloading</li>}
             {!audioSettings.audioEffects && <li>Disabled audio effects</li>}
             {!audioSettings.backgroundAudioProcessing && <li>Reduced background processing</li>}
-            {audioSettings.volumeLimit < 1.0 && <li>Limited volume to {Math.round(audioSettings.volumeLimit * 100)}%</li>}
+            {audioSettings.volumeLimit < 1.0 && (
+              <li>Limited volume to {Math.round(audioSettings.volumeLimit * 100)}%</li>
+            )}
           </ul>
         </div>
       )}
@@ -168,7 +163,7 @@ export function BatteryStatusIndicator({
           Time to full charge: {Math.round(batteryStatus.chargingTime / 60)} minutes
         </div>
       )}
-      
+
       {!batteryStatus.charging && batteryStatus.dischargingTime !== Infinity && (
         <div className="text-xs text-white/50">
           Estimated time remaining: {Math.round(batteryStatus.dischargingTime / 60)} minutes
