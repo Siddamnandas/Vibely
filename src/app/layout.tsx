@@ -176,15 +176,7 @@ export default function RootLayout({
                   };
                   sessionStorage.setItem('networkInfo', JSON.stringify(networkInfo));
                 }
-                
-                // Preload critical components based on route
-                const path = window.location.pathname;
-                if (path === '/' || path === '/generator') {
-                  const link = document.createElement('link');
-                  link.rel = 'modulepreload';
-                  link.href = '/_next/static/chunks/pages/generator.js';
-                  document.head.appendChild(link);
-                }
+                // Removed custom modulepreload to avoid Next.js chunk path issues
                 
                 // Initialize performance timing
                 if ('performance' in window && 'mark' in performance) {

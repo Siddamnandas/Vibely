@@ -181,7 +181,7 @@ export default function StoriesPage() {
                   >
                     <div className="relative overflow-hidden aspect-[9/16] cursor-pointer group">
                       <motion.div
-                        className="w-full h-full bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-[32px] border border-white/10 shadow-2xl overflow-hidden"
+                        className="relative w-full h-full bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-[32px] border border-white/10 shadow-2xl overflow-hidden"
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
                         transition={{ duration: 0.2 }}

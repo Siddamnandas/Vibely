@@ -48,6 +48,8 @@ export class AudioEngine {
   private isSpotifySDKReady = false;
   private isAppleMusicReady = false;
 
+  private isInitialized = false;
+
   constructor() {
     this.state = {
       isPlaying: false,
@@ -59,13 +61,32 @@ export class AudioEngine {
       repeat: "off",
     };
 
-    this.initializeSDKs();
+    // Don't initialize immediately - wait for first use
+  }
+
+  /**
+   * Ensure SDKs are initialized before use
+   */
+  private async ensureInitialized() {
+    if (!this.isInitialized && typeof window !== "undefined") {
+      this.isInitialized = true;
+      await this.initializeSDKs();
+    }
   }
 
   /**
    * Initialize Spotify and Apple Music SDKs
    */
   private async initializeSDKs() {
+    // Only initialize on the client side
+    if (typeof window === "undefined") {
+      console.log("AudioEngine: Skipping initialization on server side");
+      return;
+    }
+
+    console.log("AudioEngine: Initializing on client side");
+    this.isInitialized = true;
+
     // Initialize Spotify Web Playback SDK
     await this.initializeSpotifySDK();
 
@@ -73,8 +94,12 @@ export class AudioEngine {
     await this.initializeAppleMusicSDK();
 
     // Create HTML audio element for preview playback
-    this.audioElement = new Audio();
-    this.setupAudioElementEvents();
+    try {
+      this.audioElement = new Audio();
+      this.setupAudioElementEvents();
+    } catch (error) {
+      console.error("Failed to create Audio element:", error);
+    }
   }
 
   /**
@@ -317,6 +342,8 @@ export class AudioEngine {
    * Play a track
    */
   async playTrack(track: AudioEngineTrack): Promise<boolean> {
+    await this.ensureInitialized();
+    
     try {
       this.currentProvider = track.provider;
 
@@ -566,6 +593,10 @@ export class AudioEngine {
     listener: AudioEngineEvents[K],
   ): void {
     this.listeners[event] = listener;
+    // Initialize on first use if we're on the client
+    if (!this.isInitialized && typeof window !== "undefined") {
+      this.initializeSDKs();
+    }
   }
 
   /**
@@ -586,6 +617,10 @@ export class AudioEngine {
    * Check if ready for playback
    */
   isReady(): boolean {
+    // Initialize on first check if we're on the client
+    if (!this.isInitialized && typeof window !== "undefined") {
+      this.initializeSDKs();
+    }
     return this.isSpotifySDKReady || this.isAppleMusicReady || !!this.audioElement;
   }
 
@@ -603,5 +638,19 @@ export class AudioEngine {
   }
 }
 
-// Create singleton instance
-export const audioEngine = new AudioEngine();
+// Create singleton instance with lazy initialization
+let _audioEngine: AudioEngine | null = null;
+
+export const getAudioEngine = (): AudioEngine => {
+  if (!_audioEngine) {
+    _audioEngine = new AudioEngine();
+  }
+  return _audioEngine;
+};
+
+// Backward compatibility
+export const audioEngine = {
+  get instance() {
+    return getAudioEngine();
+  }
+};

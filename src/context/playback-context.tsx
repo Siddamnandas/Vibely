@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { track as trackEvent } from "@/lib/analytics";
 import { songs as baseSongs } from "@/lib/data";
-import { audioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
+import { getAudioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
 import { useAuth } from "@/hooks/use-auth";
 
 export type Track = {
@@ -99,21 +99,27 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       handleNextInternal();
     };
 
-    audioEngine.addEventListener("stateChange", handleStateChange);
-    audioEngine.addEventListener("trackEnd", handleTrackEnd);
-    audioEngine.addEventListener("ready", handleReady);
-    audioEngine.addEventListener("error", handleError);
+    const audioEngine = getAudioEngine();
+    
+    // Only set up listeners on the client side
+    if (typeof window !== "undefined") {
+      audioEngine.addEventListener("stateChange", handleStateChange);
+      audioEngine.addEventListener("trackEnd", handleTrackEnd);
+      audioEngine.addEventListener("ready", handleReady);
+      audioEngine.addEventListener("error", handleError);
 
-    // Check if already ready
-    if (audioEngine.isReady()) {
-      setIsReady(true);
+      // Check if already ready
+      if (audioEngine.isReady()) {
+        setIsReady(true);
+      }
     }
 
     return () => {
-      audioEngine.removeEventListener("stateChange");
-      audioEngine.removeEventListener("trackEnd");
-      audioEngine.removeEventListener("ready");
-      audioEngine.removeEventListener("error");
+      const engine = getAudioEngine();
+      engine.removeEventListener("stateChange");
+      engine.removeEventListener("trackEnd");
+      engine.removeEventListener("ready");
+      engine.removeEventListener("error");
     };
   }, []);
 
@@ -133,7 +139,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
     // Only play if we're supposed to be playing
     if (isPlaying) {
-      audioEngine.playTrack(engineTrack);
+      getAudioEngine().playTrack(engineTrack);
     }
   }, [current, isReady]);
 
@@ -168,19 +174,19 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         preview_url: current.preview_url,
       };
 
-      const success = await audioEngine.playTrack(engineTrack);
+      const success = await getAudioEngine().playTrack(engineTrack);
       if (success) {
         setIsPlaying(true);
       }
     } else {
-      await audioEngine.play();
+      await getAudioEngine().play();
       setIsPlaying(true);
     }
   };
 
   const pause = async () => {
     if (!isReady) return;
-    await audioEngine.pause();
+    await getAudioEngine().pause();
     setIsPlaying(false);
   };
 
@@ -250,7 +256,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (!isReady) return;
 
     const clamped = Math.max(0, Math.min(duration, to));
-    await audioEngine.seek(clamped);
+    await getAudioEngine().seek(clamped);
     setProgress(clamped);
 
     trackEvent("seek", {
@@ -264,7 +270,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (!isReady) return;
 
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    await audioEngine.setVolume(clampedVolume);
+    await getAudioEngine().setVolume(clampedVolume);
     setVolumeState(clampedVolume);
   };
 
@@ -285,7 +291,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         preview_url: targetTrack.preview_url,
       };
 
-      const success = await audioEngine.playTrack(engineTrack);
+      const success = await getAudioEngine().playTrack(engineTrack);
       if (success) {
         setIsPlaying(true);
       }

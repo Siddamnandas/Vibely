@@ -22,7 +22,7 @@ type HeroProps = {
 function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
   return (
     <div
-      className="relative h-[70vh] max-h-[760px] w-full rounded-[32px] overflow-hidden shadow-2xl"
+      className="relative h-[60vh] max-h-[600px] w-full rounded-[32px] overflow-hidden shadow-2xl"
       aria-label="Hero"
     >
       {/* Neon gradient background */}
@@ -128,13 +128,15 @@ function TopArtistCard() {
   return (
     <div className="relative w-full rounded-3xl overflow-hidden bg-white/8 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)]">
       <div className="absolute inset-0">
-        <Image
-          src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop"
-          alt="Top Artist"
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+        <div className="relative w-full h-full">
+          <Image
+            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop"
+            alt="Top Artist"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+        </div>
       </div>
       <div className="relative z-[2] p-5 flex items-end justify-between gap-4">
         <div>
@@ -162,7 +164,7 @@ export default function Home() {
   const chips = useMemo(() => generateHeroChips(tracks), [tracks]);
 
   return (
-    <div className="min-h-screen bg-[#0E0F12] text-white px-4 pt-6 pb-28">
+    <div className="min-h-screen bg-[#0E0F12] text-white px-4 pt-6 pb-28 overflow-x-hidden">
       {/* Hero */}
       <HeroCard nameTop={first} nameBottom={last} photoUrl={photo} chips={chips} />
 

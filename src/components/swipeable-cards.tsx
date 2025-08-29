@@ -191,20 +191,22 @@ export function SwipeableCards({
               >
                 {/* Background Image */}
                 <div className="absolute inset-0">
-                  <Image
-                    src={song.originalCoverUrl}
-                    alt={`${song.title} cover`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 384px) 100vw, 384px"
-                    priority={song.stackIndex === 0}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src =
-                        "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=500&h=500&q=80";
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={song.originalCoverUrl}
+                      alt={`${song.title} cover`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 384px) 100vw, 384px"
+                      priority={song.stackIndex === 0}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src =
+                          "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=500&h=500&q=80";
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  </div>
                 </div>
 
                 {/* Content Overlay */}
