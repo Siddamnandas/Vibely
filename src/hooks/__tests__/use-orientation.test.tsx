@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 
-import { renderHook, act } from \"@testing-library/react\";
-import { useOrientation, useResponsiveDesign, useMiniPlayerResponsive } from \"../use-orientation\";
-import { mobileOrientationService } from \"@/lib/mobile-orientation-service\";
+import { renderHook, act } from "@testing-library/react";
+import { useOrientation, useResponsiveDesign, useMiniPlayerResponsive } from "../use-orientation";
+import { mobileOrientationService } from "@/lib/mobile-orientation-service";
 
 // Mock the mobile orientation service
-jest.mock(\"@/lib/mobile-orientation-service\", () => ({
+jest.mock("@/lib/mobile-orientation-service", () => ({
   mobileOrientationService: {
     getState: jest.fn(),
     onOrientationChange: jest.fn(),
@@ -20,11 +20,13 @@ jest.mock(\"@/lib/mobile-orientation-service\", () => ({
   },
 }));
 
-const mockOrientationService = mobileOrientationService as jest.Mocked<typeof mobileOrientationService>;
+const mockOrientationService = mobileOrientationService as jest.Mocked<
+  typeof mobileOrientationService
+>;
 
 // Default mock state
 const mockPortraitState = {
-  orientation: \"portrait\" as const,
+  orientation: "portrait" as const,
   angle: 0,
   isSupported: true,
   screenWidth: 375,
@@ -41,13 +43,13 @@ const mockPortraitState = {
 
 const mockLandscapeState = {
   ...mockPortraitState,
-  orientation: \"landscape\" as const,
+  orientation: "landscape" as const,
   angle: 90,
   availableWidth: 667,
   availableHeight: 375,
 };
 
-describe(\"useOrientation\", () => {
+describe("useOrientation", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockOrientationService.getState.mockReturnValue(mockPortraitState);
@@ -56,17 +58,17 @@ describe(\"useOrientation\", () => {
     mockOrientationService.onOrientationChange.mockReturnValue(jest.fn());
   });
 
-  test(\"returns initial orientation state\", () => {
+  test("returns initial orientation state", () => {
     const { result } = renderHook(() => useOrientation());
 
-    expect(result.current.orientation).toBe(\"portrait\");
+    expect(result.current.orientation).toBe("portrait");
     expect(result.current.availableWidth).toBe(375);
     expect(result.current.availableHeight).toBe(667);
     expect(result.current.isPortrait).toBe(true);
     expect(result.current.isLandscape).toBe(false);
   });
 
-  test(\"updates config when provided\", () => {
+  test("updates config when provided", () => {
     const config = {
       enableLayoutOptimization: false,
       trackOrientationChanges: false,
@@ -77,13 +79,13 @@ describe(\"useOrientation\", () => {
     expect(mockOrientationService.updateConfig).toHaveBeenCalledWith(config);
   });
 
-  test(\"subscribes to orientation changes\", () => {
+  test("subscribes to orientation changes", () => {
     renderHook(() => useOrientation());
 
     expect(mockOrientationService.onOrientationChange).toHaveBeenCalled();
   });
 
-  test(\"unsubscribes on unmount\", () => {
+  test("unsubscribes on unmount", () => {
     const unsubscribe = jest.fn();
     mockOrientationService.onOrientationChange.mockReturnValue(unsubscribe);
 
@@ -94,7 +96,7 @@ describe(\"useOrientation\", () => {
     expect(unsubscribe).toHaveBeenCalled();
   });
 
-  test(\"updates state when orientation changes\", () => {
+  test("updates state when orientation changes", () => {
     let orientationCallback: (state: any) => void = () => {};
     mockOrientationService.onOrientationChange.mockImplementation((callback) => {
       orientationCallback = callback;
@@ -103,29 +105,29 @@ describe(\"useOrientation\", () => {
 
     const { result } = renderHook(() => useOrientation());
 
-    expect(result.current.orientation).toBe(\"portrait\");
+    expect(result.current.orientation).toBe("portrait");
 
     // Simulate orientation change
     act(() => {
       orientationCallback(mockLandscapeState);
     });
 
-    expect(result.current.orientation).toBe(\"landscape\");
+    expect(result.current.orientation).toBe("landscape");
     expect(result.current.availableWidth).toBe(667);
     expect(result.current.availableHeight).toBe(375);
   });
 
-  test(\"provides utility functions\", () => {
+  test("provides utility functions", () => {
     const { result } = renderHook(() => useOrientation());
 
-    expect(typeof result.current.forceRefresh).toBe(\"function\");
-    expect(typeof result.current.updateConfig).toBe(\"function\");
-    expect(typeof result.current.getOptimalMiniPlayerSize).toBe(\"function\");
-    expect(typeof result.current.getOrientationCSS).toBe(\"function\");
+    expect(typeof result.current.forceRefresh).toBe("function");
+    expect(typeof result.current.updateConfig).toBe("function");
+    expect(typeof result.current.getOptimalMiniPlayerSize).toBe("function");
+    expect(typeof result.current.getOrientationCSS).toBe("function");
   });
 });
 
-describe(\"useResponsiveDesign\", () => {
+describe("useResponsiveDesign", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockOrientationService.getState.mockReturnValue(mockPortraitState);
@@ -134,16 +136,16 @@ describe(\"useResponsiveDesign\", () => {
     mockOrientationService.onOrientationChange.mockReturnValue(jest.fn());
   });
 
-  test(\"detects mobile device in portrait\", () => {
+  test("detects mobile device in portrait", () => {
     const { result } = renderHook(() => useResponsiveDesign());
 
     expect(result.current.isMobile).toBe(true);
     expect(result.current.isTablet).toBe(false);
     expect(result.current.isDesktop).toBe(false);
-    expect(result.current.breakpoint).toBe(\"sm-portrait\");
+    expect(result.current.breakpoint).toBe("sm-portrait");
   });
 
-  test(\"detects tablet device in landscape\", () => {
+  test("detects tablet device in landscape", () => {
     const tabletLandscapeState = {
       ...mockLandscapeState,
       availableWidth: 1024,
@@ -158,10 +160,10 @@ describe(\"useResponsiveDesign\", () => {
     expect(result.current.isMobile).toBe(false);
     expect(result.current.isTablet).toBe(true);
     expect(result.current.isDesktop).toBe(false);
-    expect(result.current.breakpoint).toBe(\"lg-landscape\");
+    expect(result.current.breakpoint).toBe("lg-landscape");
   });
 
-  test(\"detects desktop device\", () => {
+  test("detects desktop device", () => {
     const desktopState = {
       ...mockPortraitState,
       availableWidth: 1440,
@@ -174,17 +176,17 @@ describe(\"useResponsiveDesign\", () => {
     expect(result.current.isMobile).toBe(false);
     expect(result.current.isTablet).toBe(false);
     expect(result.current.isDesktop).toBe(true);
-    expect(result.current.breakpoint).toBe(\"lg-portrait\");
+    expect(result.current.breakpoint).toBe("lg-portrait");
   });
 
-  test(\"calculates responsive spacing\", () => {
+  test("calculates responsive spacing", () => {
     const { result } = renderHook(() => useResponsiveDesign());
 
     // Portrait mode, standard screen
     expect(result.current.getSpacing(16)).toBe(16); // 16 * 1 * 1
   });
 
-  test(\"calculates responsive spacing for landscape\", () => {
+  test("calculates responsive spacing for landscape", () => {
     mockOrientationService.getState.mockReturnValue(mockLandscapeState);
     mockOrientationService.isLandscape.mockReturnValue(true);
     mockOrientationService.isPortrait.mockReturnValue(false);
@@ -195,7 +197,7 @@ describe(\"useResponsiveDesign\", () => {
     expect(result.current.getSpacing(16)).toBe(12); // 16 * 0.75 * 1
   });
 
-  test(\"calculates responsive spacing for small screen\", () => {
+  test("calculates responsive spacing for small screen", () => {
     const smallScreenState = {
       ...mockPortraitState,
       availableWidth: 320,
@@ -208,27 +210,27 @@ describe(\"useResponsiveDesign\", () => {
     expect(result.current.getSpacing(16)).toBe(14); // 16 * 1 * 0.85
   });
 
-  test(\"detects correct breakpoints for different screen sizes\", () => {
+  test("detects correct breakpoints for different screen sizes", () => {
     const testCases = [
-      { width: 320, orientation: \"portrait\", expected: \"xs-portrait\" },
-      { width: 375, orientation: \"portrait\", expected: \"sm-portrait\" },
-      { width: 414, orientation: \"portrait\", expected: \"md-portrait\" },
-      { width: 800, orientation: \"portrait\", expected: \"lg-portrait\" },
-      { width: 500, orientation: \"landscape\", expected: \"xs-landscape\" },
-      { width: 600, orientation: \"landscape\", expected: \"sm-landscape\" },
-      { width: 800, orientation: \"landscape\", expected: \"md-landscape\" },
-      { width: 1200, orientation: \"landscape\", expected: \"lg-landscape\" },
+      { width: 320, orientation: "portrait", expected: "xs-portrait" },
+      { width: 375, orientation: "portrait", expected: "sm-portrait" },
+      { width: 414, orientation: "portrait", expected: "md-portrait" },
+      { width: 800, orientation: "portrait", expected: "lg-portrait" },
+      { width: 500, orientation: "landscape", expected: "xs-landscape" },
+      { width: 600, orientation: "landscape", expected: "sm-landscape" },
+      { width: 800, orientation: "landscape", expected: "md-landscape" },
+      { width: 1200, orientation: "landscape", expected: "lg-landscape" },
     ];
 
     testCases.forEach(({ width, orientation, expected }) => {
       const testState = {
         ...mockPortraitState,
-        orientation: orientation as \"portrait\" | \"landscape\",
+        orientation: orientation as "portrait" | "landscape",
         availableWidth: width,
       };
       mockOrientationService.getState.mockReturnValue(testState);
-      mockOrientationService.isLandscape.mockReturnValue(orientation === \"landscape\");
-      mockOrientationService.isPortrait.mockReturnValue(orientation === \"portrait\");
+      mockOrientationService.isLandscape.mockReturnValue(orientation === "landscape");
+      mockOrientationService.isPortrait.mockReturnValue(orientation === "portrait");
 
       const { result } = renderHook(() => useResponsiveDesign());
       expect(result.current.breakpoint).toBe(expected);
@@ -236,7 +238,7 @@ describe(\"useResponsiveDesign\", () => {
   });
 });
 
-describe(\"useMiniPlayerResponsive\", () => {
+describe("useMiniPlayerResponsive", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockOrientationService.getState.mockReturnValue(mockPortraitState);
@@ -250,7 +252,7 @@ describe(\"useMiniPlayerResponsive\", () => {
     });
   });
 
-  test(\"provides mini-player dimensions for portrait\", () => {
+  test("provides mini-player dimensions for portrait", () => {
     const { result } = renderHook(() => useMiniPlayerResponsive());
 
     expect(result.current.dimensions).toEqual({
@@ -263,7 +265,7 @@ describe(\"useMiniPlayerResponsive\", () => {
     });
   });
 
-  test(\"provides mini-player dimensions for landscape\", () => {
+  test("provides mini-player dimensions for landscape", () => {
     mockOrientationService.getState.mockReturnValue(mockLandscapeState);
     mockOrientationService.isLandscape.mockReturnValue(true);
     mockOrientationService.isPortrait.mockReturnValue(false);
@@ -285,7 +287,7 @@ describe(\"useMiniPlayerResponsive\", () => {
     });
   });
 
-  test(\"provides mini-player dimensions for small screen\", () => {
+  test("provides mini-player dimensions for small screen", () => {
     const smallScreenState = {
       ...mockPortraitState,
       availableWidth: 320,
@@ -297,27 +299,27 @@ describe(\"useMiniPlayerResponsive\", () => {
     expect(result.current.dimensions.marginX).toBe(12); // Smaller margin for small screens
   });
 
-  test(\"generates correct player styles\", () => {
+  test("generates correct player styles", () => {
     const { result } = renderHook(() => useMiniPlayerResponsive());
 
     expect(result.current.playerStyles).toEqual({
-      height: \"68px\",
-      borderRadius: \"20px\",
-      marginLeft: \"16px\",
-      marginRight: \"16px\",
+      height: "68px",
+      borderRadius: "20px",
+      marginLeft: "16px",
+      marginRight: "16px",
     });
   });
 
-  test(\"generates correct icon styles\", () => {
+  test("generates correct icon styles", () => {
     const { result } = renderHook(() => useMiniPlayerResponsive());
 
     expect(result.current.iconStyles).toEqual({
-      width: \"44px\",
-      height: \"44px\",
+      width: "44px",
+      height: "44px",
     });
   });
 
-  test(\"provides responsive icon size helper\", () => {
+  test("provides responsive icon size helper", () => {
     // Portrait mode
     const { result: portraitResult } = renderHook(() => useMiniPlayerResponsive());
     expect(portraitResult.current.getIconSize(18)).toBe(18);
@@ -332,7 +334,7 @@ describe(\"useMiniPlayerResponsive\", () => {
     expect(landscapeResult.current.getIconSize(14)).toBe(14); // Min 14
   });
 
-  test(\"provides responsive animation config\", () => {
+  test("provides responsive animation config", () => {
     const { result } = renderHook(() => useMiniPlayerResponsive());
     const animConfig = result.current.getAnimationConfig();
 
@@ -341,14 +343,14 @@ describe(\"useMiniPlayerResponsive\", () => {
       animate: { y: 0, opacity: 1 },
       exit: { y: 100, opacity: 0 },
       transition: {
-        type: \"spring\",
+        type: "spring",
         stiffness: 300,
         damping: 30,
       },
     });
   });
 
-  test(\"provides responsive animation config for landscape\", () => {
+  test("provides responsive animation config for landscape", () => {
     mockOrientationService.getState.mockReturnValue(mockLandscapeState);
     mockOrientationService.isLandscape.mockReturnValue(true);
     mockOrientationService.isPortrait.mockReturnValue(false);
@@ -361,14 +363,14 @@ describe(\"useMiniPlayerResponsive\", () => {
       animate: { y: 0, opacity: 1 },
       exit: { y: 80, opacity: 0 },
       transition: {
-        type: \"spring\",
+        type: "spring",
         stiffness: 350, // Stiffer spring
         damping: 30,
       },
     });
   });
 
-  test(\"updates configuration with mobile-specific settings\", () => {
+  test("updates configuration with mobile-specific settings", () => {
     renderHook(() => useMiniPlayerResponsive());
 
     expect(mockOrientationService.updateConfig).toHaveBeenCalledWith({
@@ -379,18 +381,18 @@ describe(\"useMiniPlayerResponsive\", () => {
 });
 
 // Integration test
-describe(\"Hook Integration\", () => {
-  test(\"multiple hooks can be used together without conflicts\", () => {
+describe("Hook Integration", () => {
+  test("multiple hooks can be used together without conflicts", () => {
     const { result: orientationResult } = renderHook(() => useOrientation());
     const { result: responsiveResult } = renderHook(() => useResponsiveDesign());
     const { result: miniPlayerResult } = renderHook(() => useMiniPlayerResponsive());
 
-    expect(orientationResult.current.orientation).toBe(\"portrait\");
-    expect(responsiveResult.current.breakpoint).toBe(\"sm-portrait\");
+    expect(orientationResult.current.orientation).toBe("portrait");
+    expect(responsiveResult.current.breakpoint).toBe("sm-portrait");
     expect(miniPlayerResult.current.dimensions.height).toBe(68);
 
     // All should share the same base orientation data
     expect(orientationResult.current.availableWidth).toBe(responsiveResult.current.availableWidth);
     expect(responsiveResult.current.orientation).toBe(miniPlayerResult.current.orientation);
   });
-});"
+});

@@ -1,0 +1,6 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    // Keep strict defaults; relax or add project rules as needed
+  }
+}
