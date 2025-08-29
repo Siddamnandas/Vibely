@@ -1,29 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
+import { firebasePurchaseService } from "@/lib/firebase-purchase-service";
 
 export async function GET(request: NextRequest) {
   try {
     // TODO: Get user ID from authentication
-    // const userId = await getUserIdFromAuth(request);
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
 
-    // TODO: Fetch purchases from database
-    // const purchases = await getPurchasesFromDatabase(userId);
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    }
 
-    // Mock purchases for now
-    const mockPurchases = [
-      {
-        productId: "premium_monthly",
-        transactionId: "pi_mock_transaction_123",
-        purchaseToken: "cs_mock_session_456",
-        purchaseTime: "2024-01-15T10:30:00Z",
-        isValid: true,
-        isSubscription: true,
-        expiryTime: "2024-02-15T10:30:00Z",
-        amount: 4.99,
-        currency: "usd",
-      },
-    ];
+    // Fetch purchases from Firebase
+    const purchases = await firebasePurchaseService.getUserPurchases(userId);
 
-    return NextResponse.json(mockPurchases);
+    // Transform to the expected format
+    const formattedPurchases = purchases.map(purchase => ({
+      productId: purchase.productId,
+      transactionId: purchase.transactionId,
+      purchaseToken: purchase.purchaseToken,
+      purchaseTime: purchase.purchaseTime.toISOString(),
+      isValid: purchase.isValid,
+      isSubscription: purchase.isSubscription,
+      expiryTime: purchase.expiryTime?.toISOString(),
+      amount: purchase.amount,
+      currency: purchase.currency,
+      platform: purchase.platform,
+      status: purchase.status,
+    }));
+
+    return NextResponse.json(formattedPurchases);
   } catch (error) {
     console.error("Failed to fetch user purchases:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   // Enable experimental features for better performance
   experimental: {
@@ -157,15 +159,27 @@ const nextConfig: NextConfig = {
 
   // Performance headers
   async headers() {
-    return [
+    const securityAndPerfHeaders = [
       {
         source: "/(.*)",
         headers: [
           // Security headers
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
+          // Only send X-Frame-Options in production so local previews (VS Code, etc.) can iframe the app.
+          // In development, allow trusted ancestors via CSP instead.
+          ...(isProd
+            ? [
+                {
+                  key: "X-Frame-Options",
+                  value: "DENY",
+                },
+              ]
+            : [
+                {
+                  key: "Content-Security-Policy",
+                  value:
+                    "frame-ancestors 'self' vscode-webview://* http://localhost:* https://localhost:*;",
+                },
+              ]),
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
@@ -213,6 +227,8 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+
+    return securityAndPerfHeaders;
   },
 
   // Rewrites for service worker

@@ -1,0 +1,257 @@
+{
+  "jobs": {
+    "1": {
+      "playlistId": "1",
+      "total": 42,
+      "completed": 16,
+      "status": "canceled",
+      "startedAt": 1756479484957,
+      "rows": {
+        "1-1-0-0": {
+          "trackId": "1-1-0-0",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-1-1-0-0-668/500/500",
+          "updatedAt": 1756479485758
+        },
+        "2-1-1-1": {
+          "trackId": "2-1-1-1",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-2-1-1-1-5125/500/500",
+          "updatedAt": 1756479486560
+        },
+        "3-1-2-2": {
+          "trackId": "3-1-2-2",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-3-1-2-2-3295/500/500",
+          "updatedAt": 1756479487362
+        },
+        "4-1-3-3": {
+          "trackId": "4-1-3-3",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-4-1-3-3-721/500/500",
+          "updatedAt": 1756479488165
+        },
+        "1-1-0-4": {
+          "trackId": "1-1-0-4",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-1-1-0-4-8418/500/500",
+          "updatedAt": 1756479488965
+        },
+        "2-1-1-5": {
+          "trackId": "2-1-1-5",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-2-1-1-5-8748/500/500",
+          "updatedAt": 1756479489767
+        },
+        "3-1-2-6": {
+          "trackId": "3-1-2-6",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-3-1-2-6-7555/500/500",
+          "updatedAt": 1756479490567
+        },
+        "4-1-3-7": {
+          "trackId": "4-1-3-7",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-4-1-3-7-3782/500/500",
+          "updatedAt": 1756479491369
+        },
+        "1-1-0-8": {
+          "trackId": "1-1-0-8",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-1-1-0-8-3276/500/500",
+          "updatedAt": 1756479492169
+        },
+        "2-1-1-9": {
+          "trackId": "2-1-1-9",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-2-1-1-9-6246/500/500",
+          "updatedAt": 1756479492972
+        },
+        "3-1-2-10": {
+          "trackId": "3-1-2-10",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-3-1-2-10-1896/500/500",
+          "updatedAt": 1756479493772
+        },
+        "4-1-3-11": {
+          "trackId": "4-1-3-11",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-4-1-3-11-5027/500/500",
+          "updatedAt": 1756479494573
+        },
+        "1-1-0-12": {
+          "trackId": "1-1-0-12",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-1-1-0-12-3624/500/500",
+          "updatedAt": 1756479495374
+        },
+        "2-1-1-13": {
+          "trackId": "2-1-1-13",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-2-1-1-13-1658/500/500",
+          "updatedAt": 1756479496176
+        },
+        "3-1-2-14": {
+          "trackId": "3-1-2-14",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-3-1-2-14-6287/500/500",
+          "updatedAt": 1756479496976
+        },
+        "4-1-3-15": {
+          "trackId": "4-1-3-15",
+          "status": "updated",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500",
+          "newCoverUrl": "https://picsum.photos/seed/cover-4-1-3-15-1490/500/500",
+          "updatedAt": 1756479497777
+        },
+        "1-1-0-16": {
+          "trackId": "1-1-0-16",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-17": {
+          "trackId": "2-1-1-17",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-18": {
+          "trackId": "3-1-2-18",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-19": {
+          "trackId": "4-1-3-19",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-20": {
+          "trackId": "1-1-0-20",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-21": {
+          "trackId": "2-1-1-21",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-22": {
+          "trackId": "3-1-2-22",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-23": {
+          "trackId": "4-1-3-23",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-24": {
+          "trackId": "1-1-0-24",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-25": {
+          "trackId": "2-1-1-25",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-26": {
+          "trackId": "3-1-2-26",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-27": {
+          "trackId": "4-1-3-27",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-28": {
+          "trackId": "1-1-0-28",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-29": {
+          "trackId": "2-1-1-29",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-30": {
+          "trackId": "3-1-2-30",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-31": {
+          "trackId": "4-1-3-31",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-32": {
+          "trackId": "1-1-0-32",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-33": {
+          "trackId": "2-1-1-33",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-34": {
+          "trackId": "3-1-2-34",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-35": {
+          "trackId": "4-1-3-35",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-36": {
+          "trackId": "1-1-0-36",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-37": {
+          "trackId": "2-1-1-37",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        },
+        "3-1-2-38": {
+          "trackId": "3-1-2-38",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/gh/500/500"
+        },
+        "4-1-3-39": {
+          "trackId": "4-1-3-39",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/fe/500/500"
+        },
+        "1-1-0-40": {
+          "trackId": "1-1-0-40",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/mb/500/500"
+        },
+        "2-1-1-41": {
+          "trackId": "2-1-1-41",
+          "status": "pending",
+          "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
+        }
+      }
+    }
+  },
+  "queue": [],
+  "active": null
+}

@@ -19,7 +19,6 @@ interface PushNotificationOptions {
   requireInteraction?: boolean;
   silent?: boolean;
   tag?: string;
-  renotify?: boolean;
   timestamp?: number;
 }
 
@@ -139,32 +138,23 @@ class PushNotificationService {
       // Check if service worker is available for more advanced notifications
       if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.ready;
-
         await registration.showNotification(payload.title, {
           body: payload.body,
           icon: payload.icon || "/icon-192x192.png",
-          image: payload.image,
-          badge: payload.badge || "/badge-72x72.png",
           data: payload.data,
-          actions: payload.actions,
           requireInteraction: options.requireInteraction,
           silent: options.silent,
           tag: options.tag,
-          renotify: options.renotify,
-          timestamp: options.timestamp || Date.now(),
         });
       } else {
-        // Fallback to basic notification
-        new Notification(payload.title, {
+        // Use the new Notification API
+        const notification = new Notification(payload.title, {
           body: payload.body,
           icon: payload.icon || "/icon-192x192.png",
-          image: payload.image,
           data: payload.data,
           requireInteraction: options.requireInteraction,
           silent: options.silent,
           tag: options.tag,
-          renotify: options.renotify,
-          timestamp: options.timestamp || Date.now(),
         });
       }
 
@@ -190,7 +180,6 @@ class PushNotificationService {
           title: payload.notification.title || "Vibely",
           body: payload.notification.body || "",
           icon: payload.notification.icon,
-          image: payload.notification.image,
           data: payload.data,
         });
       }
@@ -213,6 +202,64 @@ class PushNotificationService {
         window.dispatchEvent(
           new CustomEvent("notification-regen-complete", {
             detail: { playlistId: data.playlistId },
+          }),
+        );
+        break;
+
+      case "regen_started":
+        // Show progress indicator or navigate to playlist
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-started", {
+            detail: { playlistId: data.playlistId, totalTracks: data.totalTracks },
+          }),
+        );
+        break;
+
+      case "regen_progress":
+        // Update progress indicators
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-progress", {
+            detail: { 
+              playlistId: data.playlistId, 
+              completed: data.completed, 
+              total: data.total,
+              percentage: data.percentage 
+            },
+          }),
+        );
+        break;
+
+      case "regen_paused":
+        // Handle pause action or show resume option
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-paused", {
+            detail: { 
+              playlistId: data.playlistId, 
+              completed: data.completed, 
+              total: data.total 
+            },
+          }),
+        );
+        break;
+
+      case "regen_resumed":
+        // Handle resume notification
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-resumed", {
+            detail: { playlistId: data.playlistId },
+          }),
+        );
+        break;
+
+      case "regen_canceled":
+        // Handle cancellation notification
+        window.dispatchEvent(
+          new CustomEvent("notification-regen-canceled", {
+            detail: { 
+              playlistId: data.playlistId, 
+              completed: data.completed, 
+              total: data.total 
+            },
           }),
         );
         break;
@@ -334,6 +381,310 @@ export async function notifyRegenComplete(playlistName: string, playlistId: stri
     {
       requireInteraction: true,
       tag: `regen-${playlistId}`,
+    },
+  );
+}
+
+// New regeneration progress notification functions
+export async function notifyRegenStarted(playlistName: string, playlistId: string, totalTracks: number) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Generating Album Covers 🎨",
+      body: `Started generating ${totalTracks} covers for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_started",
+        playlistId,
+        totalTracks,
+        action: "view_progress",
+      },
+    },
+    {
+      silent: true,
+      tag: `regen-progress-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyRegenProgress(
+  playlistName: string, 
+  playlistId: string, 
+  completed: number, 
+  total: number,
+  milestone?: boolean
+) {
+  const percentage = Math.round((completed / total) * 100);
+  
+  // Only send notifications for milestone percentages or when specifically requested
+  if (!milestone && ![25, 50, 75].includes(percentage)) {
+    return false;
+  }
+
+  return pushNotificationService.showNotification(
+    {
+      title: `Generating Covers (${percentage}%) 🎨`,
+      body: `${completed}/${total} covers ready for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_progress",
+        playlistId,
+        completed,
+        total,
+        percentage,
+        action: "view_progress",
+      },
+      actions: [
+        {
+          action: "view",
+          title: "View Progress",
+        },
+        {
+          action: "pause",
+          title: "Pause",
+        },
+      ],
+    },
+    {
+      tag: `regen-progress-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyRegenPaused(playlistName: string, playlistId: string, completed: number, total: number) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Generation Paused ⏸️",
+      body: `${completed}/${total} covers completed for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_paused",
+        playlistId,
+        completed,
+        total,
+        action: "resume",
+      },
+      actions: [
+        {
+          action: "resume",
+          title: "Resume",
+        },
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+      ],
+    },
+    {
+      requireInteraction: true,
+      tag: `regen-paused-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyRegenResumed(playlistName: string, playlistId: string) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Generation Resumed 🎨",
+      body: `Continuing cover generation for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_resumed",
+        playlistId,
+        action: "view_progress",
+      },
+    },
+    {
+      silent: true,
+      tag: `regen-progress-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyRegenCanceled(playlistName: string, playlistId: string, completed: number, total: number) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Generation Canceled 🚫",
+      body: `${completed}/${total} covers were completed for \"${playlistName}\"`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "regen_canceled",
+        playlistId,
+        completed,
+        total,
+        action: "view_playlist",
+      },
+    },
+    {
+      tag: `regen-canceled-${playlistId}`,
+    },
+  );
+}
+
+// Playlist update notification functions
+export async function notifyPlaylistCreated(playlistName: string, playlistId: string, trackCount: number) {
+  return pushNotificationService.showNotification(
+    {
+      title: "New Playlist Created 🎵",
+      body: `"${playlistName}" created with ${trackCount} songs`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "playlist_created",
+        playlistId,
+        trackCount,
+        action: "view_playlist",
+      },
+      actions: [
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ],
+    },
+    {
+      tag: `playlist-created-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyPlaylistUpdated(playlistName: string, playlistId: string, changeType: string, changeCount: number) {
+  const getUpdateMessage = (type: string, count: number) => {
+    switch (type) {
+      case "songs_added":
+        return `${count} song${count !== 1 ? 's' : ''} added to "${playlistName}"`;
+      case "songs_removed":
+        return `${count} song${count !== 1 ? 's' : ''} removed from "${playlistName}"`;
+      case "songs_reordered":
+        return `Songs reordered in "${playlistName}"`;
+      case "metadata_updated":
+        return `"${playlistName}" details updated`;
+      default:
+        return `"${playlistName}" updated`;
+    }
+  };
+
+  return pushNotificationService.showNotification(
+    {
+      title: "Playlist Updated 📝",
+      body: getUpdateMessage(changeType, changeCount),
+      icon: "/icon-192x192.png",
+      data: {
+        type: "playlist_updated",
+        playlistId,
+        changeType,
+        changeCount,
+        action: "view_playlist",
+      },
+      actions: [
+        {
+          action: "view",
+          title: "View Changes",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ],
+    },
+    {
+      tag: `playlist-updated-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyPlaylistShared(playlistName: string, playlistId: string, sharedBy: string) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Playlist Shared 🤝",
+      body: `${sharedBy} shared "${playlistName}" with you`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "playlist_shared",
+        playlistId,
+        sharedBy,
+        action: "view_playlist",
+      },
+      actions: [
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+        {
+          action: "add",
+          title: "Add to Library",
+        },
+      ],
+    },
+    {
+      requireInteraction: true,
+      tag: `playlist-shared-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyPlaylistDeleted(playlistName: string, playlistId: string) {
+  return pushNotificationService.showNotification(
+    {
+      title: "Playlist Deleted 🗑️",
+      body: `"${playlistName}" has been deleted`,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "playlist_deleted",
+        playlistId,
+        playlistName,
+        action: "view_library",
+      },
+      actions: [
+        {
+          action: "undo",
+          title: "Undo Delete",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ],
+    },
+    {
+      requireInteraction: true,
+      tag: `playlist-deleted-${playlistId}`,
+    },
+  );
+}
+
+export async function notifyNewMusicAdded(artistName: string, songTitle: string, playlistName?: string) {
+  const body = playlistName 
+    ? `New song "${songTitle}" by ${artistName} added to "${playlistName}"`
+    : `New song "${songTitle}" by ${artistName} available`;
+
+  return pushNotificationService.showNotification(
+    {
+      title: "New Music Added 🎶",
+      body,
+      icon: "/icon-192x192.png",
+      data: {
+        type: "new_music",
+        artistName,
+        songTitle,
+        playlistName,
+        action: playlistName ? "view_playlist" : "view_library",
+      },
+      actions: [
+        {
+          action: "play",
+          title: "Play Now",
+        },
+        {
+          action: "view",
+          title: playlistName ? "View Playlist" : "View Library",
+        },
+      ],
+    },
+    {
+      tag: `new-music-${Date.now()}`,
     },
   );
 }

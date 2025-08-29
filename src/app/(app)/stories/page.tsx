@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -10,6 +11,7 @@ import StoryViewer from "@/components/story-viewer";
 import { Plus, Search, Filter } from "lucide-react";
 
 export default function StoriesPage() {
+  const router = useRouter();
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
@@ -28,6 +30,11 @@ export default function StoriesPage() {
     setMounted(true);
     console.log("StoriesPage mounted with", savedStories.length, "stories");
 
+    // Add a timeout to ensure mounting doesn't get stuck
+    const mountTimeout = setTimeout(() => {
+      setMounted(true);
+    }, 1000);
+
     // Pre-load images to detect errors early
     savedStories.forEach((story) => {
       setImageLoading((prev) => ({ ...prev, [story.id]: true }));
@@ -43,6 +50,8 @@ export default function StoriesPage() {
       };
       img.src = story.generatedCoverUrl;
     });
+    
+    return () => clearTimeout(mountTimeout);
   }, []);
 
   const handleImageError = (storyId: string) => {
@@ -76,9 +85,7 @@ export default function StoriesPage() {
             </div>
             <Button
               className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full"
-              onClick={() => {
-                /* TODO: Navigate to generator */
-              }}
+              onClick={() => router.push('/generator?source=stories_header')}
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New
@@ -149,9 +156,7 @@ export default function StoriesPage() {
               </p>
               <Button
                 className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full px-8 py-3"
-                onClick={() => {
-                  /* TODO: Navigate to generator */
-                }}
+                onClick={() => router.push('/generator?source=stories_empty_state')}
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Cover

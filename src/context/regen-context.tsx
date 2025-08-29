@@ -9,8 +9,9 @@ type RegenStatus = "idle" | "running" | "paused" | "canceled" | "completed" | "q
 export type RegenRowState = {
   trackId: string;
   status: "pending" | "updating" | "updated" | "restored";
-  prevCoverUrl?: string;
-  newCoverUrl?: string;
+  prevCoverUrl?: string; // Original cover
+  newCoverUrl?: string;  // AI-generated cover (when status is "updated") or currently displayed cover
+  aiCoverUrl?: string;   // Always stores the AI-generated cover for undo functionality
   updatedAt?: number;
 };
 
@@ -32,6 +33,7 @@ type RegenContextType = {
   cancel: (playlistId: string) => void;
   restoreAll: (playlistId: string) => void;
   restoreTrack: (playlistId: string, trackId: string) => void;
+  undoRestore: (playlistId: string, trackId: string) => void;
 };
 
 const RegenContext = createContext<RegenContextType | undefined>(undefined);
@@ -49,6 +51,8 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const timers = useRef<Record<string, NodeJS.Timeout | null>>({});
   const pollers = useRef<Record<string, NodeJS.Timeout | null>>({});
+  
+  // Note: useRegenNotifications() moved to layout.tsx to avoid circular dependency
 
   const updateMilestones = (job: RegenJob, startedAt?: number) => {
     const pct = Math.round((job.completed / job.total) * 100);
@@ -92,6 +96,7 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
         status: "updated",
         prevCoverUrl: covers[nextTrackId],
         newCoverUrl: randomCover(nextTrackId),
+        aiCoverUrl: randomCover(nextTrackId), // Store the AI cover for undo functionality
         updatedAt: Date.now(),
       };
       const variantId = `cv_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -427,15 +432,36 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
     setJobs((prev) => {
       const job = prev[playlistId];
       if (!job) return prev;
-      const rows = Object.fromEntries(
-        Object.entries(job.rows).map(([id, r]) => [
-          id,
-          { ...r, status: "restored", newCoverUrl: r.prevCoverUrl },
-        ]),
-      );
-      trackEvent("cover_restored", { playlist_id: playlistId, scope: "playlist" });
-      toast({ title: "Restored previous covers" });
-      return { ...prev, [playlistId]: { ...job, rows } };
+      
+      const updatedRows = { ...job.rows };
+      let restoredCount = 0;
+      
+      Object.keys(updatedRows).forEach((trackId) => {
+        const row = updatedRows[trackId];
+        if (row?.status === "updated" && row.prevCoverUrl) {
+          updatedRows[trackId] = { 
+            ...row, 
+            status: "restored" as const, 
+            newCoverUrl: row.prevCoverUrl, // Show original cover
+            aiCoverUrl: row.aiCoverUrl || row.newCoverUrl // Keep AI cover for undo
+          };
+          restoredCount++;
+        }
+      });
+      
+      if (restoredCount > 0) {
+        trackEvent("cover_restored", { 
+          playlist_id: playlistId, 
+          scope: "playlist", 
+          tracks_restored: restoredCount 
+        });
+        toast({ 
+          title: "Restored previous covers", 
+          description: `${restoredCount} song${restoredCount !== 1 ? 's' : ''} restored to original covers` 
+        });
+      }
+      
+      return { ...prev, [playlistId]: { ...job, rows: updatedRows } };
     });
   };
 
@@ -453,16 +479,53 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
       const job = prev[playlistId];
       if (!job) return prev;
       const row = job.rows[trackId];
-      if (!row) return prev;
-      const updated = { ...row, status: "restored", newCoverUrl: row.prevCoverUrl };
+      if (!row || row.status !== "updated" || !row.prevCoverUrl) return prev;
+      
+      const updated: RegenRowState = { 
+        ...row, 
+        status: "restored", 
+        newCoverUrl: row.prevCoverUrl,
+        aiCoverUrl: row.aiCoverUrl || row.newCoverUrl // Keep AI cover for undo
+      };
       trackEvent("cover_restored", { playlist_id: playlistId, track_id: trackId, scope: "track" });
-      toast({ title: "Restored previous covers" });
+      toast({ 
+        title: "Cover restored", 
+        description: "Switched back to the original cover" 
+      });
+      return { ...prev, [playlistId]: { ...job, rows: { ...job.rows, [trackId]: updated } } };
+    });
+  };
+  
+  const undoRestore = (playlistId: string, trackId: string) => {
+    setJobs((prev) => {
+      const job = prev[playlistId];
+      if (!job) return prev;
+      const row = job.rows[trackId];
+      if (!row || row.status !== "restored" || !row.aiCoverUrl) return prev;
+      
+      // Switch back to the AI-generated cover
+      const updated: RegenRowState = { 
+        ...row, 
+        status: "updated", 
+        newCoverUrl: row.aiCoverUrl // Use the stored AI cover
+      };
+      
+      trackEvent("cover_restored", { 
+        playlist_id: playlistId, 
+        track_id: trackId, 
+        scope: "track", 
+        action: "undo" 
+      });
+      toast({ 
+        title: "Restore undone", 
+        description: "Switched back to the AI-generated cover" 
+      });
       return { ...prev, [playlistId]: { ...job, rows: { ...job.rows, [trackId]: updated } } };
     });
   };
 
   const value = useMemo(
-    () => ({ jobs, start, pause, resume, cancel, restoreAll, restoreTrack }),
+    () => ({ jobs, start, pause, resume, cancel, restoreAll, restoreTrack, undoRestore }),
     [jobs],
   );
 

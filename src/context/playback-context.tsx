@@ -5,6 +5,7 @@ import { track as trackEvent } from "@/lib/analytics";
 import { songs as baseSongs } from "@/lib/data";
 import { getAudioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
 import { useAuth } from "@/hooks/use-auth";
+import { useBatteryAwareAudio, type BatteryAwareAudioSettings, type BatteryStatus } from "@/hooks/use-battery-aware-audio";
 
 export type Track = {
   id: string;
@@ -32,6 +33,10 @@ type PlaybackContextType = {
   repeat: RepeatMode;
   volume: number;
   isReady: boolean;
+  // Battery-aware audio properties
+  batteryStatus: BatteryStatus;
+  audioSettings: BatteryAwareAudioSettings;
+  isBatterySaveMode: boolean;
   setQueue: (tracks: Track[], startIndex?: number) => void;
   setQueueWithPlaylist: (playlistId: string, tracks: Track[], startIndex?: number) => void;
   play: () => void;
@@ -44,6 +49,9 @@ type PlaybackContextType = {
   setRepeat: (mode: RepeatMode) => void;
   setVolume: (volume: number) => void;
   playTrackAt: (index: number, tracks?: Track[]) => void;
+  // Battery-aware audio methods
+  enableBatterySaveMode: () => void;
+  disableBatterySaveMode: () => void;
 };
 
 const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined);
@@ -73,6 +81,16 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
+  
+  // Battery-aware audio integration
+  const {
+    batteryStatus,
+    audioSettings,
+    enableBatterySaveMode,
+    disableBatterySaveMode,
+  } = useBatteryAwareAudio();
+  
+  const isBatterySaveMode = audioSettings.autoSaveMode;
 
   const current = useMemo(() => queue[currentIndex] ?? null, [queue, currentIndex]);
 
@@ -149,6 +167,31 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current as any);
     };
   }, []);
+  
+  // Apply battery optimizations to audio engine
+  useEffect(() => {
+    if (!isReady) return;
+    
+    const audioEngine = getAudioEngine();
+    audioEngine.applyBatteryOptimizations(audioSettings);
+    
+    // Preload next track if settings allow
+    if (audioSettings.preloadNext && !audioSettings.shouldReduceQuality) {
+      const nextTrack = queue[currentIndex + 1];
+      if (nextTrack) {
+        const engineTrack: AudioEngineTrack = {
+          id: nextTrack.id,
+          title: nextTrack.title,
+          artist: nextTrack.artist,
+          uri: nextTrack.uri || `preview:${nextTrack.id}`,
+          duration: nextTrack.duration || 180,
+          provider: nextTrack.provider || "preview",
+          preview_url: nextTrack.preview_url,
+        };
+        audioEngine.preloadTrack(engineTrack);
+      }
+    }
+  }, [audioSettings, isReady, currentIndex, queue]);
 
   const setQueue = (tracks: Track[], startIndex = 0) => {
     setQueueState(tracks);
@@ -316,6 +359,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     repeat,
     volume,
     isReady,
+    // Battery-aware audio properties
+    batteryStatus,
+    audioSettings,
+    isBatterySaveMode,
     setQueue,
     setQueueWithPlaylist,
     play,
@@ -328,6 +375,9 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     setRepeat,
     setVolume,
     playTrackAt,
+    // Battery-aware audio methods
+    enableBatterySaveMode,
+    disableBatterySaveMode,
   };
 
   return <PlaybackContext.Provider value={value}>{children}</PlaybackContext.Provider>;

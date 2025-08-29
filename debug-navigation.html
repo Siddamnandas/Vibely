@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navigation Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        .nav-test { margin: 20px 0; }
+        .nav-test a { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            margin: 5px; 
+            background: #333; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px;
+            border: 1px solid #555;
+        }
+        .nav-test a:hover { background: #555; }
+        .status { margin: 10px 0; padding: 10px; background: #222; border-radius: 5px; }
+        .error { color: #ff6b6b; }
+        .success { color: #51cf66; }
+    </style>
+</head>
+<body>
+    <h1>Vibely Navigation Debug Test</h1>
+    <div class="status">
+        <p>Current URL: <span id="currentUrl"></span></p>
+        <p>Status: <span id="status">Ready</span></p>
+    </div>
+
+    <div class="nav-test">
+        <h3>Direct Navigation Links (should work if server is running)</h3>
+        <a href="http://localhost:3003/" target="_blank">Home (Generate)</a>
+        <a href="http://localhost:3003/library" target="_blank">Library</a>
+        <a href="http://localhost:3003/stories" target="_blank">Stories</a>
+        <a href="http://localhost:3003/profile" target="_blank">Profile</a>
+    </div>
+
+    <div class="nav-test">
+        <h3>Test Server Response</h3>
+        <button onclick="testServer()">Test Server Connection</button>
+        <div id="serverTest"></div>
+    </div>
+
+    <script>
+        document.getElementById('currentUrl').textContent = window.location.href;
+        
+        async function testServer() {
+            const serverTestDiv = document.getElementById('serverTest');
+            const statusSpan = document.getElementById('status');
+            
+            serverTestDiv.innerHTML = '<p>Testing server...</p>';
+            statusSpan.textContent = 'Testing...';
+            
+            const endpoints = [
+                'http://localhost:3003/',
+                'http://localhost:3003/library',
+                'http://localhost:3003/stories', 
+                'http://localhost:3003/profile'
+            ];
+            
+            const results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    const success = response.ok;
+                    results.push(`${endpoint}: ${success ? '✅ OK' : '❌ Failed'} (${response.status})`);
+                } catch (error) {
+                    results.push(`${endpoint}: ❌ Error - ${error.message}`);
+                }
+            }
+            
+            serverTestDiv.innerHTML = '<h4>Server Test Results:</h4><ul>' + 
+                results.map(r => `<li class="${r.includes('✅') ? 'success' : 'error'}">${r}</li>`).join('') + 
+                '</ul>';
+            
+            const allSuccess = results.every(r => r.includes('✅'));
+            statusSpan.textContent = allSuccess ? 'All endpoints working' : 'Some endpoints failed';
+            statusSpan.className = allSuccess ? 'success' : 'error';
+        }
+        
+        // Auto-test on load
+        setTimeout(testServer, 1000);
+    </script>
+</body>
+</html>

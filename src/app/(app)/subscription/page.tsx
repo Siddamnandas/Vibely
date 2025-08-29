@@ -45,8 +45,18 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     // Load current subscription
-    const subscription = subscriptionService.getCurrentSubscription("user1");
-    setCurrentSubscription(subscription);
+    let cancelled = false;
+    (async () => {
+      try {
+        const subscription = await subscriptionService.getCurrentSubscription("user1");
+        if (!cancelled) setCurrentSubscription(subscription);
+      } catch (e) {
+        // Keep null on failure; UI will handle gracefully
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleUpgrade = async () => {
@@ -99,7 +109,7 @@ export default function SubscriptionPage() {
       const result = await subscriptionService.cancelSubscription("user1", false);
 
       if (result.success) {
-        const updatedSub = subscriptionService.getCurrentSubscription("user1");
+        const updatedSub = await subscriptionService.getCurrentSubscription("user1");
         setCurrentSubscription(updatedSub);
 
         toast({
@@ -156,7 +166,7 @@ export default function SubscriptionPage() {
   };
 
   const { platform } = getPlatformInfo();
-  const isPremium = currentSubscription?.plan.tier === "premium" || hasActiveSubscription;
+  const isPremium = currentSubscription?.plan?.tier === "premium" || hasActiveSubscription;
   const premiumPlan = SUBSCRIPTION_PLANS.find((p) => p.tier === "premium")!;
   const freemiumPlan = SUBSCRIPTION_PLANS.find((p) => p.tier === "freemium")!;
 

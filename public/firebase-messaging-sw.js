@@ -65,6 +65,70 @@ self.addEventListener("notificationclick", (event) => {
   } else if (action === "dismiss") {
     // Just close the notification (already handled above)
     return;
+  } else if (action === "undo") {
+    // Handle undo delete action
+    event.waitUntil(
+      clients.matchAll({ type: "window" }).then((clientList) => {
+        if (clientList.length > 0) {
+          // Send message to the app to handle undo
+          clientList[0].postMessage({
+            type: "undo_playlist_delete",
+            playlistId: data.playlistId,
+            playlistName: data.playlistName,
+          });
+          return clientList[0].focus();
+        }
+        return clients.openWindow(`${self.location.origin}/library`);
+      })
+    );
+  } else if (action === "add") {
+    // Handle add to library action
+    event.waitUntil(
+      clients.matchAll({ type: "window" }).then((clientList) => {
+        if (clientList.length > 0) {
+          // Send message to the app to handle add to library
+          clientList[0].postMessage({
+            type: "add_playlist_to_library",
+            playlistId: data.playlistId,
+            sharedBy: data.sharedBy,
+          });
+          return clientList[0].focus();
+        }
+        return clients.openWindow(getUrlForNotification(data));
+      })
+    );
+  } else if (action === "play") {
+    // Handle play now action
+    event.waitUntil(
+      clients.matchAll({ type: "window" }).then((clientList) => {
+        if (clientList.length > 0) {
+          // Send message to the app to handle play
+          clientList[0].postMessage({
+            type: "play_new_music",
+            artistName: data.artistName,
+            songTitle: data.songTitle,
+            playlistName: data.playlistName,
+          });
+          return clientList[0].focus();
+        }
+        return clients.openWindow(getUrlForNotification(data));
+      })
+    );
+  } else if (action === "pause" || action === "resume") {
+    // Handle pause/resume actions for regeneration
+    event.waitUntil(
+      clients.matchAll({ type: "window" }).then((clientList) => {
+        if (clientList.length > 0) {
+          // Send message to the app to handle pause/resume
+          clientList[0].postMessage({
+            type: action === "pause" ? "pause_regeneration" : "resume_regeneration",
+            playlistId: data.playlistId,
+          });
+          return clientList[0].focus();
+        }
+        return clients.openWindow(getUrlForNotification(data));
+      })
+    );
   }
 });
 
@@ -77,6 +141,66 @@ function getNotificationActions(type) {
           action: "view",
           title: "View Playlist",
           icon: "/icons/view.png",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "regen_started":
+      return [
+        {
+          action: "view",
+          title: "View Progress",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "regen_progress":
+      return [
+        {
+          action: "view",
+          title: "View Progress",
+        },
+        {
+          action: "pause",
+          title: "Pause",
+        },
+      ];
+
+    case "regen_paused":
+      return [
+        {
+          action: "resume",
+          title: "Resume",
+        },
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+      ];
+
+    case "regen_resumed":
+      return [
+        {
+          action: "view",
+          title: "View Progress",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "regen_canceled":
+      return [
+        {
+          action: "view",
+          title: "View Playlist",
         },
         {
           action: "dismiss",
@@ -108,6 +232,66 @@ function getNotificationActions(type) {
         },
       ];
 
+    case "playlist_created":
+      return [
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "playlist_updated":
+      return [
+        {
+          action: "view",
+          title: "View Changes",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "playlist_shared":
+      return [
+        {
+          action: "view",
+          title: "View Playlist",
+        },
+        {
+          action: "add",
+          title: "Add to Library",
+        },
+      ];
+
+    case "playlist_deleted":
+      return [
+        {
+          action: "undo",
+          title: "Undo Delete",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+        },
+      ];
+
+    case "new_music":
+      return [
+        {
+          action: "play",
+          title: "Play Now",
+        },
+        {
+          action: "view",
+          title: "View",
+        },
+      ];
+
     default:
       return [
         {
@@ -124,6 +308,11 @@ function getUrlForNotification(data) {
 
   switch (data?.type) {
     case "regen_complete":
+    case "regen_started":
+    case "regen_progress":
+    case "regen_paused":
+    case "regen_resumed":
+    case "regen_canceled":
       return `${baseUrl}/playlist/${data.playlistId}`;
 
     case "new_feature":
@@ -131,6 +320,18 @@ function getUrlForNotification(data) {
 
     case "share_response":
       return `${baseUrl}/track/${data.trackId}`;
+
+    case "playlist_created":
+    case "playlist_updated":
+    case "playlist_shared":
+    case "playlist_deleted":
+      return `${baseUrl}/playlist/${data.playlistId}`;
+
+    case "new_music":
+      if (data.playlistName) {
+        return `${baseUrl}/playlist/${data.playlistId || 'library'}`;
+      }
+      return `${baseUrl}/library`;
 
     default:
       return baseUrl;

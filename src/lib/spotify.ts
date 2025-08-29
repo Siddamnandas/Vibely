@@ -6,7 +6,7 @@ const SPOTIFY_CONFIG = {
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
   redirectUri:
     process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
-    "http://localhost:9002/api/auth/spotify/callback",
+    "http://localhost:3000/auth/callback",
   scopes: [
     "user-read-private",
     "user-read-email",

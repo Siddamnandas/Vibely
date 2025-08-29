@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navigation Test - Vibely</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: white; 
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section { 
+            margin: 30px 0; 
+            padding: 20px; 
+            background: #2a2a2a; 
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        .nav-test a { 
+            display: inline-block; 
+            padding: 12px 24px; 
+            margin: 8px; 
+            background: #333; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px;
+            border: 1px solid #555;
+            transition: all 0.2s;
+        }
+        .nav-test a:hover { 
+            background: #555; 
+            border-color: #777;
+        }
+        .status { 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: #222; 
+            border-radius: 8px; 
+            border: 1px solid #444;
+        }
+        .error { color: #ff6b6b; }
+        .success { color: #51cf66; }
+        .warning { color: #ffd43b; }
+        button {
+            background: #4c6ef5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #364fc7;
+        }
+        .console-output {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .console-error { color: #ff6b6b; }
+        .console-warn { color: #ffd43b; }
+        .console-info { color: #51cf66; }
+        .iframe-container {
+            border: 2px solid #444;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Vibely Navigation Debug Test</h1>
+    <p>This test will help identify why navigation isn't working in the app.</p>
+
+    <div class="status">
+        <p><strong>Current URL:</strong> <span id="currentUrl"></span></p>
+        <p><strong>Status:</strong> <span id="status">Ready to test</span></p>
+        <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>🌐 1. Server Connectivity Test</h3>
+        <p>First, let's verify the development server is responding correctly.</p>
+        <button onclick="testServerConnectivity()">Test Server Connectivity</button>
+        <div id="serverTestResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔗 2. Direct Navigation Links</h3>
+        <p>Test direct navigation to each page (opens in new tab):</p>
+        <div class="nav-test">
+            <a href="http://localhost:3001/" target="_blank">🏠 Home (Generate)</a>
+            <a href="http://localhost:3001/library" target="_blank">📚 Library</a>
+            <a href="http://localhost:3001/stories" target="_blank">📖 Stories</a>
+            <a href="http://localhost:3001/profile" target="_blank">👤 Profile</a>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🖼️ 3. Embedded App Test</h3>
+        <p>Test navigation within the actual app (embedded below):</p>
+        <button onclick="loadEmbeddedApp()">Load App in Frame</button>
+        <button onclick="testEmbeddedNavigation()">Test Navigation</button>
+        <div class="iframe-container" id="iframeContainer" style="display: none;">
+            <iframe id="appFrame" src="about:blank"></iframe>
+        </div>
+        <div id="embeddedTestResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔍 4. JavaScript Console Monitor</h3>
+        <p>Monitor JavaScript errors and warnings:</p>
+        <button onclick="clearConsoleLog()">Clear Console</button>
+        <button onclick="checkForErrors()">Check for Errors</button>
+        <div class="console-output" id="consoleOutput">Console output will appear here...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>📋 5. Browser Information</h3>
+        <div id="browserInfo"></div>
+    </div>
+
+    <script>
+        let consoleLog = [];
+        
+        // Update current URL and timestamp
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+        // Capture console messages
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info
+        };
+
+        function logToCustomConsole(type, args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = Array.from(args).map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            consoleLog.push({
+                type,
+                timestamp,
+                message
+            });
+            
+            updateConsoleDisplay();
+            originalConsole[type].apply(console, args);
+        }
+
+        console.log = (...args) => logToCustomConsole('log', args);
+        console.error = (...args) => logToCustomConsole('error', args);
+        console.warn = (...args) => logToCustomConsole('warn', args);
+        console.info = (...args) => logToCustomConsole('info', args);
+
+        function updateConsoleDisplay() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML = consoleLog.map(entry => {
+                const className = `console-${entry.type}`;
+                return `<div class="${className}">[${entry.timestamp}] ${entry.message}</div>`;
+            }).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearConsoleLog() {
+            consoleLog = [];
+            updateConsoleDisplay();
+        }
+
+        async function testServerConnectivity() {
+            const resultDiv = document.getElementById('serverTestResult');
+            const statusSpan = document.getElementById('status');
+            
+            resultDiv.innerHTML = '<p>🔄 Testing server connectivity...</p>';
+            statusSpan.textContent = 'Testing server...';
+            
+            const endpoints = [
+                'http://localhost:3001/',
+                'http://localhost:3001/library',
+                'http://localhost:3001/stories', 
+                'http://localhost:3001/profile'
+            ];
+            
+            const results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.info(`Testing endpoint: ${endpoint}`);
+                    const response = await fetch(endpoint);
+                    const success = response.ok;
+                    const status = response.status;
+                    const contentType = response.headers.get('content-type') || 'unknown';
+                    
+                    results.push({
+                        endpoint,
+                        success,
+                        status,
+                        contentType,
+                        error: null
+                    });
+                    
+                    console.info(`✅ ${endpoint}: ${status} (${contentType})`);
+                } catch (error) {
+                    results.push({
+                        endpoint,
+                        success: false,
+                        status: 'ERROR',
+                        contentType: 'unknown',
+                        error: error.message
+                    });
+                    
+                    console.error(`❌ ${endpoint}: ${error.message}`);
+                }
+            }
+            
+            // Display results
+            const successCount = results.filter(r => r.success).length;
+            const isAllSuccess = successCount === endpoints.length;
+            
+            let html = `<h4>Server Connectivity Results:</h4><ul>`;
+            results.forEach(result => {
+                const icon = result.success ? '✅' : '❌';
+                const errorInfo = result.error ? ` (${result.error})` : '';
+                html += `<li class="${result.success ? 'success' : 'error'}">${icon} ${result.endpoint}: ${result.status}${errorInfo}</li>`;
+            });
+            html += '</ul>';
+            
+            if (isAllSuccess) {
+                html += '<p class="success">🎉 All endpoints are working correctly!</p>';
+                statusSpan.textContent = 'Server OK - Navigation issue is client-side';
+            } else {
+                html += '<p class="error">❌ Some endpoints failed - Server may have issues</p>';
+                statusSpan.textContent = 'Server connectivity issues detected';
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+
+        function loadEmbeddedApp() {
+            const container = document.getElementById('iframeContainer');
+            const iframe = document.getElementById('appFrame');
+            
+            container.style.display = 'block';
+            iframe.src = 'http://localhost:3001/';
+            
+            console.info('Loading embedded app...');
+            
+            iframe.onload = () => {
+                console.info('✅ App loaded in iframe');
+            };
+            
+            iframe.onerror = () => {
+                console.error('❌ Failed to load app in iframe');
+            };
+        }
+
+        function testEmbeddedNavigation() {
+            const resultDiv = document.getElementById('embeddedTestResult');
+            const iframe = document.getElementById('appFrame');
+            
+            if (!iframe.src || iframe.src === 'about:blank') {
+                resultDiv.innerHTML = '<p class="warning">⚠️ Please load the app first</p>';
+                return;
+            }
+            
+            console.info('Testing embedded navigation...');
+            
+            // Try to access iframe content (may be blocked by CORS)
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const navElements = iframeDoc.querySelectorAll('nav a, [href="/library"], [href="/stories"], [href="/profile"]');
+                
+                resultDiv.innerHTML = `
+                    <h4>Navigation Elements Found:</h4>
+                    <p>Found ${navElements.length} navigation elements</p>
+                    <ul>
+                        ${Array.from(navElements).map(el => `<li>${el.getAttribute('href')} - ${el.textContent || el.getAttribute('aria-label') || 'No text'}</li>`).join('')}
+                    </ul>
+                `;
+                
+                console.info(`Found ${navElements.length} navigation elements`);
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="warning">⚠️ Cannot access iframe content due to CORS policy</p>`;
+                console.warn('Cannot access iframe content:', error.message);
+            }
+        }
+
+        function checkForErrors() {
+            const errorEntries = consoleLog.filter(entry => entry.type === 'error');
+            const warnEntries = consoleLog.filter(entry => entry.type === 'warn');
+            
+            if (errorEntries.length === 0 && warnEntries.length === 0) {
+                console.info('✅ No errors or warnings detected');
+            } else {
+                console.info(`Found ${errorEntries.length} errors and ${warnEntries.length} warnings`);
+            }
+        }
+
+        // Display browser information
+        function displayBrowserInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine,
+                'Cookies Enabled': navigator.cookieEnabled,
+                'JavaScript Enabled': 'Yes',
+                'Local Storage': typeof(Storage) !== "undefined" ? 'Available' : 'Not available',
+                'Service Worker': 'serviceWorker' in navigator ? 'Supported' : 'Not supported',
+                'Current Origin': window.location.origin,
+                'Current Protocol': window.location.protocol
+            };
+            
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<tr style="border-bottom: 1px solid #444;"><td style="padding: 8px; font-weight: bold;">${key}:</td><td style="padding: 8px;">${value}</td></tr>`;
+            }
+            html += '</table>';
+            
+            document.getElementById('browserInfo').innerHTML = html;
+        }
+
+        // Run initial tests
+        displayBrowserInfo();
+        
+        // Auto-test server connectivity after a short delay
+        setTimeout(testServerConnectivity, 1000);
+
+        console.info('Navigation debug test page loaded');
+    </script>
+</body>
+</html>

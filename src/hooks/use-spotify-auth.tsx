@@ -22,7 +22,13 @@ export function useSpotifyAuth() {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const isAuth = await spotifyAPI.isAuthenticated();
+      // Add timeout for auth check
+      const authPromise = spotifyAPI.isAuthenticated();
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth check timeout')), 2000)
+      );
+      
+      const isAuth = await Promise.race([authPromise, timeout]);
 
       if (isAuth) {
         const profile = await spotifyAPI.getUserProfile();

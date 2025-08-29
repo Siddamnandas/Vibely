@@ -23,14 +23,32 @@ export function usePhotoGallery() {
   // Check availability on mount
   useEffect(() => {
     const checkAvailability = async () => {
-      const isSupported = photoGallery.isAvailable();
-      const hasPermission = isSupported ? await photoGallery.requestPermission() : false;
+      try {
+        const isSupported = photoGallery.isAvailable();
+        let hasPermission = false;
+        
+        if (isSupported) {
+          // Add timeout for permission check
+          const permissionPromise = photoGallery.requestPermission();
+          const timeout = new Promise<boolean>((resolve) => 
+            setTimeout(() => resolve(false), 1000) // 1 second timeout
+          );
+          
+          hasPermission = await Promise.race([permissionPromise, timeout]);
+        }
 
-      setState((prev) => ({
-        ...prev,
-        isSupported,
-        hasPermission,
-      }));
+        setState((prev) => ({
+          ...prev,
+          isSupported,
+          hasPermission,
+        }));
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          isSupported: false,
+          hasPermission: false,
+        }));
+      }
     };
 
     checkAvailability();

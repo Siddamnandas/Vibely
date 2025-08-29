@@ -7,6 +7,9 @@ import { MiniPlayer } from "@/components/mini-player";
 import { PlaybackProvider } from "@/context/playback-context";
 import { RegenProvider } from "@/context/regen-context";
 import { usePlayback } from "@/context/playback-context";
+import { RegenNotificationBanner } from "@/components/regen-notification-banner";
+import { OrientationProvider } from "@/components/orientation-provider";
+import { useRegenNotifications } from "@/hooks/use-regen-notifications";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -35,26 +38,32 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <PlaybackProvider>
       <RegenProvider>
-        <main className="pb-24">
-          {/* Auto-open full player when playback starts anywhere */}
-          <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
-          {children}
-          {/* Mini Player — persists across pages, above nav, below modals */}
-          <MiniPlayer onExpand={() => setShowFullPlayer(true)} />
-          <BottomNav />
+        <OrientationProvider>
+          {/* Enable regeneration notifications */}
+          <RegenNotifications />
+          {/* Global banner notification for regeneration completions */}
+          <RegenNotificationBanner />
+          <main className="pb-24">
+            {/* Auto-open full player when playback starts anywhere */}
+            <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
+            {children}
+            {/* Mini Player — persists across pages, above nav, below modals */}
+            <MiniPlayer onExpand={() => setShowFullPlayer(true)} />
+            <BottomNav />
 
-          {/* Full Player */}
-          <FullPlayer
-            onClose={() => {
-              try {
-                window.history.back();
-              } catch {
-                setShowFullPlayer(false);
-              }
-            }}
-            isVisible={showFullPlayer}
-          />
-        </main>
+            {/* Full Player */}
+            <FullPlayer
+              onClose={() => {
+                try {
+                  window.history.back();
+                } catch {
+                  setShowFullPlayer(false);
+                }
+              }}
+              isVisible={showFullPlayer}
+            />
+          </main>
+        </OrientationProvider>
       </RegenProvider>
     </PlaybackProvider>
   );
@@ -78,5 +87,11 @@ function AutoOpenFullPlayer({ onOpen }: { onOpen: () => void }) {
     prevIdRef.current = id;
   }, [current?.id, onOpen]);
 
+  return null;
+}
+
+// Component to enable regen notifications inside the RegenProvider context
+function RegenNotifications() {
+  useRegenNotifications();
   return null;
 }

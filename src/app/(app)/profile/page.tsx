@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { useMusicData } from "@/hooks/use-music-data";
 import { subscriptionService } from "@/lib/subscription";
+import type { UserSubscription } from "@/lib/subscription";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -48,8 +49,25 @@ export default function ProfilePage() {
     analytics: true,
   });
 
-  const currentSubscription = subscriptionService.getCurrentSubscription("user1");
-  const isPremium = currentSubscription?.plan.tier === "premium";
+  // Safe handling for when subscription/plan might be undefined
+  const [subscriptionData, setSubscriptionData] = useState<UserSubscription | null>(null);
+  
+  useEffect(() => {
+    const loadSubscription = async () => {
+      try {
+        const sub = await subscriptionService.getCurrentSubscription("user1");
+        setSubscriptionData(sub);
+      } catch (error) {
+        console.error("Failed to load subscription:", error);
+        // Set default subscription
+        setSubscriptionData({
+          plan: { tier: "freemium" },
+          coversUsedThisMonth: 0
+        });
+      }
+    };
+    loadSubscription();
+  }, []);
 
   const handleSettingChange = (setting: string, value: boolean) => {
     setSettings((prev) => ({ ...prev, [setting]: value }));
@@ -211,13 +229,13 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Crown className={`${isPremium ? "text-[#FFD36E]" : "text-white/50"}`} />
+                    <Crown className={`${subscriptionData?.plan?.tier === "premium" ? "text-[#FFD36E]" : "text-white/50"}`} />
                     Subscription
                   </div>
                   <Badge
-                    className={`${isPremium ? "bg-gradient-to-r from-[#9FFFA2] to-[#FFD36E] text-black" : "bg-[#8FD3FF]/20 text-[#8FD3FF]"}`}
+                    className={`${subscriptionData?.plan?.tier === "premium" ? "bg-gradient-to-r from-[#9FFFA2] to-[#FFD36E] text-black" : "bg-[#8FD3FF]/20 text-[#8FD3FF]"}`}
                   >
-                    {isPremium ? "PREMIUM" : "FREEMIUM"}
+                    {subscriptionData?.plan?.tier === "premium" ? "PREMIUM" : "FREEMIUM"}
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -225,11 +243,11 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white/70 text-sm mb-2">
-                      {isPremium
+                      {subscriptionData?.plan?.tier === "premium"
                         ? "Unlimited covers, no watermarks, HD export"
-                        : `${currentSubscription?.coversUsedThisMonth || 0}/3 covers used this month`}
+                        : `${subscriptionData?.coversUsedThisMonth || 0}/3 covers used this month`}
                     </p>
-                    {!isPremium && (
+                    {subscriptionData?.plan?.tier !== "premium" && (
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90"

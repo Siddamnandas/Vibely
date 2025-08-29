@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,6 +39,7 @@ interface GeneratorState {
   selectedStyle: "auto" | "classic" | "modern" | "neon" | "vintage";
   photoMatches: PhotoMatchScore[];
   isAnalyzingPhotos: boolean;
+  hasShownWelcome: boolean;
 }
 
 export default function GeneratorPage() {
@@ -45,6 +47,8 @@ export default function GeneratorPage() {
   const { toast } = useToast();
   const { trackInteraction } = useComponentPerformance("GeneratorPage");
   const { isOffline, isSlowConnection } = useOfflineAware();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [state, setState] = useState<GeneratorState>({
     currentTrackIndex: 0,
@@ -55,9 +59,47 @@ export default function GeneratorPage() {
     selectedStyle: "auto",
     photoMatches: [],
     isAnalyzingPhotos: false,
+    hasShownWelcome: false,
   });
 
   const currentTrack = tracks[state.currentTrackIndex];
+
+  // Handle URL parameters for better integration
+  useEffect(() => {
+    if (!searchParams || tracks.length === 0) return;
+
+    const artist = searchParams.get('artist');
+    const genre = searchParams.get('genre');
+    const source = searchParams.get('source');
+
+    // Find track by artist if specified
+    if (artist && tracks.length > 0) {
+      const trackIndex = tracks.findIndex(track => 
+        track.artist.toLowerCase().includes(artist.toLowerCase())
+      );
+      if (trackIndex !== -1 && trackIndex !== state.currentTrackIndex) {
+        setState(prev => ({ ...prev, currentTrackIndex: trackIndex }));
+      }
+    }
+
+    // Show contextual welcome message
+    if (source && !state.hasShownWelcome) {
+      const welcomeMessages = {
+        'home_top_artist': `Ready to create covers for ${artist || 'your top artist'}!`,
+        'stories_header': 'Create a new AI-generated album cover for your collection!',
+        'stories_empty_state': 'Let\'s create your first AI album cover!',
+      };
+      
+      const message = welcomeMessages[source as keyof typeof welcomeMessages];
+      if (message) {
+        toast({
+          title: "Welcome to the Generator!",
+          description: message,
+        });
+        setState(prev => ({ ...prev, hasShownWelcome: true }));
+      }
+    }
+  }, [tracks, searchParams, state.currentTrackIndex, state.hasShownWelcome, toast]);
 
   const handleShuffle = async () => {
     const startTime = performance.now();

@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { firebasePurchaseService } from "@/lib/firebase-purchase-service";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-11-20.acacia",
+  apiVersion: "2025-08-27.basil",
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId } = await request.json();
+    const { sessionId, userId } = await request.json();
 
     if (!sessionId) {
       return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
     // Retrieve the checkout session
@@ -24,9 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
     }
 
-    // Create purchase record
-    const purchase = {
-      productId: session.metadata?.productId,
+    // Create purchase record in Firebase
+    const purchaseRecord = {
+      userId,
+      productId: session.metadata?.productId || "unknown",
       transactionId: session.payment_intent as string,
       purchaseToken: sessionId,
       purchaseTime: new Date(),
@@ -38,16 +44,47 @@ export async function POST(request: NextRequest) {
           : undefined,
       customerId: session.customer as string,
       amount: session.amount_total ? session.amount_total / 100 : 0,
-      currency: session.currency,
+      currency: session.currency || "usd",
+      platform: "web" as const,
+      status: "completed" as const,
+      metadata: {
+        stripeSessionId: sessionId,
+        paymentIntent: session.payment_intent,
+      },
     };
 
-    // TODO: Save purchase to database
-    // await savePurchaseToDatabase(purchase);
+    // Save purchase to Firebase
+    const purchaseId = await firebasePurchaseService.savePurchaseRecord(purchaseRecord);
 
-    // TODO: Update user subscription status
-    // await updateUserSubscription(userId, purchase);
+    // If it's a subscription, create subscription record
+    if (session.mode === "subscription" && session.metadata?.productId) {
+      const billingCycle = session.metadata.productId.includes("yearly") ? "yearly" : "monthly";
+      const tier = session.metadata.productId.includes("premium") ? "premium" : "freemium";
+      
+      const now = new Date();
+      const endDate = billingCycle === "yearly" 
+        ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
-    return NextResponse.json(purchase);
+      await firebasePurchaseService.saveSubscriptionRecord({
+        userId,
+        purchaseRecordId: purchaseId,
+        planId: session.metadata.productId,
+        tier: tier as "premium" | "freemium",
+        status: "active",
+        currentPeriodStart: now,
+        currentPeriodEnd: endDate,
+        coversUsedThisMonth: 0,
+        cancelAtPeriodEnd: false,
+        billingCycle,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      purchaseId,
+      purchase: purchaseRecord,
+    });
   } catch (error) {
     console.error("Purchase completion failed:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -2,8 +2,25 @@
   /* Spacing tokens for bottom nav + mini player */
   --nav-height: 80px; /* Updated at runtime by BottomNav ResizeObserver */
   --nav-gap: 16px; /* Breathing room above nav */
-  --mini-height: 68px; /* Fixed Mini Player height */
-  --mini-icon: 44px; /* Diameter of play/pause button in Mini Player */
+  --mini-height: 68px; /* Mini Player height - responsive */
+  --mini-icon: 44px; /* Diameter of play/pause button in Mini Player - responsive */
+  --mini-border-radius: 20px; /* Border radius - responsive */
+  
+  /* Orientation-specific variables */
+  --current-orientation: portrait; /* Updated by orientation service */
+  --screen-width: 100vw;
+  --screen-height: 100vh;
+  
+  /* Responsive spacing */
+  --content-padding: 16px;
+  --mini-side-margin: 16px;
+  --mini-left: var(--mini-side-margin);
+  --mini-right: var(--mini-side-margin);
+  
+  /* Orientation-specific offsets */
+  --mini-portrait-offset: 12px;
+  --mini-landscape-offset: 8px;
+  
   /* Derived offset used to anchor Mini Player safely above the nav + safe-area */
   --mini-offset-bottom: calc(
     var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px)
@@ -41,6 +58,70 @@
     background-position:
       100% 0%,
       0% 100%;
+  }
+}
+
+/* Orientation-specific responsive design */
+.orientation-landscape {
+  --mini-height: 56px;
+  --mini-icon: 40px;
+  --nav-gap: 12px;
+  --mini-border-radius: 16px;
+  --content-padding: 12px;
+  --mini-side-margin: 12px;
+}
+
+.orientation-portrait {
+  --mini-height: 68px;
+  --mini-icon: 44px;
+  --nav-gap: 16px;
+  --mini-border-radius: 20px;
+  --content-padding: 16px;
+  --mini-side-margin: 16px;
+}
+
+/* Small screen adjustments */
+@media (max-width: 375px) {
+  .orientation-landscape {
+    --content-padding: 8px;
+    --mini-side-margin: 8px;
+    --mini-height: 52px;
+    --mini-icon: 36px;
+  }
+  
+  .orientation-portrait {
+    --content-padding: 12px;
+    --mini-side-margin: 12px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 414px) {
+  .orientation-landscape {
+    --content-padding: 16px;
+    --mini-side-margin: 16px;
+  }
+  
+  .orientation-portrait {
+    --content-padding: 20px;
+    --mini-side-margin: 20px;
+  }
+}
+
+/* Safe area handling for different orientations */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .orientation-landscape {
+    --mini-offset-bottom: calc(
+      var(--nav-height, 80px) + var(--nav-gap, 12px) + 
+      max(env(safe-area-inset-bottom, 0px), var(--mini-landscape-offset, 8px))
+    );
+  }
+  
+  .orientation-portrait {
+    --mini-offset-bottom: calc(
+      var(--nav-height, 80px) + var(--nav-gap, 16px) + 
+      max(env(safe-area-inset-bottom, 0px), var(--mini-portrait-offset, 12px))
+    );
   }
 }
 

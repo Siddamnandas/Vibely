@@ -43,10 +43,11 @@ export default function PlaylistDetailOverlay({
   const playlist = useMemo(() => getPlaylistById(playlistId), [playlistId]);
   const { toast } = useToast();
   const { setQueueWithPlaylist, play, playTrackAt } = usePlayback();
-  const { jobs, start, pause, resume, cancel, restoreAll, restoreTrack } = useRegen();
+  const { jobs, start, pause, resume, cancel, restoreAll, restoreTrack, undoRestore } = useRegen();
   const job = jobs[playlistId!];
 
   const [showModal, setShowModal] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const { isAuthenticated, checking, provider, reconnect } = useStreamingAuth();
 
@@ -115,6 +116,19 @@ export default function PlaylistDetailOverlay({
       coversMap,
     );
   };
+
+  const handleRestoreAll = () => {
+    setShowRestoreDialog(false);
+    restoreAll(playlist.id);
+    toast({ 
+      title: "Restored all covers", 
+      description: `${Object.keys(job?.rows || {}).length} songs restored to original covers` 
+    });
+  };
+
+  // Count tracks that can be restored
+  const updatedTracksCount = Object.values(job?.rows || {}).filter(row => row.status === "updated").length;
+  const restoredTracksCount = Object.values(job?.rows || {}).filter(row => row.status === "restored").length;
 
   const pct = job ? Math.round((job.completed / job.total) * 100) : 0;
 
@@ -250,11 +264,58 @@ export default function PlaylistDetailOverlay({
                   New covers are ready ✨
                 </Badge>
               )}
-              {job && (
-                <Button variant="ghost" size="sm" onClick={() => restoreAll(playlist.id)}>
-                  <RotateCcw className="h-4 w-4 mr-1" /> Restore previous covers
-                </Button>
+              
+              {/* Restore status summary */}
+              {(updatedTracksCount > 0 || restoredTracksCount > 0) && (
+                <div className="flex items-center gap-1 text-xs">
+                  {updatedTracksCount > 0 && (
+                    <Badge variant="outline" className="border-[#9FFFA2] text-[#9FFFA2] bg-[#9FFFA2]/10">
+                      {updatedTracksCount} new
+                    </Badge>
+                  )}
+                  {restoredTracksCount > 0 && (
+                    <Badge variant="outline" className="border-amber-400 text-amber-400 bg-amber-400/10">
+                      {restoredTracksCount} restored
+                    </Badge>
+                  )}
+                </div>
               )}
+              
+              <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    disabled={updatedTracksCount === 0}
+                    className="disabled:opacity-50"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" /> 
+                    Restore previous covers
+                    {updatedTracksCount > 0 && (
+                      <Badge variant="secondary" className="ml-2 bg-white/20 text-white text-xs">
+                        {updatedTracksCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Restore Previous Covers</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to restore {updatedTracksCount} song{updatedTracksCount !== 1 ? 's' : ''} to their original covers? 
+                      This will undo the recent AI-generated covers.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="secondary" onClick={() => setShowRestoreDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleRestoreAll} className="bg-amber-500 hover:bg-amber-600 text-black">
+                      Restore {updatedTracksCount} cover{updatedTracksCount !== 1 ? 's' : ''}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -296,14 +357,17 @@ export default function PlaylistDetailOverlay({
               {tracks.map((t, idx) => {
                 const rowState = job?.rows[t.id];
                 const disabled = t.available === false;
+                const isCurrentlyGenerating = job?.status === "running" && job?.completed === idx && rowState?.status === "pending";
                 const statusText =
                   rowState?.status === "pending"
-                    ? "New cover pending"
-                    : rowState?.status === "updated"
-                      ? "Updated just now"
-                      : rowState?.status === "restored"
-                        ? "Restored"
-                        : undefined;
+                    ? isCurrentlyGenerating ? "Generating now..." : "Queued for generation"
+                    : rowState?.status === "updating"
+                      ? "Generating..."
+                      : rowState?.status === "updated"
+                        ? "Updated just now"
+                        : rowState?.status === "restored"
+                          ? "Restored"
+                          : undefined;
 
                 return (
                   <li key={t.id} className="py-3" data-track-id={t.id}>
@@ -315,12 +379,57 @@ export default function PlaylistDetailOverlay({
                           fill
                           className="object-cover"
                         />
+                        
+                        {/* Individual progress indicator */}
+                        {isCurrentlyGenerating && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <div className="w-8 h-8 border-2 border-[#9FFFA2] border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        
+                        {/* Progress status indicator */}
+                        {rowState?.status === "updated" && (
+                          <div className="absolute top-1 right-1">
+                            <div className="w-4 h-4 bg-[#9FFFA2] rounded-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-black rounded-full" />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {rowState?.status === "restored" && (
+                          <div className="absolute top-1 right-1">
+                            <div className="w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
+                              <RotateCcw className="w-2 h-2 text-black" />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {rowState?.status === "pending" && job?.status === "running" && (
+                          <div className="absolute top-1 right-1">
+                            <div className="w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            </div>
+                          </div>
+                        )}
                       </div>
+                      
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-white truncate">{t.title}</p>
                         <p className="text-white/70 text-sm truncate">{t.artist}</p>
-                        {statusText && <p className="text-xs text-white/60 mt-1">{statusText}</p>}
+                        {statusText && (
+                          <p className={`text-xs mt-1 ${
+                            isCurrentlyGenerating ? "text-[#9FFFA2] font-medium" : 
+                            rowState?.status === "restored" ? "text-amber-400 font-medium" :
+                            "text-white/60"
+                          }`}>
+                            {statusText}
+                            {isCurrentlyGenerating && (
+                              <span className="inline-block ml-1 w-1 h-1 bg-[#9FFFA2] rounded-full animate-pulse" />
+                            )}
+                          </p>
+                        )}
                       </div>
+                      
                       <div className="flex items-center gap-2">
                         {disabled ? (
                           <Tooltip>
@@ -340,19 +449,48 @@ export default function PlaylistDetailOverlay({
                             size="icon"
                             className="w-12 h-12 rounded-full"
                             aria-label={`Play ${t.title}`}
+                            disabled={isCurrentlyGenerating}
                           >
                             <Play className="h-5 w-5" />
                           </Button>
                         )}
 
-                        {rowState?.status === "updated" && (
+                        {(rowState?.status === "updated" || rowState?.status === "restored") && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => restoreTrack(playlist.id, t.id)}
-                            aria-label={`Restore cover for ${t.title}`}
+                            onClick={() => {
+                              if (rowState.status === "updated") {
+                                restoreTrack(playlist.id, t.id);
+                              } else if (rowState.status === "restored" && rowState.aiCoverUrl) {
+                                // Undo restore - switch back to AI cover
+                                undoRestore(playlist.id, t.id);
+                              } else {
+                                // Regenerate if no AI cover is available
+                                start(playlist.id, [t.id], { [t.id]: t.coverUrl });
+                              }
+                            }}
+                            aria-label={`${
+                              rowState.status === "updated" 
+                                ? `Restore original cover for ${t.title}` 
+                                : rowState.status === "restored" && rowState.aiCoverUrl
+                                  ? `Switch back to AI cover for ${t.title}`
+                                  : `Regenerate cover for ${t.title}`
+                            }`}
                           >
-                            <RotateCcw className="h-4 w-4 mr-1" /> Restore
+                            {rowState.status === "updated" ? (
+                              <>
+                                <RotateCcw className="h-4 w-4 mr-1" /> Restore
+                              </>
+                            ) : rowState.status === "restored" && rowState.aiCoverUrl ? (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-1" /> Use AI
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-1" /> Regenerate
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>

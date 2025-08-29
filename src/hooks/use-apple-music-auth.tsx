@@ -27,7 +27,13 @@ export function useAppleMusicAuth() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const isAuth = appleMusicService.isAuthenticated();
+      // Add timeout for auth check
+      const authPromise = Promise.resolve(appleMusicService.isAuthenticated());
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth check timeout')), 2000)
+      );
+      
+      const isAuth = await Promise.race([authPromise, timeout]);
 
       if (isAuth) {
         const userProfile = await appleMusicService.getUserProfile();
