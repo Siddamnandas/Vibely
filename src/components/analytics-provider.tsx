@@ -14,11 +14,25 @@ const AnalyticsContext = createContext<AnalyticsContextType | null>(null);
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
+    // Skip analytics in embedded preview/webviews to avoid CSP blocks
+    if (typeof window !== "undefined") {
+      try {
+        if (window.self !== window.top) return;
+      } catch {
+        // If access to window.top is blocked, treat as embedded
+        return;
+      }
+    }
     analytics.initialize();
   }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      try {
+        if (window.self !== window.top) return;
+      } catch {
+        return;
+      }
       analytics.pageView(window.location.pathname);
     }
   }, []);

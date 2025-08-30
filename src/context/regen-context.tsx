@@ -156,24 +156,22 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
-  const hydrate = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const { jobs: j, queue, active } = JSON.parse(raw);
-      setJobs(j || {});
-      setQueueOrder(queue || []);
-      setActiveId(active || null);
-      // restart timer if needed
-      if (active && j?.[active]?.status === "running") {
-        runTimer(active);
-      }
-    } catch {}
-  };
-
   useEffect(() => {
-    hydrate();
+    // hydrate persisted jobs/queue/active
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const { jobs: j, queue, active } = JSON.parse(raw);
+          setJobs(j || {});
+          setQueueOrder(queue || []);
+          setActiveId(active || null);
+          if (active && j?.[active]?.status === "running") {
+            runTimer(active);
+          }
+        }
+      } catch {}
+    }
     // If using backend, seed jobs from server (survive reloads/background)
     if (typeof window !== "undefined" && USE_BACKEND) {
       fetch("/api/regen/all", { cache: "no-store" })
@@ -204,6 +202,18 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {});
     }
+    
+    // Cleanup all timers and intervals when component unmounts
+    const timersSnapshot = timers.current;
+    const pollersSnapshot = pollers.current;
+    return () => {
+      Object.values(timersSnapshot).forEach((timer) => {
+        if (timer) clearInterval(timer);
+      });
+      Object.values(pollersSnapshot).forEach((poller) => {
+        if (poller) clearInterval(poller);
+      });
+    };
   }, []);
 
   const runTimer = (playlistId: string) => {
@@ -323,7 +333,7 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
         setActiveId(playlistId);
         trackEvent("regen_started", { playlist_id: playlistId, total_tracks: trackIds.length });
         toast({
-          title: "We’re regenerating covers",
+          title: "We're regenerating covers",
           description: `Queued ${trackIds.length} songs.`,
         });
         try {

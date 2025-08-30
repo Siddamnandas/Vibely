@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { track as trackEvent } from "@/lib/analytics";
 
 interface CachedPlaylist {
@@ -237,12 +238,19 @@ class OfflinePlaylistService {
       // Remove associated tracks
       const trackStore = transaction.objectStore("tracks");
       const trackIndex = trackStore.index("playlistId");
-      const trackCursor = await trackIndex.openCursor(playlistId);
-
-      while (trackCursor) {
-        await trackCursor.delete();
-        await trackCursor.continue();
-      }
+      await new Promise<void>((resolve, reject) => {
+        const request = trackIndex.openCursor(IDBKeyRange.only(playlistId));
+        request.onsuccess = () => {
+          const cursor = request.result as IDBCursorWithValue | null;
+          if (cursor) {
+            cursor.delete();
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        request.onerror = () => reject(request.error || new Error("Cursor error"));
+      });
 
       // Request service worker to clear cache
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {

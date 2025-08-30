@@ -13,10 +13,12 @@ import { usePlayback } from "@/context/playback-context";
 import { songs as demoSongs } from "@/lib/data";
 import { useAuth } from "@/hooks/use-auth";
 import { useMusicData } from "@/hooks/use-music-data";
+import { PageSkeleton, TrackSkeleton, PlaylistSkeleton } from "@/components/ui/skeleton";
 import { useUserStats } from "@/hooks/use-user-stats";
+import { ProgressiveGrid, ProgressiveSection } from "@/components/progressive-loading";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { SpotifyAuth } from "@/components/spotify-auth";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import type { VibelyTrack } from "@/lib/data";
 
 type HeroProps = {
@@ -64,8 +66,12 @@ function HeroCard({ nameTop, nameBottom, photoUrl, chips }: HeroProps) {
             alt="User portrait"
             fill
             priority
+            quality={85} // Reduce quality for faster loading
+            sizes="(max-width: 768px) 68vw, 360px" // Add responsive sizes
             className="object-cover rounded-[28px] [box-shadow:0_30px_60px_rgba(0,0,0,.35)]"
             fallbackSrc="https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=840&auto=format&fit=crop"
+            placeholder="blur" // Add blur placeholder
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           />
         </div>
       </div>
@@ -104,19 +110,23 @@ function TopSongCard() {
   // Get the user's top song (first in the list since tracks are sorted by relevance)
   const topSong = tracks && tracks.length > 0 ? tracks[0] : null;
 
-  const queue = (tracks.length > 0 ? tracks : demoSongs).map((s) => ({
-    id: s.id,
-    title: s.title,
-    artist: s.artist,
-    coverUrl: s.originalCoverUrl,
-    available: true,
-  }));
+  // Use demo songs as fallback to prevent empty states
+  const queue = useMemo(() => {
+    const songsToUse = tracks.length > 0 ? tracks : demoSongs;
+    return songsToUse.map((s) => ({
+      id: s.id,
+      title: s.title,
+      artist: s.artist,
+      coverUrl: s.originalCoverUrl,
+      available: true,
+    }));
+  }, [tracks]);
 
-  const onPlay = () => {
+  const onPlay = useCallback(() => {
     if (topSong) {
       playTrackAt(0, queue);
     }
-  };
+  }, [topSong, playTrackAt, queue]);
 
   return (
     <div className="w-full rounded-3xl bg-white/8 backdrop-blur-xl border border-white/10 p-4 flex items-center gap-4 shadow-[0_10px_40px_rgba(0,0,0,.35)]">
@@ -128,6 +138,8 @@ function TopSongCard() {
             src={topSong.originalCoverUrl}
             alt={topSong.title}
             fill
+            loading="lazy" // Use lazy loading for secondary images
+            quality={75} // Reduce quality for album covers
             className="object-cover"
             fallbackSrc="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop"
           />
@@ -364,7 +376,14 @@ export default function Home() {
     }
   }, [tracks, updateFavoriteGenres]);
 
+  // Show skeleton instead of loading spinner for better perceived performance
+  // Move this check after all hooks are defined
+  if (isLoading && tracks.length === 0) {
+    return <PageSkeleton />;
+  }
+
   // Show loading state while checking onboarding
+  // Move this check after all hooks are defined
   if (onboardingLoading) {
     console.log("⏳ Onboarding still loading...");
     return (

@@ -147,7 +147,7 @@ export function useBatteryAwareAudio() {
         charging: batteryStatus.charging,
       });
     }
-  }, [batteryStatus, deviceProfile]);
+  }, [batteryStatus, deviceProfile, audioSettings]);
 
   // Force battery save mode
   const enableBatterySaveMode = useCallback(() => {

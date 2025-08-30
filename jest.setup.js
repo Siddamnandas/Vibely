@@ -48,33 +48,31 @@ jest.mock("lucide-react", () => {
 
 // Mock Canvas getContext to avoid jsdom not-implemented errors
 if (typeof HTMLCanvasElement !== "undefined") {
-  HTMLCanvasElement.prototype.getContext =
-    HTMLCanvasElement.prototype.getContext ||
-    jest.fn(() => ({
-      fillRect: jest.fn(),
-      clearRect: jest.fn(),
-      getImageData: jest.fn(() => ({ data: [] })),
-      putImageData: jest.fn(),
-      createImageData: jest.fn(() => []),
-      setTransform: jest.fn(),
-      drawImage: jest.fn(),
-      save: jest.fn(),
-      fillText: jest.fn(),
-      restore: jest.fn(),
-      beginPath: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      closePath: jest.fn(),
-      stroke: jest.fn(),
-      translate: jest.fn(),
-      scale: jest.fn(),
-      rotate: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      measureText: jest.fn(() => ({ width: 0 })),
-      transform: jest.fn(),
-      resetTransform: jest.fn(),
-    }));
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    fillRect: jest.fn(),
+    clearRect: jest.fn(),
+    getImageData: jest.fn(() => ({ data: [] })),
+    putImageData: jest.fn(),
+    createImageData: jest.fn(() => []),
+    setTransform: jest.fn(),
+    drawImage: jest.fn(),
+    save: jest.fn(),
+    fillText: jest.fn(),
+    restore: jest.fn(),
+    beginPath: jest.fn(),
+    moveTo: jest.fn(),
+    lineTo: jest.fn(),
+    closePath: jest.fn(),
+    stroke: jest.fn(),
+    translate: jest.fn(),
+    scale: jest.fn(),
+    rotate: jest.fn(),
+    arc: jest.fn(),
+    fill: jest.fn(),
+    measureText: jest.fn(() => ({ width: 0 })),
+    transform: jest.fn(),
+    resetTransform: jest.fn(),
+  }));
 }
 
 // Mock ResizeObserver
@@ -94,6 +92,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,
+  configurable: true,
   value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
@@ -180,3 +179,11 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError;
 });
+
+// Minimal MediaStream stub for tests that require it
+if (typeof global.MediaStream === "undefined") {
+  // @ts-ignore
+  global.MediaStream = class MediaStream {
+    constructor() {}
+  };
+}

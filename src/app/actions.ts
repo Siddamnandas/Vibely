@@ -81,7 +81,8 @@ export async function generateCoverAction(prevState: any, formData: FormData) {
 
     return {
       ...prevState,
-      generatedCoverUri: generationResult.generatedCoverUri,
+      // Use first variant for the generated cover preview/save flow
+      generatedCoverUri: generationResult.generatedCoverUris?.[0] || null,
       matchedPhotoId: analysisResult.matchedPhotoId,
       error: null,
     };

@@ -185,7 +185,7 @@ export function AdaptiveImage({
   if (fill) {
     return (
       <div className="relative w-full h-full">
-        <Image {...imageProps} alt={props.alt || ""} fill sizes={sizes || "100vw"} />
+        <Image {...imageProps} alt={alt} fill sizes={sizes || "100vw"} />
         {/* Loading skeleton for low-end devices */}
         {isLoading && deviceProfile.isLowEndDevice && (
           <div className="absolute inset-0 bg-white/10 animate-pulse" />
@@ -202,7 +202,7 @@ export function AdaptiveImage({
 
   return (
     <div className="relative" style={{ width, height }}>
-      <Image {...imageProps} alt={props.alt || ""} width={width} height={height} />
+      <Image {...imageProps} alt={alt} width={width} height={height} />
       {/* Loading skeleton for low-end devices */}
       {isLoading && deviceProfile.isLowEndDevice && (
         <div className="absolute inset-0 bg-white/10 animate-pulse" style={{ width, height }} />

@@ -91,6 +91,20 @@ class MobilePerformanceBenchmark {
     this.isRunning = false;
     this.metrics = {};
     this.stopPerformanceObservers();
+    
+    // Clean up the shared canvas element if it exists
+    if ((window as any).__performanceBenchmarkCanvas) {
+      try {
+        // Remove the canvas from the DOM if it was added
+        if ((window as any).__performanceBenchmarkCanvas.parentNode) {
+          (window as any).__performanceBenchmarkCanvas.parentNode.removeChild((window as any).__performanceBenchmarkCanvas);
+        }
+        // Clear the reference
+        (window as any).__performanceBenchmarkCanvas = null;
+      } catch (error) {
+        console.warn("Failed to clean up performance benchmark canvas:", error);
+      }
+    }
   }
 
   /**
@@ -304,19 +318,30 @@ class MobilePerformanceBenchmark {
       let frameCount = 0;
       let totalFrameTime = 0;
       let jankFrames = 0;
+      
+      // Reuse a single canvas element throughout the application lifecycle
+      // to prevent WebGL context leaks
+      let canvas: HTMLCanvasElement;
+      if (!(window as any).__performanceBenchmarkCanvas) {
+        canvas = document.createElement("canvas");
+        (window as any).__performanceBenchmarkCanvas = canvas;
+      } else {
+        canvas = (window as any).__performanceBenchmarkCanvas;
+      }
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext("2d");
 
       const measureFrame = () => {
         const frameStart = performance.now();
 
         // Simulate rendering work with error handling
-        const canvas = document.createElement("canvas");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
         try {
-          const ctx = canvas.getContext("2d");
-
           if (ctx) {
+            // Clear canvas for reuse
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             // Draw complex shapes to stress test
             for (let i = 0; i < 100; i++) {
               ctx.fillStyle = `hsl(${Math.random() * 360}, 50%, 50%)`;

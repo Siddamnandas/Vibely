@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { track as trackEvent } from "@/lib/analytics";
 import { songs as baseSongs } from "@/lib/data";
 import { getAudioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
@@ -10,6 +10,8 @@ import {
   type BatteryAwareAudioSettings,
   type BatteryStatus,
 } from "@/hooks/use-battery-aware-audio";
+import { useAudioOptimization } from "@/hooks/use-audio-optimization";
+import type { AudioOptimizationProfile } from "@/hooks/use-audio-optimization";
 
 export type Track = {
   id: string;
@@ -41,6 +43,8 @@ type PlaybackContextType = {
   batteryStatus: BatteryStatus;
   audioSettings: BatteryAwareAudioSettings;
   isBatterySaveMode: boolean;
+  // Audio optimization properties
+  optimizationProfile: AudioOptimizationProfile;
   setQueue: (tracks: Track[], startIndex?: number) => void;
   setQueueWithPlaylist: (playlistId: string, tracks: Track[], startIndex?: number) => void;
   play: () => void;
@@ -90,11 +94,45 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const { batteryStatus, audioSettings, enableBatterySaveMode, disableBatterySaveMode } =
     useBatteryAwareAudio();
 
+  // Audio optimization integration
+  const { 
+    optimizationProfile,
+    applyOptimizations,
+    getEngineOptimizationStatus 
+  } = useAudioOptimization();
+
   const isBatterySaveMode = audioSettings.autoSaveMode;
 
   const current = useMemo(() => queue[currentIndex] ?? null, [queue, currentIndex]);
 
+  // Apply audio optimizations when dependencies change
+  useEffect(() => {
+    applyOptimizations();
+  }, [applyOptimizations]);
+
   // Set up audio engine event listeners
+  const handleNextInternal = useCallback(() => {
+    setProgress(0);
+    setCurrentIndex((idx) => {
+      const fromId = queue[idx]?.id;
+      if (repeat === "one") return idx; // loop current
+      const lastIndex = queue.length - 1;
+      if (idx >= lastIndex) {
+        if (repeat === "all") return 0;
+        setIsPlaying(false);
+        return idx; // stop at end
+      }
+      const toIndex = idx + 1;
+      const toId = queue[toIndex]?.id;
+      trackEvent("track_next", {
+        from_track_id: fromId,
+        to_track_id: toId,
+        playlist_id: currentPlaylistId,
+      });
+      return toIndex;
+    });
+  }, [queue, repeat, currentPlaylistId]);
+
   useEffect(() => {
     const handleStateChange = (engineState: AudioEngineState) => {
       setIsPlaying(engineState.isPlaying);
@@ -134,12 +172,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       const engine = getAudioEngine();
-      engine.removeEventListener("stateChange");
-      engine.removeEventListener("trackEnd");
-      engine.removeEventListener("ready");
-      engine.removeEventListener("error");
+      engine.removeEventListener("stateChange", handleStateChange);
+      engine.removeEventListener("trackEnd", handleTrackEnd);
+      engine.removeEventListener("ready", handleReady);
+      engine.removeEventListener("error", handleError);
     };
-  }, []);
+  }, [handleNextInternal]);
 
   // Update audio engine when current track changes
   useEffect(() => {
@@ -159,12 +197,13 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (isPlaying) {
       getAudioEngine().playTrack(engineTrack);
     }
-  }, [current, isReady]);
+  }, [current, isReady, isPlaying, duration]);
 
   // Cleanup interval (keeping for potential fallback)
   useEffect(() => {
+    const id = intervalRef.current;
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current as any);
+      if (id) clearInterval(id as any);
     };
   }, []);
 
@@ -256,27 +295,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const handleNextInternal = () => {
-    setProgress(0);
-    setCurrentIndex((idx) => {
-      const fromId = queue[idx]?.id;
-      if (repeat === "one") return idx; // loop current
-      const lastIndex = queue.length - 1;
-      if (idx >= lastIndex) {
-        if (repeat === "all") return 0;
-        setIsPlaying(false);
-        return idx; // stop at end
-      }
-      const toIndex = idx + 1;
-      const toId = queue[toIndex]?.id;
-      trackEvent("track_next", {
-        from_track_id: fromId,
-        to_track_id: toId,
-        playlist_id: currentPlaylistId,
-      });
-      return toIndex;
-    });
-  };
+  // handleNextInternal is defined above with useCallback
 
   const next = () => handleNextInternal();
 
@@ -363,6 +382,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     batteryStatus,
     audioSettings,
     isBatterySaveMode,
+    // Audio optimization properties
+    optimizationProfile,
     setQueue,
     setQueueWithPlaylist,
     play,

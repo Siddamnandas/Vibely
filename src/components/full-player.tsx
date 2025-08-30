@@ -81,7 +81,7 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
         });
       }
     }
-  }, [current?.id, pendingCoverUpdate, currentPlaylistId]);
+  }, [current, pendingCoverUpdate, currentPlaylistId]);
 
   // Handle cover updates with never-swap-mid-song rule
   useEffect(() => {
@@ -141,15 +141,7 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
         playlist_id: currentPlaylistId,
       });
     }
-  }, [
-    current,
-    currentPlaylistId,
-    jobs,
-    isPlaying,
-    trackStartTime,
-    displayCover,
-    pendingCoverUpdate,
-  ]);
+  }, [current, pendingCoverUpdate, currentPlaylistId, isPlaying, displayCover, jobs, trackStartTime]);
   const [isShuffleOn, setIsShuffleOn] = useState(false);
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
   const [isLiked, setIsLiked] = useState(false);

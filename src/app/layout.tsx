@@ -184,7 +184,9 @@ export default function RootLayout({
                 }
                 
                 // Early service worker registration
-                if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+                var embedded = false;
+                try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+                if (!embedded && 'serviceWorker' in navigator && window.location.protocol === 'https:') {
                   navigator.serviceWorker.register('/sw.js').catch(function(e) {
                     console.log('SW registration failed');
                   });

@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMusicData } from "@/hooks/use-music-data";
-import { subscriptionService } from "@/lib/subscription";
+import { subscriptionService, SUBSCRIPTION_PLANS } from "@/lib/subscription";
 import type { UserSubscription } from "@/lib/subscription";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,7 +61,11 @@ export default function ProfilePage() {
         console.error("Failed to load subscription:", error);
         // Set default subscription
         setSubscriptionData({
-          plan: { tier: "freemium" },
+          userId: "user1",
+          plan: SUBSCRIPTION_PLANS[0], // Freemium plan
+          status: "active",
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()),
           coversUsedThisMonth: 0,
         });
       }

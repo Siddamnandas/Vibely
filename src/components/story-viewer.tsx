@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
@@ -38,28 +38,43 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   const [isActionsVisible, setIsActionsVisible] = useState(true);
   const { toast } = useToast();
   const { shareTrack, isSharing } = useSharing();
+  const isUnmounting = useRef(false);
+  const downloadRef = useRef<HTMLAnchorElement | null>(null);
 
   const currentStory = stories[current];
 
   // Hide actions after 3 seconds, show on tap
   useEffect(() => {
-    const timer = setTimeout(() => setIsActionsVisible(false), 3000);
-    return () => clearTimeout(timer);
+    if (isUnmounting.current) return;
+    
+    const timer = setTimeout(() => {
+      if (!isUnmounting.current) {
+        setIsActionsVisible(false);
+      }
+    }, 3000);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, [current]);
 
   const toggleActions = () => {
-    setIsActionsVisible(!isActionsVisible);
+    if (!isUnmounting.current) {
+      setIsActionsVisible(!isActionsVisible);
+    }
   };
 
   useEffect(() => {
-    if (!api) return;
+    if (!api || isUnmounting.current) return;
 
     // Set initial slide
     api.scrollTo(initialIndex);
     setCurrent(initialIndex);
 
     const onSelect = () => {
-      setCurrent(api.selectedScrollSnap());
+      if (!isUnmounting.current) {
+        setCurrent(api.selectedScrollSnap());
+      }
     };
 
     api.on("select", onSelect);
@@ -70,16 +85,22 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   }, [api, initialIndex]);
 
   const handleImageError = (storyId: string) => {
+    if (isUnmounting.current) return;
+    
     console.error(`StoryViewer image load error for story ${storyId}`);
     setImageErrors((prev) => ({ ...prev, [storyId]: true }));
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   const handleImageLoad = (storyId: string) => {
+    if (isUnmounting.current) return;
+    
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   const handleDownload = async () => {
+    if (isUnmounting.current || !currentStory) return;
+    
     try {
       const response = await fetch(currentStory.generatedCoverUrl);
       const blob = await response.blob();
@@ -90,7 +111,10 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Safe removal - check if element still exists
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
 
       toast({
         title: "Downloaded!",
@@ -106,6 +130,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   };
 
   const handleShare = async () => {
+    if (isUnmounting.current || !currentStory) return;
+    
     await shareTrack(
       currentStory.title,
       currentStory.artist,
@@ -115,6 +141,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   };
 
   const handleInstagramShare = async () => {
+    if (isUnmounting.current || !currentStory) return;
+    
     await shareTrack(
       currentStory.title,
       currentStory.artist,
@@ -124,6 +152,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   };
 
   const handleDelete = () => {
+    if (isUnmounting.current) return;
+    
     // This would need to be implemented with proper state management
     toast({
       title: "Delete feature",
@@ -132,11 +162,23 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
     });
   };
 
+  // Cleanup function to prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      isUnmounting.current = true;
+      // Clean up any pending timers
+      if (downloadRef.current && document.body.contains(downloadRef.current)) {
+        document.body.removeChild(downloadRef.current);
+        downloadRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="relative w-full h-full bg-[#0E0F12]">
       {/* Close Button */}
-      <AnimatePresence>
-        {isActionsVisible && (
+      <AnimatePresence mode="wait">
+        {isActionsVisible && !isUnmounting.current && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,6 +190,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
               variant="ghost"
               onClick={onClose}
               className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 transition-all"
+              disabled={isUnmounting.current}
             >
               <X className="w-6 h-6" />
             </Button>
@@ -197,8 +240,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                       />
 
                       {/* Story Info Overlay */}
-                      <AnimatePresence>
-                        {isActionsVisible && (
+                      <AnimatePresence mode="wait">
+                        {isActionsVisible && !isUnmounting.current && (
                           <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -222,8 +265,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
           </CarouselContent>
 
           {/* Navigation Arrows - Only visible when actions are shown */}
-          <AnimatePresence>
-            {isActionsVisible && stories.length > 1 && (
+          <AnimatePresence mode="wait">
+            {isActionsVisible && stories.length > 1 && !isUnmounting.current && (
               <>
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -246,8 +289,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
       </div>
 
       {/* Action Buttons */}
-      <AnimatePresence>
-        {isActionsVisible && (
+      <AnimatePresence mode="wait">
+        {isActionsVisible && !isUnmounting.current && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -261,6 +304,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                 className="rounded-full w-14 h-14 bg-[#9FFFA2]/20 border border-[#9FFFA2]/30 text-[#9FFFA2] hover:bg-[#9FFFA2]/30 transition-all"
                 onClick={handleDownload}
                 aria-label="Download cover"
+                disabled={isUnmounting.current}
               >
                 <Download className="w-6 h-6" />
               </Button>
@@ -271,6 +315,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                 className="rounded-full w-14 h-14 bg-[#8FD3FF]/20 border border-[#8FD3FF]/30 text-[#8FD3FF] hover:bg-[#8FD3FF]/30 transition-all"
                 onClick={handleShare}
                 aria-label="Share cover"
+                disabled={isUnmounting.current || isSharing}
               >
                 <Share2 className="w-6 h-6" />
               </Button>
@@ -281,6 +326,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                 className="rounded-full w-14 h-14 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
                 onClick={handleInstagramShare}
                 aria-label="Share to Instagram"
+                disabled={isUnmounting.current || isSharing}
               >
                 <Instagram className="w-6 h-6" />
               </Button>
@@ -291,6 +337,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                 className="rounded-full w-14 h-14 bg-[#FF6F91]/20 border border-[#FF6F91]/30 text-[#FF6F91] hover:bg-[#FF6F91]/30 transition-all"
                 onClick={handleDelete}
                 aria-label="Delete cover"
+                disabled={isUnmounting.current}
               >
                 <Trash2 className="w-6 h-6" />
               </Button>
@@ -300,8 +347,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
       </AnimatePresence>
 
       {/* Progress Indicators */}
-      <AnimatePresence>
-        {isActionsVisible && stories.length > 1 && (
+      <AnimatePresence mode="wait">
+        {isActionsVisible && stories.length > 1 && !isUnmounting.current && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -320,6 +367,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.9 }}
                   aria-label={`Go to story ${index + 1}`}
+                  disabled={isUnmounting.current}
                 />
               ))}
             </div>

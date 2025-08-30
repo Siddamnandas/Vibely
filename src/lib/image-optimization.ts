@@ -1,14 +1,80 @@
 /**
  * Image Optimization Utilities
  * Handles image lazy loading, caching, and optimization for Vibely app
+ * Enhanced with memory-aware capabilities
  */
 
 import React from "react";
 
-// Image cache for storing processed images
-class ImageCache {
+interface MemoryAwareImageConfig {
+  maxCacheSize: number;
+  qualityByMemoryTier: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  dimensionsByMemoryTier: {
+    high: { maxWidth: number; maxHeight: number };
+    medium: { maxWidth: number; maxHeight: number };
+    low: { maxWidth: number; maxHeight: number };
+  };
+}
+
+// Memory-aware image cache
+class MemoryAwareImageCache {
   private cache = new Map<string, string>();
-  private maxSize = 50; // Max cached images
+  private memoryTier: "high" | "medium" | "low" = "medium";
+  private maxSize = 50;
+
+  constructor() {
+    this.updateMemoryTier();
+    this.setupMemoryListener();
+  }
+
+  private updateMemoryTier() {
+    if (typeof window === "undefined") return;
+    
+    const memory = (performance as any).memory;
+    if (memory) {
+      const usedPercent = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
+      
+      if (usedPercent > 0.8) {
+        this.memoryTier = "low";
+        this.maxSize = 10;
+      } else if (usedPercent > 0.6) {
+        this.memoryTier = "medium";
+        this.maxSize = 25;
+      } else {
+        this.memoryTier = "high";
+        this.maxSize = 50;
+      }
+      
+      // Clear excess items if cache is too large
+      while (this.cache.size > this.maxSize) {
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey) {
+          this.cache.delete(firstKey);
+        }
+      }
+    }
+  }
+
+  private setupMemoryListener() {
+    if (typeof window === "undefined") return;
+    
+    window.addEventListener("memory-cleanup" as any, ((event: any) => {
+      const { action } = (event?.detail ?? {}) as { action?: string };
+      
+      if (action === "clear-caches" || action === "reduce-image-quality") {
+        this.clear();
+      }
+    }) as EventListener);
+
+    // Update memory tier periodically
+    setInterval(() => {
+      this.updateMemoryTier();
+    }, 10000);
+  }
 
   set(key: string, value: string) {
     if (this.cache.size >= this.maxSize) {
@@ -37,9 +103,27 @@ class ImageCache {
   clear() {
     this.cache.clear();
   }
+
+  getMemoryTier(): "high" | "medium" | "low" {
+    return this.memoryTier;
+  }
+
+  getOptimalQuality(): number {
+    const qualities = { high: 0.9, medium: 0.7, low: 0.5 };
+    return qualities[this.memoryTier];
+  }
+
+  getOptimalDimensions(): { maxWidth: number; maxHeight: number } {
+    const dimensions = {
+      high: { maxWidth: 1200, maxHeight: 1200 },
+      medium: { maxWidth: 800, maxHeight: 800 },
+      low: { maxWidth: 400, maxHeight: 400 },
+    };
+    return dimensions[this.memoryTier];
+  }
 }
 
-export const imageCache = new ImageCache();
+export const imageCache = new MemoryAwareImageCache();
 
 // Lazy image loader with intersection observer
 export class LazyImageLoader {
@@ -114,11 +198,13 @@ export class LazyImageLoader {
             return;
           }
 
-          // Calculate optimal dimensions
-          const maxWidth = 800;
-          const maxHeight = 800;
+          // Get memory-aware optimization settings
+          const { maxWidth, maxHeight } = imageCache.getOptimalDimensions();
+          const quality = imageCache.getOptimalQuality();
+          
           let { width, height } = img;
 
+          // Calculate optimal dimensions based on memory tier
           if (width > maxWidth) {
             height = (height * maxWidth) / width;
             width = maxWidth;
@@ -132,9 +218,9 @@ export class LazyImageLoader {
           canvas.width = width;
           canvas.height = height;
 
-          // Draw and compress
+          // Draw and compress with memory-aware quality
           ctx.drawImage(img, 0, 0, width, height);
-          const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          const optimizedDataUrl = canvas.toDataURL("image/jpeg", quality);
 
           resolve(optimizedDataUrl);
         } catch (error) {

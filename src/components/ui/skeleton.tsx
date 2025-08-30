@@ -1,198 +1,203 @@
-import { cn } from "@/lib/utils";
+"use client";
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+import React from "react";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
+
+// Base skeleton component with performance awareness
+interface SkeletonProps {
+  width?: string;
+  height?: string;
   className?: string;
+  variant?: "rectangular" | "circular" | "text";
+  animation?: boolean;
 }
 
-function Skeleton({ className, ...props }: SkeletonProps) {
-  return <div className={cn("animate-pulse rounded-md bg-white/10", className)} {...props} />;
-}
-
-// Card skeleton for music tracks
-export function TrackCardSkeleton() {
+export function Skeleton({ 
+  width = "100%", 
+  height = "1rem", 
+  className = "", 
+  variant = "rectangular",
+  animation = true 
+}: SkeletonProps) {
+  const deviceProfile = useDevicePerformance();
+  
+  // Disable animations on low-end devices
+  const shouldAnimate = animation && deviceProfile.shouldUseAnimations;
+  
+  const baseClasses = "bg-white/5 border border-white/10";
+  const animationClasses = shouldAnimate ? "animate-pulse" : "";
+  
+  const variantClasses = {
+    rectangular: "rounded",
+    circular: "rounded-full",
+    text: "rounded"
+  };
+  
   return (
-    <div className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 backdrop-blur-sm rounded-2xl overflow-hidden">
-      <div className="p-6">
-        <div className="flex flex-col sm:flex-row gap-6 items-center">
-          {/* Album art skeleton */}
-          <Skeleton className="w-32 h-32 flex-shrink-0 rounded-2xl" />
+    <div 
+      className={`${baseClasses} ${variantClasses[variant]} ${animationClasses} ${className}`}
+      style={{ width, height }}
+    />
+  );
+}
 
-          {/* Content skeleton */}
-          <div className="flex-grow text-center sm:text-left w-full">
-            <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
-              <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-16 rounded-full" />
-            </div>
-            <Skeleton className="h-8 w-48 mb-2 mx-auto sm:mx-0" />
-            <Skeleton className="h-6 w-32 mb-4 mx-auto sm:mx-0" />
-            <Skeleton className="h-10 w-28 rounded-full mx-auto sm:mx-0" />
-          </div>
-        </div>
+// Music track skeleton
+export function TrackSkeleton() {
+  return (
+    <div className="flex items-center space-x-3 p-3">
+      <Skeleton variant="rectangular" width="48px" height="48px" />
+      <div className="flex-1 space-y-2">
+        <Skeleton width="70%" height="16px" />
+        <Skeleton width="50%" height="12px" />
       </div>
+      <Skeleton variant="circular" width="24px" height="24px" />
     </div>
   );
 }
 
-// Photo grid skeleton
-export function PhotoGridSkeleton({ count = 8 }: { count?: number }) {
+// Playlist skeleton
+export function PlaylistSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className="aspect-square rounded-2xl" />
-      ))}
-    </div>
-  );
-}
-
-// Story card skeleton
-export function StoryCardSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="relative">
-            <Skeleton className="aspect-[9/16] rounded-2xl" />
-            <div className="absolute bottom-3 left-3 right-3">
-              <Skeleton className="h-4 w-3/4 mb-2" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
-          </div>
-        ))}
+    <div className="rounded-2xl bg-white/5 p-4 space-y-3">
+      <Skeleton width="100%" height="120px" />
+      <div className="space-y-2">
+        <Skeleton width="80%" height="16px" />
+        <Skeleton width="60%" height="12px" />
       </div>
-    </div>
-  );
-}
-
-// Profile stats skeleton
-export function ProfileStatsSkeleton() {
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="text-center">
-          <Skeleton className="h-8 w-16 mb-1 mx-auto" />
-          <Skeleton className="h-4 w-20 mx-auto" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Subscription card skeleton
-export function SubscriptionCardSkeleton() {
-  return (
-    <div className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Skeleton className="w-6 h-6 rounded-full" />
-          <Skeleton className="h-6 w-24" />
-        </div>
-        <Skeleton className="h-6 w-16 rounded-full" />
-      </div>
-      <Skeleton className="h-8 w-32 mb-2" />
-      <Skeleton className="h-4 w-full mb-4" />
-      <Skeleton className="h-12 w-full rounded-full" />
-    </div>
-  );
-}
-
-// Generated cover skeleton
-export function GeneratedCoverSkeleton() {
-  return (
-    <div className="space-y-6">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-gradient-to-br from-white/5 to-white/10 border border-white/20 rounded-2xl p-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-          </div>
-          <Skeleton className="aspect-square w-full rounded-2xl mb-4" />
-          <div className="flex gap-3">
-            <Skeleton className="h-10 flex-1 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
 
 // Navigation skeleton
-export function NavigationSkeleton() {
+export function NavSkeleton() {
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 h-20 w-[95%] max-w-md rounded-full border border-white/10 bg-black/30 backdrop-blur-xl">
-      <div className="mx-auto flex h-full max-w-md items-center justify-around px-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            className={`rounded-full ${i === 0 ? "h-16 w-16 -mt-8" : "h-14 w-14"}`}
-          />
-        ))}
-      </div>
-    </nav>
-  );
-}
-
-// Swipeable cards skeleton
-export function SwipeableCardsSkeleton() {
-  return (
-    <div className="relative h-[600px] flex items-center justify-center">
-      {/* Background cards */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            className="absolute w-80 h-96 rounded-3xl"
-            style={{
-              transform: `translateX(${i * 8}px) translateY(${i * 4}px) rotate(${i * 2}deg)`,
-              zIndex: 3 - i,
-            }}
-          />
-        ))}
-      </div>
+    <div className="flex items-center justify-around h-24 bg-white/5 border-t border-white/10">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex flex-col items-center space-y-1">
+          <Skeleton variant="circular" width="24px" height="24px" />
+          <Skeleton width="32px" height="8px" />
+        </div>
+      ))}
     </div>
   );
 }
 
-// Mini player skeleton
-export function MiniPlayerSkeleton() {
+// Player skeleton
+export function PlayerSkeleton() {
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-40">
-      <div className="bg-gradient-to-r from-black/80 to-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-        <div className="flex items-center gap-4">
-          <Skeleton className="w-12 h-12 rounded-xl" />
-          <div className="flex-grow">
-            <Skeleton className="h-4 w-32 mb-2" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-8 h-8 rounded-full" />
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="w-8 h-8 rounded-full" />
-          </div>
+    <div className="fixed bottom-24 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-white/20 p-4">
+      <div className="flex items-center space-x-3">
+        <Skeleton variant="rectangular" width="48px" height="48px" />
+        <div className="flex-1 space-y-2">
+          <Skeleton width="60%" height="14px" />
+          <Skeleton width="40%" height="10px" />
         </div>
-        <div className="mt-3">
-          <Skeleton className="h-1 w-full rounded-full" />
+        <div className="flex space-x-2">
+          <Skeleton variant="circular" width="32px" height="32px" />
+          <Skeleton variant="circular" width="40px" height="40px" />
+          <Skeleton variant="circular" width="32px" height="32px" />
         </div>
       </div>
     </div>
   );
 }
 
-// Loading screen skeleton
-export function LoadingScreenSkeleton() {
+// Page header skeleton
+export function HeaderSkeleton() {
   return (
-    <div className="min-h-screen bg-[#0E0F12] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-[#9FFFA2]/30 border-t-[#9FFFA2] rounded-full animate-spin mx-auto mb-6"></div>
-        <Skeleton className="h-6 w-48 mx-auto mb-2" />
-        <Skeleton className="h-4 w-32 mx-auto" />
+    <div className="flex items-center justify-between p-6 border-b border-white/10">
+      <div className="space-y-2">
+        <Skeleton width="120px" height="24px" />
+        <Skeleton width="80px" height="14px" />
+      </div>
+      <Skeleton variant="circular" width="40px" height="40px" />
+    </div>
+  );
+}
+
+// Grid skeleton for music collections
+export function GridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 p-6">
+      {Array.from({ length: count }, (_, i) => (
+        <PlaylistSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+// List skeleton for tracks
+export function ListSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="space-y-1">
+      {Array.from({ length: count }, (_, i) => (
+        <TrackSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+// Full page skeleton for major loading states
+export function PageSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#0E0F12]">
+      <HeaderSkeleton />
+      <div className="p-6 space-y-6">
+        <div className="space-y-3">
+          <Skeleton width="40%" height="20px" />
+          <GridSkeleton count={4} />
+        </div>
+        <div className="space-y-3">
+          <Skeleton width="50%" height="20px" />
+          <ListSkeleton count={6} />
+        </div>
+      </div>
+      <NavSkeleton />
+    </div>
+  );
+}
+
+// Onboarding skeleton
+export function OnboardingSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#9FFFA2] via-[#87CEEB] to-[#FF6F91] p-6 flex flex-col justify-center">
+      <div className="max-w-md mx-auto w-full space-y-8">
+        <div className="text-center space-y-4">
+          <Skeleton variant="circular" width="80px" height="80px" className="mx-auto" />
+          <Skeleton width="60%" height="24px" className="mx-auto" />
+          <Skeleton width="80%" height="16px" className="mx-auto" />
+        </div>
+        
+        <div className="space-y-4">
+          <Skeleton width="100%" height="48px" />
+          <Skeleton width="100%" height="48px" />
+        </div>
+        
+        <div className="flex justify-center space-x-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="circular" width="8px" height="8px" />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-export { Skeleton };
+// Authentication flow skeleton
+export function AuthSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#0E0F12] flex items-center justify-center p-6">
+      <div className="text-center space-y-6 max-w-sm w-full">
+        <Skeleton variant="circular" width="64px" height="64px" className="mx-auto" />
+        <div className="space-y-3">
+          <Skeleton width="80%" height="20px" className="mx-auto" />
+          <Skeleton width="60%" height="14px" className="mx-auto" />
+        </div>
+        <div className="space-y-3">
+          <Skeleton width="100%" height="44px" />
+          <Skeleton width="100%" height="44px" />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +18,8 @@ export default function StoriesPage() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "recent" | "favorites">("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const isUnmounting = useRef(false);
 
   const filteredStories = savedStories.filter((story) => {
     const matchesSearch =
@@ -30,38 +32,87 @@ export default function StoriesPage() {
     setMounted(true);
     console.log("StoriesPage mounted with", savedStories.length, "stories");
 
-    // Add a timeout to ensure mounting doesn't get stuck
+    // Shorter timeout to ensure mounting doesn't get stuck
     const mountTimeout = setTimeout(() => {
       setMounted(true);
-    }, 1000);
+    }, 500); // Reduced from 1000ms to 500ms
 
-    // Pre-load images to detect errors early
-    savedStories.forEach((story) => {
-      setImageLoading((prev) => ({ ...prev, [story.id]: true }));
+    // Pre-load images in batches to avoid overwhelming the browser
+    const loadImagesInBatches = async () => {
+      const batchSize = 3; // Load 3 images at a time
+      for (let i = 0; i < savedStories.length; i += batchSize) {
+        const batch = savedStories.slice(i, i + batchSize);
+        
+        await Promise.allSettled(
+          batch.map(async (story) => {
+            if (isUnmounting.current) return;
+            setImageLoading((prev) => ({ ...prev, [story.id]: true }));
+            
+            try {
+              await new Promise((resolve, reject) => {
+                const img = new window.Image();
+                img.onload = resolve;
+                img.onerror = () => reject(new Error('Image load error'));
+                img.src = story.generatedCoverUrl;
+                
+                // Add timeout for individual images
+                setTimeout(() => reject(new Error('Image load timeout')), 3000);
+              });
+              
+              if (!isUnmounting.current) {
+                setImageLoading((prev) => ({ ...prev, [story.id]: false }));
+              }
+            } catch (error) {
+              if (!isUnmounting.current) {
+                console.warn(`Failed to load image for story ${story.id}:`, story.generatedCoverUrl);
+                setImageErrors((prev) => ({ ...prev, [story.id]: true }));
+                setImageLoading((prev) => ({ ...prev, [story.id]: false }));
+              }
+            }
+          })
+        );
+        
+        // Small delay between batches to prevent browser hanging
+        if (i + batchSize < savedStories.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    };
 
-      const img = new window.Image();
-      img.onload = () => {
-        setImageLoading((prev) => ({ ...prev, [story.id]: false }));
-      };
-      img.onerror = () => {
-        console.warn(`Failed to load image for story ${story.id}:`, story.generatedCoverUrl);
-        setImageErrors((prev) => ({ ...prev, [story.id]: true }));
-        setImageLoading((prev) => ({ ...prev, [story.id]: false }));
-      };
-      img.src = story.generatedCoverUrl;
-    });
+    if (savedStories.length > 0 && !isUnmounting.current) {
+      loadImagesInBatches();
+    }
 
-    return () => clearTimeout(mountTimeout);
+    return () => {
+      clearTimeout(mountTimeout);
+      isUnmounting.current = true;
+    };
   }, []);
 
   const handleImageError = (storyId: string) => {
+    if (isUnmounting.current) return;
     console.error(`Image load error for story ${storyId}`);
     setImageErrors((prev) => ({ ...prev, [storyId]: true }));
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   const handleImageLoad = (storyId: string) => {
+    if (isUnmounting.current) return;
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
+  };
+
+  const handleOpenStoryViewer = (storyId: string) => {
+    if (isUnmounting.current) return;
+    const index = savedStories.findIndex((s) => s.id === storyId);
+    if (index !== -1) {
+      setSelectedStoryIndex(index);
+      setIsDialogOpen(true);
+    }
+  };
+
+  const handleCloseStoryViewer = () => {
+    if (isUnmounting.current) return;
+    setIsDialogOpen(false);
   };
 
   // Show loading until mounted to prevent hydration issues
@@ -86,6 +137,7 @@ export default function StoriesPage() {
             <Button
               className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full"
               onClick={() => router.push("/generator?source=stories_header")}
+              disabled={isUnmounting.current}
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New
@@ -100,8 +152,9 @@ export default function StoriesPage() {
                 type="text"
                 placeholder="Search your stories..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => !isUnmounting.current && setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-[#9FFFA2]/50 focus:bg-white/20 transition-all"
+                disabled={isUnmounting.current}
               />
             </div>
             <Button
@@ -110,6 +163,7 @@ export default function StoriesPage() {
               onClick={() => {
                 /* TODO: Open filter modal */
               }}
+              disabled={isUnmounting.current}
             >
               <Filter className="w-4 h-4 mr-2" />
               Filter
@@ -157,6 +211,7 @@ export default function StoriesPage() {
               <Button
                 className="bg-gradient-to-r from-[#9FFFA2] to-[#FF6F91] text-black font-bold hover:opacity-90 rounded-full px-8 py-3"
                 onClick={() => router.push("/generator?source=stories_empty_state")}
+                disabled={isUnmounting.current}
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Cover
@@ -164,7 +219,7 @@ export default function StoriesPage() {
             </motion.div>
           </div>
         ) : (
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => !isUnmounting.current && setIsDialogOpen(open)}>
             <motion.div
               className="grid grid-cols-2 gap-4 md:gap-6"
               initial={{ opacity: 0 }}
@@ -180,9 +235,8 @@ export default function StoriesPage() {
                 >
                   <DialogTrigger
                     asChild
-                    onClick={() =>
-                      setSelectedStoryIndex(savedStories.findIndex((s) => s.id === story.id))
-                    }
+                    onClick={() => handleOpenStoryViewer(story.id)}
+                    disabled={isUnmounting.current}
                   >
                     <div className="relative overflow-hidden aspect-[9/16] cursor-pointer group">
                       <motion.div
@@ -242,7 +296,11 @@ export default function StoriesPage() {
             </motion.div>
 
             <DialogContent className="p-0 border-0 bg-transparent w-full max-w-md h-auto shadow-none">
-              <StoryViewer stories={savedStories} initialIndex={selectedStoryIndex} />
+              <StoryViewer 
+                stories={savedStories} 
+                initialIndex={selectedStoryIndex} 
+                onClose={handleCloseStoryViewer}
+              />
             </DialogContent>
           </Dialog>
         )}

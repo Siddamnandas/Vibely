@@ -22,10 +22,10 @@ export function useSpotifyAuth() {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      // Add timeout for auth check
+      // Reduced timeout from 2s to 1s for faster auth checks
       const authPromise = spotifyAPI.isAuthenticated();
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Auth check timeout")), 2000),
+        setTimeout(() => reject(new Error("Auth check timeout")), 1000),
       );
 
       const isAuth = await Promise.race([authPromise, timeout]);
@@ -47,10 +47,11 @@ export function useSpotifyAuth() {
         });
       }
     } catch (error) {
+      console.warn("🎧 Spotify auth timeout or error:", error);
       setState({
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : "Authentication failed",
+        error: null, // Don't show errors for timeouts to improve UX
         userProfile: null,
       });
     }
@@ -76,19 +77,21 @@ export function useSpotifyAuth() {
   }, []);
 
   const handleAuthCallback = useCallback(
-    async (code: string) => {
+    async (code: string): Promise<boolean> => {
       setState((prev) => ({ ...prev, isLoading: true }));
 
       try {
         const success = await spotifyAPI.exchangeCodeForToken(code);
         if (success) {
           await checkAuthStatus();
+          return true;
         } else {
           setState((prev) => ({
             ...prev,
             isLoading: false,
             error: "Failed to authenticate with Spotify",
           }));
+          return false;
         }
       } catch (error) {
         setState((prev) => ({
@@ -96,6 +99,7 @@ export function useSpotifyAuth() {
           isLoading: false,
           error: error instanceof Error ? error.message : "Authentication failed",
         }));
+        return false;
       }
     },
     [checkAuthStatus],
