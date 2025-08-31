@@ -48,33 +48,31 @@ jest.mock("lucide-react", () => {
 
 // Mock Canvas getContext to avoid jsdom not-implemented errors
 if (typeof HTMLCanvasElement !== "undefined") {
-  HTMLCanvasElement.prototype.getContext =
-    HTMLCanvasElement.prototype.getContext ||
-    jest.fn(() => ({
-      fillRect: jest.fn(),
-      clearRect: jest.fn(),
-      getImageData: jest.fn(() => ({ data: [] })),
-      putImageData: jest.fn(),
-      createImageData: jest.fn(() => []),
-      setTransform: jest.fn(),
-      drawImage: jest.fn(),
-      save: jest.fn(),
-      fillText: jest.fn(),
-      restore: jest.fn(),
-      beginPath: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      closePath: jest.fn(),
-      stroke: jest.fn(),
-      translate: jest.fn(),
-      scale: jest.fn(),
-      rotate: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      measureText: jest.fn(() => ({ width: 0 })),
-      transform: jest.fn(),
-      resetTransform: jest.fn(),
-    }));
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    fillRect: jest.fn(),
+    clearRect: jest.fn(),
+    getImageData: jest.fn(() => ({ data: [] })),
+    putImageData: jest.fn(),
+    createImageData: jest.fn(() => []),
+    setTransform: jest.fn(),
+    drawImage: jest.fn(),
+    save: jest.fn(),
+    fillText: jest.fn(),
+    restore: jest.fn(),
+    beginPath: jest.fn(),
+    moveTo: jest.fn(),
+    lineTo: jest.fn(),
+    closePath: jest.fn(),
+    stroke: jest.fn(),
+    translate: jest.fn(),
+    scale: jest.fn(),
+    rotate: jest.fn(),
+    arc: jest.fn(),
+    fill: jest.fn(),
+    measureText: jest.fn(() => ({ width: 0 })),
+    transform: jest.fn(),
+    resetTransform: jest.fn(),
+  }));
 }
 
 // Mock ResizeObserver
@@ -94,6 +92,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,
+  configurable: true,
   value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
@@ -180,3 +179,65 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError;
 });
+
+// Minimal MediaStream stub for tests that require it
+if (typeof global.MediaStream === "undefined") {
+  // @ts-ignore
+  global.MediaStream = class MediaStream {
+    constructor() {}
+  };
+}
+
+// Mock yaml module
+jest.mock("yaml", () => ({
+  parse: jest.fn(),
+  stringify: jest.fn(),
+}));
+
+// Mock dotprompt module
+jest.mock("dotprompt", () => ({
+  Dotprompt: jest.fn().mockImplementation(() => ({
+    render: jest.fn(),
+  })),
+}));
+
+// Mock @genkit-ai modules
+jest.mock("@genkit-ai/core", () => ({
+  configureGenkit: jest.fn(),
+  defineFlow: jest.fn(),
+}));
+
+jest.mock("@genkit-ai/ai", () => ({
+  generate: jest.fn().mockResolvedValue({
+    text: () => "mocked response",
+    candidates: () => [{ finishReason: "STOP" }],
+  }),
+  defineFlow: jest.fn(),
+  z: {
+    object: jest.fn().mockReturnValue({
+      describe: jest.fn(),
+    }),
+  },
+}));
+
+jest.mock("@genkit-ai/googleai", () => ({
+  googleAI: jest.fn(),
+  gemini15Flash: jest.fn(),
+}));
+
+// Mock genkit module
+jest.mock("genkit", () => ({
+  defineFlow: jest.fn(),
+  z: {
+    object: jest.fn().mockReturnValue({
+      describe: jest.fn(),
+    }),
+  },
+}));
+
+// Mock the generateAlbumCover function specifically
+jest.mock("@/ai/flows/generate-album-cover", () => ({
+  generateAlbumCover: jest.fn().mockResolvedValue({
+    generatedCoverUris: ["data:image/jpeg;base64,mockedImageData"],
+  }),
+}));

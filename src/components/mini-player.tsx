@@ -7,9 +7,10 @@ import { useRegen } from "@/context/regen-context";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { mobileOrientationService, OrientationState } from "@/lib/mobile-orientation-service";
+import { SpotifyPremiumGate } from "@/components/spotify-premium-gate";
 
 export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
-  const { current, isPlaying, togglePlay } = usePlayback();
+  const { current, isPlaying, togglePlay, isSpotifyReady, isSpotifyPremium } = usePlayback();
   const { jobs } = useRegen();
   const hasActiveRegen = Object.values(jobs || {}).some((j) => j.status === "running");
 
@@ -77,6 +78,9 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
 
   if (!current) return null;
 
+  // Show premium gate if Spotify is ready but user is not premium
+  const showPremiumGate = isSpotifyReady && !isSpotifyPremium;
+
   // Use consistent default values during SSR and initial client render to prevent hydration mismatch
   const isLandscape = isClient && orientationState.orientation === "landscape";
   const optimalSize = isClient
@@ -88,92 +92,100 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
       };
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={cn(
-          "fixed z-[58]",
-          // Use consistent positioning during SSR to prevent hydration mismatch
-          !isClient ? "left-4 right-4" : isLandscape ? "left-3 right-3" : "left-4 right-4",
-        )}
-        // Mini Player offset derives from CSS vars to avoid hardcoded spacing. Safe area included.
-        style={{
-          bottom: `var(--mini-offset-bottom, calc(var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px)))`,
-          maxWidth: `${optimalSize.width}px`,
-          marginLeft: "auto",
-          marginRight: "auto",
-        }}
-      >
-        <div
-          onClick={() => {
-            try {
-              navigator?.vibrate?.(6);
-            } catch {}
-            onExpand();
-          }}
-          role="button"
-          aria-label="Mini player — expand full player"
-          tabIndex={0}
+    <>
+      <AnimatePresence>
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className={cn(
-            "backdrop-blur-xl border border-white/10 shadow-2xl cursor-pointer transition-all duration-200 flex items-center justify-center bg-black/90 hover:bg-black/95",
-            isPlaying && "mini--playing",
-            // Orientation-specific styling
-            isLandscape ? "rounded-2xl" : "rounded-2xl",
+            "fixed z-[58]",
+            // Use consistent positioning during SSR to prevent hydration mismatch
+            !isClient ? "left-4 right-4" : isLandscape ? "left-3 right-3" : "left-4 right-4",
           )}
+          // Mini Player offset derives from CSS vars to avoid hardcoded spacing. Safe area included.
           style={{
-            height: `var(--mini-height, ${optimalSize.height}px)`,
-            borderRadius: `var(--mini-border-radius, 20px)`, // Use consistent default
+            bottom: `var(--mini-offset-bottom, calc(var(--nav-height, 80px) + var(--nav-gap, 16px) + env(safe-area-inset-bottom, 0px)))`,
+            maxWidth: `${optimalSize.width}px`,
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
-          {/* Centered Play/Pause button only */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePlay();
+          <div
+            onClick={() => {
+              try {
+                navigator?.vibrate?.(6);
+              } catch {}
+              onExpand();
             }}
-            aria-label={isPlaying ? "Pause" : "Play"}
             role="button"
-            className="bg-white text-black rounded-full flex items-center justify-center hover:bg-white/90 transition-colors relative"
+            aria-label="Mini player — expand full player"
+            tabIndex={0}
+            className={cn(
+              "backdrop-blur-xl border border-white/10 shadow-2xl cursor-pointer transition-all duration-200 flex items-center justify-center bg-black/90 hover:bg-black/95",
+              isPlaying && "mini--playing",
+              // Orientation-specific styling
+              isLandscape ? "rounded-2xl" : "rounded-2xl",
+            )}
             style={{
-              width: `var(--mini-icon, ${optimalSize.iconSize}px)`,
-              height: `var(--mini-icon, ${optimalSize.iconSize}px)`,
+              height: `var(--mini-height, ${optimalSize.height}px)`,
+              borderRadius: `var(--mini-border-radius, 20px)`, // Use consistent default
             }}
           >
-            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+            {/* Centered Play/Pause button only */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // If user is not premium, show a message instead of playing
+                if (showPremiumGate) {
+                  // The premium gate will be shown by the SpotifyPremiumGate component
+                  return;
+                }
+                togglePlay();
+              }}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              role="button"
+              className="bg-white text-black rounded-full flex items-center justify-center hover:bg-white/90 transition-colors relative"
+              style={{
+                width: `var(--mini-icon, ${optimalSize.iconSize}px)`,
+                height: `var(--mini-icon, ${optimalSize.iconSize}px)`,
+              }}
+            >
+              {isPlaying ? <Pause size={18} /> : <Play size={18} />}
 
-            {hasActiveRegen && (
-              <div
-                className="absolute"
-                style={{
-                  top: "-6px",
-                  right: "-6px",
-                }}
-              >
-                <span className="relative inline-flex">
-                  <span
-                    className="absolute inline-flex rounded-full bg-[#9FFFA2]/70 opacity-75 animate-ping"
-                    style={{
-                      width: "12px",
-                      height: "12px",
-                    }}
-                  />
-                  <span
-                    className="relative inline-flex rounded-full bg-[#9FFFA2] shadow-[0_0_0_1px_rgba(255,255,255,0.25)]"
-                    style={{
-                      width: "12px",
-                      height: "12px",
-                    }}
-                  />
-                </span>
-              </div>
-            )}
-          </motion.button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+              {hasActiveRegen && (
+                <div
+                  className="absolute"
+                  style={{
+                    top: "-6px",
+                    right: "-6px",
+                  }}
+                >
+                  <span className="relative inline-flex">
+                    <span
+                      className="absolute inline-flex rounded-full bg-[#9FFFA2]/70 opacity-75 animate-ping"
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                      }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full bg-[#9FFFA2] shadow-[0_0_0_1px_rgba(255,255,255,0.25)]"
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                      }}
+                    />
+                  </span>
+                </div>
+              )}
+            </motion.button>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      <SpotifyPremiumGate />
+    </>
   );
 }

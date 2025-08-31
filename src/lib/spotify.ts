@@ -5,7 +5,8 @@ const SPOTIFY_CONFIG = {
   clientId: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "",
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
   redirectUri:
-    process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || "http://localhost:3000/auth/callback",
+    process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+    "http://localhost:3002/auth/success?provider=spotify",
   scopes: [
     "user-read-private",
     "user-read-email",
@@ -103,7 +104,7 @@ class SpotifyAPIService {
   async exchangeCodeForToken(code: string): Promise<boolean> {
     try {
       // Use our API route for token exchange
-      const response = await fetch("/api/auth/spotify/callback", {
+      const response = await fetch("/api/auth/spotify/exchange", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -300,7 +301,27 @@ class SpotifyAPIService {
       display_name: string;
       email: string;
       images: Array<{ url: string }>;
+      product: string; // "premium", "free", etc.
     }>("/me");
+  }
+
+  /**
+   * Check if user has Spotify Premium
+   */
+  async isUserPremium(): Promise<boolean> {
+    try {
+      // First check if we're authenticated
+      if (!(await this.isAuthenticated())) {
+        return false;
+      }
+
+      const profile = await this.getUserProfile();
+      return profile?.product === "premium";
+    } catch (error) {
+      console.error("Error checking Premium status:", error);
+      // If we can't determine Premium status, assume they're not Premium
+      return false;
+    }
   }
 
   /**

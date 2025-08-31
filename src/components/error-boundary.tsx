@@ -4,6 +4,7 @@ import React from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { captureError } from "@/lib/sentry";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -48,10 +49,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
     // Log error to monitoring service
     if (typeof window !== "undefined") {
-      // In production, you would send this to your error monitoring service
-      console.error("Error Details:", {
-        message: error.message,
-        stack: error.stack,
+      // Capture error with Sentry
+      captureError(error, {
         componentStack: errorInfo.componentStack,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,

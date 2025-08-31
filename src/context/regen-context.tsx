@@ -27,28 +27,32 @@ export type RegenJob = {
 
 type RegenContextType = {
   jobs: Record<string, RegenJob>;
-  start: (playlistId: string, trackIds: string[], currentCovers: Record<string, string>) => void;
+  start: (
+    playlistId: string,
+    trackIds: string[],
+    currentCovers: Record<string, string>,
+    photoDataUri?: string,
+    idempotencyKey?: string,
+  ) => void;
   pause: (playlistId: string) => void;
   resume: (playlistId: string) => void;
   cancel: (playlistId: string) => void;
   restoreAll: (playlistId: string) => void;
   restoreTrack: (playlistId: string, trackId: string) => void;
   undoRestore: (playlistId: string, trackId: string) => void;
+  error: string | null;
+  clearError: () => void;
 };
 
 const RegenContext = createContext<RegenContextType | undefined>(undefined);
 const STORAGE_KEY = "vibely.regenState.v1";
 const MAX_CONCURRENT = 1;
 
-const randomCover = (seed: string) =>
-  `https://picsum.photos/seed/cover-${seed}-${Math.floor(Math.random() * 10000)}/500/500`;
-
-const USE_BACKEND = true;
-
 export function RegenProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<Record<string, RegenJob>>({});
   const [queueOrder, setQueueOrder] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const timers = useRef<Record<string, NodeJS.Timeout | null>>({});
   const pollers = useRef<Record<string, NodeJS.Timeout | null>>({});
 
@@ -79,70 +83,6 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const tick = (
-    playlistId: string,
-    trackQueue: string[],
-    covers: Record<string, string>,
-    startedAt?: number,
-  ) => {
-    setJobs((prev) => {
-      const job = prev[playlistId];
-      if (!job || job.status !== "running") return prev;
-      const nextTrackId = trackQueue[job.completed];
-      if (!nextTrackId) return prev;
-
-      const updatedRow: RegenRowState = {
-        trackId: nextTrackId,
-        status: "updated",
-        prevCoverUrl: covers[nextTrackId],
-        newCoverUrl: randomCover(nextTrackId),
-        aiCoverUrl: randomCover(nextTrackId), // Store the AI cover for undo functionality
-        updatedAt: Date.now(),
-      };
-      const variantId = `cv_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-      trackEvent("track_cover_updated", {
-        track_id: nextTrackId,
-        playlist_id: playlistId,
-        variant_id: variantId,
-      });
-
-      let updatedJob: RegenJob = {
-        ...job,
-        completed: job.completed + 1,
-        rows: {
-          ...job.rows,
-          [nextTrackId]: updatedRow,
-        },
-      };
-
-      // Throttle regen_progress emission to ~10% step changes
-      const pct = Math.round((updatedJob.completed / updatedJob.total) * 100);
-      const shouldEmit =
-        pct === 100 ||
-        updatedJob.lastPctEmitted === undefined ||
-        pct - (updatedJob.lastPctEmitted ?? 0) >= 10;
-      if (shouldEmit) {
-        trackEvent("regen_progress", {
-          playlist_id: playlistId,
-          done: updatedJob.completed,
-          total: updatedJob.total,
-        });
-        updatedJob = { ...updatedJob, lastPctEmitted: pct };
-      }
-
-      updateMilestones(updatedJob, startedAt);
-
-      const nextState = { ...prev, [playlistId]: updatedJob };
-      try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ jobs: nextState, queue: [], active: playlistId }),
-        );
-      } catch {}
-      return nextState;
-    });
-  };
-
   const persist = (
     nextJobs: Record<string, RegenJob>,
     nextQueue: string[],
@@ -156,27 +96,26 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
-  const hydrate = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const { jobs: j, queue, active } = JSON.parse(raw);
-      setJobs(j || {});
-      setQueueOrder(queue || []);
-      setActiveId(active || null);
-      // restart timer if needed
-      if (active && j?.[active]?.status === "running") {
-        runTimer(active);
-      }
-    } catch {}
-  };
-
   useEffect(() => {
-    hydrate();
-    // If using backend, seed jobs from server (survive reloads/background)
-    if (typeof window !== "undefined" && USE_BACKEND) {
-      fetch("/api/regen/all", { cache: "no-store" })
+    // hydrate persisted jobs/queue/active
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const { jobs: j, queue, active } = JSON.parse(raw);
+          setJobs(j || {});
+          setQueueOrder(queue || []);
+          setActiveId(active || null);
+          if (active && j?.[active]?.status === "running") {
+            runTimer(active);
+          }
+        }
+      } catch {}
+    }
+
+    // Seed jobs from server (survive reloads/background)
+    if (typeof window !== "undefined") {
+      fetch("/api/ai/regen", { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           const srvJobs = (data?.jobs || {}) as Record<string, RegenJob>;
@@ -187,10 +126,10 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
               if (pollers.current[j.playlistId])
                 clearInterval(pollers.current[j.playlistId] as any);
               pollers.current[j.playlistId] = setInterval(async () => {
-                const res = await fetch(`/api/regen/status?playlistId=${j.playlistId}`, {
+                const res = await fetch(`/api/ai/regen/${j.playlistId}`, {
                   cache: "no-store",
                 });
-                const sj = (await res.json()).job as RegenJob | undefined;
+                const sj = (await res.json()) as RegenJob | undefined;
                 if (sj) {
                   setJobs((prev) => ({ ...prev, [j.playlistId]: sj }));
                   if (sj.status === "completed" || sj.status === "canceled") {
@@ -204,6 +143,18 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {});
     }
+
+    // Cleanup all timers and intervals when component unmounts
+    const timersSnapshot = timers.current;
+    const pollersSnapshot = pollers.current;
+    return () => {
+      Object.values(timersSnapshot).forEach((timer) => {
+        if (timer) clearInterval(timer);
+      });
+      Object.values(pollersSnapshot).forEach((poller) => {
+        if (poller) clearInterval(poller);
+      });
+    };
   }, []);
 
   const runTimer = (playlistId: string) => {
@@ -252,34 +203,42 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
         }
         return prev;
       });
-      tick(
-        playlistId,
-        trackIds,
-        Object.fromEntries(trackIds.map((id) => [id, job.rows[id]?.prevCoverUrl || ""])),
-        startedAt,
-      );
     }, 800);
     timers.current[playlistId] = interval as any;
   };
 
-  const start = (playlistId: string, trackIds: string[], currentCovers: Record<string, string>) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId, trackIds, currentCovers }),
+  const start = (
+    playlistId: string,
+    trackIds: string[],
+    currentCovers: Record<string, string>,
+    photoDataUri?: string,
+    idempotencyKey?: string,
+  ) => {
+    fetch("/api/ai/regen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId, trackIds, currentCovers, photoDataUri, idempotencyKey }),
+    })
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(`HTTP error! status: ${r.status}`);
+        }
+        return r.json();
       })
-        .then((r) => r.json())
-        .then((data) => {
-          const job = data.job as RegenJob;
-          if (!job) return;
-          setJobs((prev) => ({ ...prev, [playlistId]: job }));
-          if (pollers.current[playlistId]) clearInterval(pollers.current[playlistId] as any);
-          pollers.current[playlistId] = setInterval(async () => {
-            const res = await fetch(`/api/regen/status?playlistId=${playlistId}`, {
+      .then((data) => {
+        const job = data.job as RegenJob;
+        if (!job) return;
+        setJobs((prev) => ({ ...prev, [playlistId]: job }));
+        if (pollers.current[playlistId]) clearInterval(pollers.current[playlistId] as any);
+        pollers.current[playlistId] = setInterval(async () => {
+          try {
+            const res = await fetch(`/api/ai/regen/${playlistId}`, {
               cache: "no-store",
             });
-            const j = (await res.json()).job as RegenJob | undefined;
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const j = (await res.json()) as RegenJob | undefined;
             if (j) {
               setJobs((prev) => ({ ...prev, [playlistId]: j }));
               if (j.status === "completed" || j.status === "canceled") {
@@ -287,72 +246,31 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
                 pollers.current[playlistId] = null;
               }
             }
-          }, 1000) as any;
-        })
-        .catch(() => {});
-      return;
-    }
-    setJobs((prev) => {
-      if (prev[playlistId]?.status === "running" || prev[playlistId]?.status === "queued")
-        return prev;
-      const rows: Record<string, RegenRowState> = Object.fromEntries(
-        trackIds.map((id) => [
-          id,
-          { trackId: id, status: "pending", prevCoverUrl: currentCovers[id] },
-        ]),
-      );
-      const hasActive = activeId && prev[activeId]?.status === "running";
-      const status: RegenStatus = hasActive && MAX_CONCURRENT === 1 ? "queued" : "running";
-      const job: RegenJob = {
-        playlistId,
-        total: trackIds.length,
-        completed: 0,
-        status,
-        rows,
-        startedAt: status === "running" ? Date.now() : undefined,
-      };
-      const nextJobs = { ...prev, [playlistId]: job };
-      if (status === "queued") {
-        setQueueOrder((q) => {
-          const nq = [...q, playlistId];
-          persist(nextJobs, nq, activeId);
-          return nq;
-        });
-        toast({ title: "Queued after current" });
-      } else {
-        setActiveId(playlistId);
-        trackEvent("regen_started", { playlist_id: playlistId, total_tracks: trackIds.length });
-        toast({
-          title: "We’re regenerating covers",
-          description: `Queued ${trackIds.length} songs.`,
-        });
-        try {
-          if (
-            typeof window !== "undefined" &&
-            "Notification" in window &&
-            Notification.permission === "default"
-          ) {
-            Notification.requestPermission().catch(() => {});
+          } catch (error) {
+            console.error("Error polling regen job:", error);
+            setError(
+              `Failed to check regeneration status: ${error instanceof Error ? error.message : "Unknown error"}`,
+            );
           }
-        } catch {}
-        // Start timer for active
-        setTimeout(() => runTimer(playlistId), 0);
-        persist(nextJobs, queueOrder, playlistId);
-      }
-      return nextJobs;
-    });
+        }, 1000) as any;
+      })
+      .catch((error) => {
+        console.error("Error starting regen job:", error);
+        setError(
+          `Failed to start regeneration: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      });
   };
 
   const pause = (playlistId: string) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/pause", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId }),
-      })
-        .then(() => {})
-        .catch(() => {});
-    }
+    fetch(`/api/ai/regen/${playlistId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pause" }),
+    })
+      .then(() => {})
+      .catch(() => {});
+
     setJobs((prev) => {
       const job = prev[playlistId];
       if (!job) return prev;
@@ -369,15 +287,14 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resume = (playlistId: string) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId }),
-      })
-        .then(() => {})
-        .catch(() => {});
-    }
+    fetch(`/api/ai/regen/${playlistId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resume" }),
+    })
+      .then(() => {})
+      .catch(() => {});
+
     setJobs((prev) => {
       const job = prev[playlistId];
       if (!job) return prev;
@@ -395,15 +312,14 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cancel = (playlistId: string) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId }),
-      })
-        .then(() => {})
-        .catch(() => {});
-    }
+    fetch(`/api/ai/regen/${playlistId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "cancel" }),
+    })
+      .then(() => {})
+      .catch(() => {});
+
     if (timers.current[playlistId]) clearInterval(timers.current[playlistId] as any);
     timers.current[playlistId] = null;
     setJobs((prev) => {
@@ -420,15 +336,14 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
   };
 
   const restoreAll = (playlistId: string) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId }),
-      })
-        .then(() => {})
-        .catch(() => {});
-    }
+    fetch("/api/ai/regen/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId, scope: "playlist" }),
+    })
+      .then(() => {})
+      .catch(() => {});
+
     setJobs((prev) => {
       const job = prev[playlistId];
       if (!job) return prev;
@@ -466,15 +381,14 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
   };
 
   const restoreTrack = (playlistId: string, trackId: string) => {
-    if (USE_BACKEND) {
-      fetch("/api/regen/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlistId, trackId }),
-      })
-        .then(() => {})
-        .catch(() => {});
-    }
+    fetch("/api/ai/regen/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId, trackId, scope: "track" }),
+    })
+      .then(() => {})
+      .catch(() => {});
+
     setJobs((prev) => {
       const job = prev[playlistId];
       if (!job) return prev;
@@ -524,9 +438,24 @@ export function RegenProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const clearError = () => {
+    setError(null);
+  };
+
   const value = useMemo(
-    () => ({ jobs, start, pause, resume, cancel, restoreAll, restoreTrack, undoRestore }),
-    [jobs],
+    () => ({
+      jobs,
+      start,
+      pause,
+      resume,
+      cancel,
+      restoreAll,
+      restoreTrack,
+      undoRestore,
+      error,
+      clearError,
+    }),
+    [jobs, error],
   );
 
   return <RegenContext.Provider value={value}>{children}</RegenContext.Provider>;

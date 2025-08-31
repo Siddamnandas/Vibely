@@ -4,11 +4,38 @@
  */
 
 import React, { ComponentType, LazyExoticComponent, Suspense } from "react";
+import { DevicePerformanceProfile } from "@/hooks/use-device-performance";
 
-// Component preloader for eager loading
+// Component preloader for eager loading with device awareness
 export class ComponentPreloader {
   private preloadedComponents = new Set<string>();
   private preloadPromises = new Map<string, Promise<any>>();
+  private deviceProfile: DevicePerformanceProfile | null = null;
+
+  setDeviceProfile(profile: DevicePerformanceProfile) {
+    this.deviceProfile = profile;
+  }
+
+  private shouldPreload(): boolean {
+    if (!this.deviceProfile) return true;
+    
+    // Skip preloading on low-end devices to save resources
+    if (this.deviceProfile.isLowEndDevice) return false;
+    
+    // Skip preloading on slow connections
+    if (this.deviceProfile.connectionType === 'slow') return false;
+    
+    return true;
+  }
+
+  private getPreloadDelay(): number {
+    if (!this.deviceProfile) return 100;
+    
+    // Longer delays for lower-end devices
+    if (this.deviceProfile.tier === 'low') return 500;
+    if (this.deviceProfile.tier === 'medium') return 200;
+    return 100;
+  }
 
   async preloadComponent(key: string, importFn: () => Promise<any>): Promise<void> {
     if (this.preloadedComponents.has(key)) {
@@ -39,14 +66,15 @@ export class ComponentPreloader {
   }
 
   preloadOnIdle(key: string, importFn: () => Promise<any>) {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !this.shouldPreload()) return;
 
     const preload = () => this.preloadComponent(key, importFn);
+    const delay = this.getPreloadDelay();
 
-    if ("requestIdleCallback" in window) {
-      (window as any).requestIdleCallback(preload, { timeout: 2000 });
+    if ("requestIdleCallback" in window && this.deviceProfile?.tier !== 'low') {
+      (window as any).requestIdleCallback(preload, { timeout: 3000 });
     } else {
-      setTimeout(preload, 100);
+      setTimeout(preload, delay);
     }
   }
 

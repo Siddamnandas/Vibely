@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { useSpotifyAuth } from "@/hooks/use-spotify-auth";
 import { useAppleMusicAuth } from "@/hooks/use-apple-music-auth";
 import { usePhotoGallery } from "@/hooks/use-photo-gallery";
+import { useGuestMode } from "@/hooks/use-guest-mode";
+import { track } from "@/lib/analytics";
 
 interface OnboardingStatus {
   isComplete: boolean;
   completedSteps: string[];
   isLoading: boolean;
   shouldRedirect: boolean;
+  isGuestMode: boolean;
+  canSkipToApp: boolean;
 }
 
 const ONBOARDING_STORAGE_KEY = "vibely.onboarding.completed";
@@ -21,12 +25,15 @@ export function useOnboarding() {
     completedSteps: [],
     isLoading: true,
     shouldRedirect: false,
+    isGuestMode: false,
+    canSkipToApp: false,
   });
 
   const router = useRouter();
   const spotifyAuth = useSpotifyAuth();
   const appleMusicAuth = useAppleMusicAuth();
   const photoGallery = usePhotoGallery();
+  const guestMode = useGuestMode();
 
   // Check onboarding completion status
   const checkOnboardingStatus = useCallback(() => {
@@ -55,14 +62,17 @@ export function useOnboarding() {
     const authsNotLoading = !spotifyAuth.isLoading && !appleMusicAuth.isLoading;
 
     const isComplete =
-      isManuallyCompleted || completedSteps.length >= 2 || (isDev && authsNotLoading); // Music + at least one other step, or dev bypass
+      isManuallyCompleted || completedSteps.length >= 2 || (isDev && authsNotLoading) || guestMode.isEnabled; // Music + at least one other step, or dev bypass, or guest mode
     const shouldRedirect = !isComplete && window.location.pathname !== "/onboarding";
+    const canSkipToApp = completedSteps.length > 0 || isComplete || guestMode.isEnabled;
 
     setStatus({
       isComplete,
       completedSteps,
       isLoading: false,
       shouldRedirect,
+      isGuestMode: guestMode.isEnabled,
+      canSkipToApp,
     });
 
     return { isComplete, shouldRedirect, completedSteps };
@@ -72,13 +82,14 @@ export function useOnboarding() {
     photoGallery.hasPermission,
     spotifyAuth.isLoading,
     appleMusicAuth.isLoading,
+    guestMode.isEnabled,
   ]);
 
   // Initialize onboarding check
   useEffect(() => {
     checkOnboardingStatus();
 
-    // Fallback timeout to prevent infinite loading
+    // Shorter fallback timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (typeof window !== "undefined") {
         console.log("Onboarding check timeout - bypassing for development");
@@ -89,7 +100,7 @@ export function useOnboarding() {
           shouldRedirect: false,
         }));
       }
-    }, 3000); // 3 second timeout
+    }, 1000); // Reduced from 3 seconds to 1 second
 
     return () => clearTimeout(timeout);
   }, [checkOnboardingStatus]);
@@ -103,6 +114,24 @@ export function useOnboarding() {
       shouldRedirect: false,
     }));
   }, []);
+
+  // Enable guest mode and skip onboarding
+  const enableGuestModeAndSkip = useCallback(async () => {
+    const success = await guestMode.enableGuestMode();
+    if (success) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+      setStatus((prev) => ({
+        ...prev,
+        isComplete: true,
+        isGuestMode: true,
+        shouldRedirect: false,
+        canSkipToApp: true,
+      }));
+      
+      track("onboarding_skipped_with_guest_mode");
+    }
+    return success;
+  }, [guestMode]);
 
   // Reset onboarding (for testing/admin purposes)
   const resetOnboarding = useCallback(() => {
@@ -125,6 +154,7 @@ export function useOnboarding() {
   return {
     ...status,
     completeOnboarding,
+    enableGuestModeAndSkip,
     resetOnboarding,
     redirectToOnboarding,
     checkOnboardingStatus,

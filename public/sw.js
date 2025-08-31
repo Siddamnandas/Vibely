@@ -1,15 +1,34 @@
 /**
  * Service Worker for Vibely App
- * Handles caching, offline functionality, and background sync
+ * Handles caching, offline functionality, and intelligent background sync
+ * Enhanced with performance-aware strategies
  */
 
-const CACHE_NAME = "vibely-v1.1.0";
-const STATIC_CACHE = "vibely-static-v1.1.0";
-const DYNAMIC_CACHE = "vibely-dynamic-v1.1.0";
-const IMAGE_CACHE = "vibely-images-v1.1.0";
-const PLAYLIST_CACHE = "vibely-playlists-v1.1.0";
-const AUDIO_CACHE = "vibely-audio-v1.1.0";
-const USER_DATA_CACHE = "vibely-userdata-v1.1.0";
+const CACHE_NAME = "vibely-v1.2.0";
+const STATIC_CACHE = "vibely-static-v1.2.0";
+const DYNAMIC_CACHE = "vibely-dynamic-v1.2.0";
+const IMAGE_CACHE = "vibely-images-v1.2.0";
+const PLAYLIST_CACHE = "vibely-playlists-v1.2.0";
+const AUDIO_CACHE = "vibely-audio-v1.2.0";
+const USER_DATA_CACHE = "vibely-userdata-v1.2.0";
+const OFFLINE_QUEUE_CACHE = "vibely-offline-queue-v1.2.0";
+
+// Performance-aware cache sizes
+const CACHE_LIMITS = {
+  [IMAGE_CACHE]: 50,
+  [PLAYLIST_CACHE]: 20,
+  [AUDIO_CACHE]: 10,
+  [USER_DATA_CACHE]: 30,
+  [DYNAMIC_CACHE]: 100,
+};
+
+// Background sync tag names
+const SYNC_TAGS = {
+  QUEUE_ACTIONS: 'queue-actions',
+  UPDATE_CACHE: 'update-cache',
+  ANALYTICS: 'analytics',
+  PREFERENCES: 'preferences',
+};
 
 // Resources to cache immediately
 const STATIC_ASSETS = [
@@ -94,6 +113,7 @@ self.addEventListener("activate", (event) => {
             name !== PLAYLIST_CACHE &&
             name !== AUDIO_CACHE &&
             name !== USER_DATA_CACHE &&
+            name !== OFFLINE_QUEUE_CACHE &&
             name.startsWith("vibely-"),
         );
 
@@ -103,6 +123,9 @@ self.addEventListener("activate", (event) => {
             return caches.delete(cacheName);
           }),
         );
+
+        // Initialize cache limits
+        await enforceCacheLimits();
 
         // Take control of all clients
         await self.clients.claim();
@@ -1034,3 +1057,187 @@ async function cleanupCaches() {
 setInterval(cleanupCaches, 30 * 60 * 1000); // Every 30 minutes
 
 console.log("🎵 Vibely Service Worker loaded with enhanced playlist caching");
+
+// ===============================
+// INTELLIGENT BACKGROUND SYNC
+// ===============================
+
+// Background sync event handler
+self.addEventListener('sync', event => {
+  console.log('🔄 Background sync triggered:', event.tag);
+  
+  switch (event.tag) {
+    case SYNC_TAGS.QUEUE_ACTIONS:
+      event.waitUntil(syncOfflineQueue());
+      break;
+    case SYNC_TAGS.UPDATE_CACHE:
+      event.waitUntil(updateCacheInBackground());
+      break;
+    case SYNC_TAGS.ANALYTICS:
+      event.waitUntil(syncAnalytics());
+      break;
+    case SYNC_TAGS.PREFERENCES:
+      event.waitUntil(syncUserPreferences());
+      break;
+    default:
+      console.warn('Unknown sync tag:', event.tag);
+  }
+});
+
+// Sync offline queue
+async function syncOfflineQueue() {
+  try {
+    console.log('📤 Syncing offline queue...');
+    
+    const clients = await self.clients.matchAll();
+    if (clients.length === 0) return;
+    
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'PROCESS_OFFLINE_QUEUE',
+        timestamp: Date.now()
+      });
+    });
+    
+    console.log('✅ Offline queue sync initiated');
+  } catch (error) {
+    console.error('❌ Failed to sync offline queue:', error);
+    throw error;
+  }
+}
+
+// Update cache in background
+async function updateCacheInBackground() {
+  try {
+    console.log('🔄 Updating cache in background...');
+    
+    await updateUserDataCache();
+    await updatePlaylistCache();
+    await enforceCacheLimits();
+    
+    console.log('✅ Background cache update completed');
+  } catch (error) {
+    console.error('❌ Background cache update failed:', error);
+  }
+}
+
+// Sync analytics data
+async function syncAnalytics() {
+  try {
+    console.log('📊 Syncing analytics data...');
+    
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SYNC_ANALYTICS',
+        timestamp: Date.now()
+      });
+    });
+    
+    console.log('✅ Analytics sync initiated');
+  } catch (error) {
+    console.error('❌ Analytics sync failed:', error);
+  }
+}
+
+// Sync user preferences
+async function syncUserPreferences() {
+  try {
+    console.log('⚙️ Syncing user preferences...');
+    
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SYNC_PREFERENCES',
+        timestamp: Date.now()
+      });
+    });
+    
+    console.log('✅ Preferences sync initiated');
+  } catch (error) {
+    console.error('❌ Preferences sync failed:', error);
+  }
+}
+
+// Update user data cache
+async function updateUserDataCache() {
+  try {
+    const cache = await caches.open(USER_DATA_CACHE);
+    const userDataRequests = [
+      '/api/user/profile',
+      '/api/user/settings',
+      '/api/subscription/status'
+    ];
+    
+    for (const url of userDataRequests) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          await cache.put(url, response.clone());
+        }
+      } catch (error) {
+        console.warn(`Failed to update cache for ${url}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update user data cache:', error);
+  }
+}
+
+// Enforce cache size limits
+async function enforceCacheLimits() {
+  try {
+    for (const [cacheName, limit] of Object.entries(CACHE_LIMITS)) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+      
+      if (keys.length > limit) {
+        const toDelete = keys.slice(0, keys.length - limit);
+        await Promise.all(toDelete.map(key => cache.delete(key)));
+        console.log(`🗑️ Cleaned ${toDelete.length} entries from ${cacheName}`);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to enforce cache limits:', error);
+  }
+}
+
+// Message handler for client communication
+self.addEventListener('message', event => {
+  const { type, data } = event.data;
+  
+  switch (type) {
+    case 'SKIP_WAITING':
+      self.skipWaiting();
+      break;
+      
+    case 'REGISTER_SYNC':
+      if (data && data.tag) {
+        console.log('📝 Registering background sync:', data.tag);
+      }
+      break;
+      
+    case 'CACHE_RESOURCE':
+      if (data && data.url) {
+        cacheResource(data.url, data.cacheName || DYNAMIC_CACHE);
+      }
+      break;
+      
+    default:
+      console.warn('Unknown message type:', type);
+  }
+});
+
+// Cache specific resource
+async function cacheResource(url, cacheName) {
+  try {
+    const cache = await caches.open(cacheName);
+    const response = await fetch(url);
+    if (response.ok) {
+      await cache.put(url, response);
+      console.log(`✅ Cached resource: ${url}`);
+    }
+  } catch (error) {
+    console.error(`Failed to cache resource ${url}:`, error);
+  }
+}

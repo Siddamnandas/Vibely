@@ -35,7 +35,13 @@ export function useMusicData() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const tracks = await musicService.loadUserTracks(20);
+      // Load music data with timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Music loading timeout")), 5000)
+      );
+      
+      const musicPromise = musicService.loadUserTracks(20);
+      const tracks = await Promise.race([musicPromise, timeoutPromise]) as any[];
 
       if (tracks.length > 0) {
         setState({

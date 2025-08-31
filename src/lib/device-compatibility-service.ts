@@ -192,10 +192,15 @@ class DeviceCompatibilityService {
    */
   checkJavaScriptSupport() {
     return {
+      // Avoid eval/new Function: detect via core ES2015 globals instead
       es6: this.checkFeature("es6", () => {
         try {
-          eval("const arrow = () => {}; class Test {}");
-          return true;
+          return (
+            typeof Promise !== "undefined" &&
+            typeof Map !== "undefined" &&
+            typeof Set !== "undefined" &&
+            typeof Symbol !== "undefined"
+          );
         } catch {
           return false;
         }
@@ -207,10 +212,11 @@ class DeviceCompatibilityService {
           return false;
         }
       }),
+      // Async/await support: conservative check without string evaluation
+      // We treat presence of Promise as sufficient for transpiled async/await
       asyncAwait: this.checkFeature("asyncAwait", () => {
         try {
-          eval("(async () => {})");
-          return true;
+          return typeof Promise !== "undefined" && typeof Promise.resolve === "function";
         } catch {
           return false;
         }

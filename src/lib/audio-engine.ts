@@ -1,5 +1,8 @@
 import { VibelyTrack } from "./data";
+import { isEmbedded } from "@/lib/embed";
 import type { BatteryAwareAudioSettings } from "@/hooks/use-battery-aware-audio";
+import type { ThermalState } from "@/hooks/use-thermal-monitoring";
+import type { AudioBufferConfig, BufferStatus } from "@/hooks/use-intelligent-audio-buffer";
 
 // Types for audio engine
 export interface AudioEngineTrack {
@@ -22,6 +25,11 @@ export interface AudioEngineState {
   repeat: "off" | "all" | "one";
   batteryOptimized?: boolean;
   currentQuality?: "high" | "medium" | "low";
+  thermalState?: "nominal" | "fair" | "serious" | "critical";
+  isThrottledByThermal?: boolean;
+  bufferHealth?: "critical" | "low" | "good" | "excellent";
+  currentBufferSeconds?: number;
+  targetBufferSeconds?: number;
 }
 
 export interface AudioEngineEvents {
@@ -51,9 +59,17 @@ export class AudioEngine {
   private isSpotifySDKReady = false;
   private isAppleMusicReady = false;
   private batteryAwareSettings: BatteryAwareAudioSettings | null = null;
+  private thermalState: ThermalState | null = null;
   private preloadedTracks: Map<string, HTMLAudioElement> = new Map();
+  private thermalThrottleLevel = 0; // 0-3 throttle intensity
+  private lastThermalCheck = 0;
+  private bufferConfig: AudioBufferConfig | null = null;
+  private bufferStatus: BufferStatus | null = null;
+  private downloadSpeedHistory: Array<{ timestamp: number; speed: number }> = [];
+  private bufferMonitorInterval: NodeJS.Timeout | null = null;
 
   private isInitialized = false;
+  private initializationFailed = false; // Flag to prevent repeated initialization attempts
 
   constructor() {
     this.state = {
@@ -66,10 +82,17 @@ export class AudioEngine {
       repeat: "off",
       batteryOptimized: false,
       currentQuality: "high",
+      thermalState: "nominal",
+      isThrottledByThermal: false,
+      bufferHealth: "good",
+      currentBufferSeconds: 0,
+      targetBufferSeconds: 30,
     };
 
     // Don't initialize immediately - wait for first use
   }
+
+  
 
   /**
    * Initialize a specific provider directly (used by tests and runtime)
@@ -254,12 +277,23 @@ export class AudioEngine {
   }
 
   /**
-   * Ensure SDKs are initialized before use
+   * Ensure SDKs are initialized before use with better error handling
    */
   private async ensureInitialized() {
     if (!this.isInitialized && typeof window !== "undefined") {
-      this.isInitialized = true;
-      await this.initializeSDKs();
+      try {
+        await this.initializeSDKs();
+      } catch (error) {
+        console.error("AudioEngine initialization failed:", error);
+        // Set a flag to prevent repeated initialization attempts
+        this.initializationFailed = true;
+        this.isInitialized = true;
+      }
+    }
+    
+    // If initialization previously failed, don't try again
+    if (this.initializationFailed) {
+      throw new Error("AudioEngine initialization previously failed");
     }
   }
 
@@ -275,6 +309,22 @@ export class AudioEngine {
 
     console.log("AudioEngine: Initializing on client side");
     this.isInitialized = true;
+
+    // In embedded contexts (e.g., VS Code webview/mobile preview), skip external SDKs
+    // that may be blocked by CSP and just enable preview playback.
+    if (isEmbedded() || process.env.NEXT_PUBLIC_DISABLE_EXTERNAL_SDKS === "true") {
+      try {
+        if (!this.audioElement) {
+          this.audioElement = new Audio();
+          this.setupAudioElementEvents();
+        }
+        // Signal ready so UI can interact (will use preview provider on play)
+        this.listeners.ready?.();
+      } catch (error) {
+        console.error("Failed to create Audio element in embedded mode:", error);
+      }
+      return;
+    }
 
     // Initialize Spotify Web Playback SDK
     await this.initializeSpotifySDK();
@@ -554,6 +604,35 @@ export class AudioEngine {
   }
 
   /**
+   * Opportunistic buffering tweak for poor conditions
+   */
+  optimizeBuffering(): void {
+    if (this.audioElement) {
+      // Encourage buffering for preview provider
+      this.audioElement.preload = "auto";
+    }
+  }
+
+  /**
+   * Snapshot of current optimization-related state
+   */
+  getOptimizationStatus(): {
+    batteryOptimized?: boolean;
+    thermalState?: AudioEngineState["thermalState"];
+    bufferHealth?: AudioEngineState["bufferHealth"];
+    currentBufferSeconds?: number;
+    targetBufferSeconds?: number;
+  } {
+    return {
+      batteryOptimized: this.state.batteryOptimized,
+      thermalState: this.state.thermalState,
+      bufferHealth: this.state.bufferHealth,
+      currentBufferSeconds: this.state.currentBufferSeconds,
+      targetBufferSeconds: this.state.targetBufferSeconds,
+    };
+  }
+
+  /**
    * Play Spotify track
    */
   private async playSpotifyTrack(track: AudioEngineTrack): Promise<boolean> {
@@ -791,7 +870,7 @@ export class AudioEngine {
   /**
    * Remove event listener
    */
-  removeEventListener<K extends keyof AudioEngineEvents>(event: K): void {
+  removeEventListener<K extends keyof AudioEngineEvents>(event: K, _listener?: AudioEngineEvents[K]): void {
     delete this.listeners[event];
   }
 
@@ -829,126 +908,321 @@ export class AudioEngine {
   }
 
   /**
-   * Apply optimizations to HTML audio element
+   * Apply thermal-aware audio optimizations
    */
-  private applyAudioElementOptimizations(settings: BatteryAwareAudioSettings): void {
-    if (!this.audioElement) return;
+  applyThermalOptimizations(thermalState: ThermalState): void {
+    this.thermalState = thermalState;
+    this.state.thermalState = thermalState.level;
+    this.state.isThrottledByThermal = thermalState.shouldThrottleAudio;
 
-    // Set preload behavior based on battery settings
-    if (settings.shouldReduceQuality) {
-      this.audioElement.preload = "none";
-    } else if (settings.preloadNext) {
-      this.audioElement.preload = "auto";
-    } else {
-      this.audioElement.preload = "metadata";
+    // Update throttle level based on thermal state
+    switch (thermalState.level) {
+      case "critical":
+        this.thermalThrottleLevel = 3;
+        this.pauseNonEssentialProcessing();
+        break;
+      case "serious":
+        this.thermalThrottleLevel = 2;
+        this.reduceConcurrentProcessing();
+        break;
+      case "fair":
+        this.thermalThrottleLevel = 1;
+        this.optimizeForThermal();
+        break;
+      case "nominal":
+      default:
+        this.thermalThrottleLevel = 0;
+        this.restoreNormalProcessing();
+        break;
     }
 
-    // Adjust buffer size by controlling the audio element's loading strategy
-    if (settings.bufferSize === "small") {
-      // For small buffer, we'll load in smaller chunks
+    // Apply audio quality reduction based on thermal state
+    if (thermalState.shouldReduceQuality) {
+      this.state.currentQuality = thermalState.maxAudioBitrate;
+    }
+
+    // Configure audio element for thermal optimization
+    if (this.audioElement && this.currentProvider === "preview") {
+      this.applyThermalAudioOptimizations(thermalState);
+    }
+
+    this.listeners.stateChange?.(this.state);
+  }
+
+  /**
+   * Pause non-essential audio processing during critical thermal state
+   */
+  private pauseNonEssentialProcessing(): void {
+    // Clear all preloaded tracks
+    this.clearPreloadedTracks();
+    
+    // Reduce audio element buffer if possible
+    if (this.audioElement) {
       this.audioElement.preload = "none";
+      
+      // Reduce volume slightly to reduce power consumption
+      const thermalVolumeReduction = 0.8;
+      if (this.state.volume > thermalVolumeReduction) {
+        this.audioElement.volume = this.state.volume * thermalVolumeReduction;
+      }
     }
   }
 
   /**
-   * Preload next track based on battery settings
+   * Reduce concurrent processing during serious thermal state
    */
-  async preloadTrack(track: AudioEngineTrack): Promise<void> {
-    if (!this.batteryAwareSettings?.preloadNext || this.batteryAwareSettings.shouldReduceQuality) {
-      return; // Skip preloading to save battery
+  private reduceConcurrentProcessing(): void {
+    // Limit preloaded tracks
+    while (this.preloadedTracks.size > 1) {
+      const oldestKey = this.preloadedTracks.keys().next().value;
+      if (oldestKey) {
+        const oldAudio = this.preloadedTracks.get(oldestKey);
+        if (oldAudio) {
+          oldAudio.src = "";
+          this.preloadedTracks.delete(oldestKey);
+        }
+      }
     }
+    
+    // Reduce audio buffer size
+    if (this.audioElement) {
+      this.audioElement.preload = "metadata";
+    }
+  }
 
-    if (track.provider === "preview" && track.preview_url) {
-      const audio = new Audio();
-      audio.preload = "metadata";
-      audio.src = this.getOptimizedAudioUrl(track.preview_url);
-      this.preloadedTracks.set(track.id, audio);
-
-      // Limit number of preloaded tracks to manage memory
-      if (this.preloadedTracks.size > 3) {
-        const oldestKey = this.preloadedTracks.keys().next().value;
-        if (oldestKey) {
-          const oldAudio = this.preloadedTracks.get(oldestKey);
-          if (oldAudio) {
-            oldAudio.src = "";
-            this.preloadedTracks.delete(oldestKey);
-          }
+  /**
+   * Optimize for thermal efficiency during fair thermal state
+   */
+  private optimizeForThermal(): void {
+    // Limit preloaded tracks to 2
+    while (this.preloadedTracks.size > 2) {
+      const oldestKey = this.preloadedTracks.keys().next().value;
+      if (oldestKey) {
+        const oldAudio = this.preloadedTracks.get(oldestKey);
+        if (oldAudio) {
+          oldAudio.src = "";
+          this.preloadedTracks.delete(oldestKey);
         }
       }
     }
   }
 
   /**
-   * Get optimized audio URL based on current quality settings
+   * Restore normal processing when thermal state is nominal
    */
-  private getOptimizedAudioUrl(originalUrl: string): string {
-    if (!this.batteryAwareSettings) return originalUrl;
-
-    // For preview URLs, we might modify quality parameters if the service supports it
-    try {
-      const url = new URL(originalUrl);
-
-      // Add quality parameters based on battery settings
-      if (this.batteryAwareSettings.audioBitrate === "low") {
-        url.searchParams.set("bitrate", "128");
-      } else if (this.batteryAwareSettings.audioBitrate === "medium") {
-        url.searchParams.set("bitrate", "256");
-      }
-
-      return url.toString();
-    } catch {
-      return originalUrl;
+  private restoreNormalProcessing(): void {
+    // Restore normal audio element settings
+    if (this.audioElement) {
+      this.audioElement.preload = "auto";
+      this.audioElement.volume = this.state.volume;
     }
   }
 
   /**
-   * Clear preloaded tracks to free memory
+   * Apply thermal optimizations to HTML audio element
+   */
+  private applyThermalAudioOptimizations(thermalState: ThermalState): void {
+    if (!this.audioElement) return;
+
+    // Adjust preload behavior based on thermal state
+    switch (thermalState.level) {
+      case "critical":
+        this.audioElement.preload = "none";
+        break;
+      case "serious":
+        this.audioElement.preload = "metadata";
+        break;
+      case "fair":
+        this.audioElement.preload = "metadata";
+        break;
+      case "nominal":
+      default:
+        this.audioElement.preload = "auto";
+        break;
+    }
+
+    // Apply crossOrigin settings that might affect performance
+    if (thermalState.shouldThrottleAudio) {
+      this.audioElement.crossOrigin = "anonymous";
+    }
+  }
+
+  /**
+   * Apply intelligent buffer configuration
+   */
+  applyBufferOptimizations(bufferConfig: AudioBufferConfig, bufferStatus: BufferStatus): void {
+    this.bufferConfig = bufferConfig;
+    this.bufferStatus = bufferStatus;
+    
+    this.state.bufferHealth = bufferStatus.bufferHealth;
+    this.state.currentBufferSeconds = bufferStatus.currentBuffer;
+    this.state.targetBufferSeconds = bufferStatus.targetBuffer;
+
+    // Configure audio element for buffer optimization
+    if (this.audioElement && this.currentProvider === "preview") {
+      this.applyBufferAudioOptimizations(bufferConfig);
+    }
+
+    this.listeners.stateChange?.(this.state);
+  }
+
+  /**
+   * Apply buffer optimizations to HTML audio element
+   */
+  private applyBufferAudioOptimizations(bufferConfig: AudioBufferConfig): void {
+    if (!this.audioElement) return;
+
+    // Adjust preload behavior based on buffer configuration
+    switch (bufferConfig.bufferSize) {
+      case "tiny":
+        this.audioElement.preload = "none";
+        break;
+      case "small":
+        this.audioElement.preload = "metadata";
+        break;
+      case "medium":
+        this.audioElement.preload = "auto";
+        break;
+      case "large":
+        this.audioElement.preload = "auto";
+        break;
+      case "adaptive":
+      default:
+        this.audioElement.preload = "auto";
+        break;
+    }
+  }
+
+  /**
+   * Clear all preloaded tracks
    */
   private clearPreloadedTracks(): void {
-    this.preloadedTracks.forEach((audio) => {
+    this.preloadedTracks.forEach((audio, key) => {
       audio.src = "";
+      this.preloadedTracks.delete(key);
     });
-    this.preloadedTracks.clear();
   }
 
   /**
-   * Get battery optimization status
+   * Preload a track for faster playback
    */
-  getBatteryOptimizationStatus(): {
-    isOptimized: boolean;
-    currentQuality: "high" | "medium" | "low";
-    settings: BatteryAwareAudioSettings | null;
-  } {
-    return {
-      isOptimized: this.state.batteryOptimized || false,
-      currentQuality: this.state.currentQuality || "high",
-      settings: this.batteryAwareSettings,
-    };
+  async preloadTrack(track: AudioEngineTrack): Promise<void> {
+    // Only preload preview tracks
+    if (track.provider !== "preview" || !track.preview_url) {
+      return;
+    }
+
+    // Don't preload if we already have this track
+    if (this.preloadedTracks.has(track.id)) {
+      return;
+    }
+
+    // Limit number of preloaded tracks
+    if (this.preloadedTracks.size >= 3) {
+      // Remove the oldest preloaded track
+      const oldestKey = this.preloadedTracks.keys().next().value;
+      if (oldestKey) {
+        const oldAudio = this.preloadedTracks.get(oldestKey);
+        if (oldAudio) {
+          oldAudio.src = "";
+          this.preloadedTracks.delete(oldestKey);
+        }
+      }
+    }
+
+    try {
+      const audio = new Audio();
+      audio.src = track.preview_url;
+      audio.preload = "auto";
+      // Don't start playing, just load
+      await audio.load();
+      this.preloadedTracks.set(track.id, audio);
+    } catch (error) {
+      console.warn("Failed to preload track:", error);
+    }
   }
 
   /**
-   * Check if ready for playback
+   * Disconnect from all services
+   */
+  private disconnect(): void {
+    // Disconnect Spotify player
+    if (this.spotifyPlayer) {
+      try {
+        this.spotifyPlayer.disconnect();
+      } catch (error) {
+        console.warn("Error disconnecting Spotify player:", error);
+      }
+      this.spotifyPlayer = null;
+    }
+
+    // Disconnect Apple Music player
+    if (this.appleMusicPlayer) {
+      try {
+        // Apple Music doesn't have a disconnect method, just nullify
+        this.appleMusicPlayer = null;
+      } catch (error) {
+        console.warn("Error disconnecting Apple Music player:", error);
+      }
+    }
+
+    // Clean up audio element
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.src = "";
+      } catch (error) {
+        console.warn("Error cleaning up audio element:", error);
+      }
+    }
+
+    // Clear preloaded tracks
+    this.clearPreloadedTracks();
+
+    // Clear intervals
+    if (this.bufferMonitorInterval) {
+      clearInterval(this.bufferMonitorInterval);
+      this.bufferMonitorInterval = null;
+    }
+  }
+
+  /**
+   * Check if the engine is ready for playback
    */
   isReady(): boolean {
-    // Initialize on first check if we're on the client
-    if (!this.isInitialized && typeof window !== "undefined") {
-      this.initializeSDKs();
+    // For preview playback, we just need the audio element
+    if (this.currentProvider === "preview") {
+      return !!this.audioElement;
     }
-    return this.isSpotifySDKReady || this.isAppleMusicReady || !!this.audioElement;
+
+    // For Spotify, we need the player and device ID
+    if (this.currentProvider === "spotify") {
+      return !!(this.spotifyPlayer && this.deviceId);
+    }
+
+    // For Apple Music, we need the player
+    if (this.currentProvider === "apple-music") {
+      return !!this.appleMusicPlayer;
+    }
+
+    return false;
   }
 
   /**
-   * Disconnect and cleanup
+   * Apply audio element optimizations based on battery settings
    */
-  disconnect(): void {
-    if (this.spotifyPlayer) {
-      this.spotifyPlayer.disconnect();
+  private applyAudioElementOptimizations(settings: BatteryAwareAudioSettings): void {
+    if (!this.audioElement) return;
+
+    // Adjust preload behavior based on battery settings
+    if (settings.shouldReduceQuality) {
+      this.audioElement.preload = "metadata"; // Reduced preloading
+    } else {
+      this.audioElement.preload = "auto"; // Normal preloading
     }
-    if (this.audioElement) {
-      this.audioElement.pause();
-      this.audioElement.src = "";
-    }
-    this.clearPreloadedTracks();
+
+    // Apply crossOrigin settings for better performance
+    this.audioElement.crossOrigin = "anonymous";
   }
 }
 

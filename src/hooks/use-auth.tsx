@@ -9,12 +9,16 @@ import { Loader2 } from "lucide-react";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isGuestMode: boolean;
+  signInAsGuest: () => Promise<void>;
 }
 
 // Create the context with a default value
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true,
+  loading: false, // Default to false to prevent blocking
+  isGuestMode: false,
+  signInAsGuest: async () => {},
 });
 
 // Create a provider component
@@ -24,24 +28,36 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Changed from true to false for better UX
+  const [loading, setLoading] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
   useEffect(() => {
     console.log("🔐 Auth provider initializing...");
 
-    // Set a timeout to prevent infinite loading
+    // Set aggressive timeout for Firebase auth check
     const timeoutId = setTimeout(() => {
-      console.log("⏰ Auth timeout - proceeding without user");
+      console.log("⏰ Firebase auth timeout - enabling guest mode");
       setLoading(false);
-    }, 1000); // Reduced from 3 seconds to 1 second
+      setIsGuestMode(true);
+    }, 500); // 500ms timeout for immediate app access
 
     // Subscribe to the Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      clearTimeout(timeoutId);
-      console.log("🔐 Auth state changed:", user ? "User found" : "No user");
-      setUser(user);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        clearTimeout(timeoutId);
+        console.log("🔐 Auth state changed:", user ? "User found" : "No user");
+        setUser(user);
+        setLoading(false);
+        setIsGuestMode(false); // Clear guest mode when auth succeeds
+      },
+      (error) => {
+        console.warn("🔐 Auth error:", error);
+        clearTimeout(timeoutId);
+        setLoading(false);
+        setIsGuestMode(true); // Enable guest mode on auth error
+      }
+    );
 
     // Unsubscribe from the listener when the component unmounts
     return () => {
@@ -50,21 +66,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  const value = { user, loading };
+  const signInAsGuest = async () => {
+    // Minimal guest sign-in: mark guest mode and clear user
+    setIsGuestMode(true);
+    setUser(null);
+  };
 
-  // Render a loading screen while checking auth state, then render children
+  const value = { user, loading, isGuestMode, signInAsGuest };
+
+  // Render app shell immediately instead of loading screen
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
-        <div className="flex min-h-screen w-full items-center justify-center bg-gray-900">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-white/60">Loading...</p>
-          </div>
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 }

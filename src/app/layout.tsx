@@ -125,9 +125,6 @@ export default function RootLayout({
         {/* <link rel="icon" href="/icon.svg" type="image/svg+xml" /> */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* Preload critical resources */}
-        {/* Font preloading handled by Next.js Google Fonts optimization */}
-
         {/* Web App Manifest */}
         <link rel="manifest" href="/manifest.json" />
 
@@ -176,7 +173,6 @@ export default function RootLayout({
                   };
                   sessionStorage.setItem('networkInfo', JSON.stringify(networkInfo));
                 }
-                // Removed custom modulepreload to avoid Next.js chunk path issues
                 
                 // Initialize performance timing
                 if ('performance' in window && 'mark' in performance) {
@@ -184,7 +180,9 @@ export default function RootLayout({
                 }
                 
                 // Early service worker registration
-                if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+                var embedded = false;
+                try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+                if (!embedded && 'serviceWorker' in navigator && window.location.protocol === 'https:') {
                   navigator.serviceWorker.register('/sw.js').catch(function(e) {
                     console.log('SW registration failed');
                   });

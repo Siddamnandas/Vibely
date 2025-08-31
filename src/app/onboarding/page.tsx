@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Music, Camera, Lock, Sparkles, ArrowRight, Star, Zap, X } from "lucide-react";
+import { Check, Music, Camera, Lock, Sparkles, ArrowRight, Star, Zap, X, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +12,9 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useSpotifyAuth } from "@/hooks/use-spotify-auth";
 import { useAppleMusicAuth } from "@/hooks/use-apple-music-auth";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
+import { useTimeoutAwareOnboarding } from "@/hooks/use-timeout-aware-onboarding";
+import { useGuestMode } from "@/hooks/use-guest-mode";
+import { OnboardingSkeleton } from "@/components/ui/skeleton";
 
 const steps = [
   {
@@ -46,10 +49,15 @@ export default function OnboardingPage() {
   const [showSkipOptions, setShowSkipOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const timeoutWarningRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const { user } = useAuth();
   const deviceProfile = useDevicePerformance();
   const onboarding = useOnboarding();
+  const timeoutAwareOnboarding = useTimeoutAwareOnboarding();
+  const guestMode = useGuestMode();
   const spotifyAuth = useSpotifyAuth();
   const appleMusicAuth = useAppleMusicAuth();
 
@@ -86,6 +94,44 @@ export default function OnboardingPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Show timeout warning 5 seconds before step timeout
+  useEffect(() => {
+    if (timeoutAwareOnboarding.status.timeToNextStep > 0 && 
+        timeoutAwareOnboarding.status.timeToNextStep <= 5000) {
+      setShowTimeoutWarning(true);
+      setTimeRemaining(Math.ceil(timeoutAwareOnboarding.status.timeToNextStep / 1000));
+      
+      // Update countdown
+      if (timeoutWarningRef.current) {
+        clearInterval(timeoutWarningRef.current);
+      }
+      
+      timeoutWarningRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            if (timeoutWarningRef.current) {
+              clearInterval(timeoutWarningRef.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setShowTimeoutWarning(false);
+      if (timeoutWarningRef.current) {
+        clearInterval(timeoutWarningRef.current);
+        timeoutWarningRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (timeoutWarningRef.current) {
+        clearInterval(timeoutWarningRef.current);
+      }
+    };
+  }, [timeoutAwareOnboarding.status.timeToNextStep]);
+
   // Real step handlers with actual functionality
   const handleMusicConnect = async () => {
     setIsLoading(true);
@@ -97,13 +143,15 @@ export default function OnboardingPage() {
         return;
       }
 
-      setCompletedSteps((prev) => [...prev, "music"]);
+      timeoutAwareOnboarding.handleStepComplete("music");
       track("onboarding_music_connected", {
         provider: "spotify",
         user_id: user?.uid,
       });
     } catch (error) {
       console.error("Music connection failed:", error);
+      // Even on error, mark as completed to allow progression
+      timeoutAwareOnboarding.handleStepComplete("music");
     } finally {
       setIsLoading(false);
       setCurrentStep(null);
@@ -116,11 +164,12 @@ export default function OnboardingPage() {
 
     try {
       // Acknowledge photo access
-      setCompletedSteps((prev) => [...prev, "photos"]);
+      timeoutAwareOnboarding.handleStepComplete("photos");
       track("onboarding_photos_granted", { user_id: user?.uid });
     } catch (error) {
       console.error("Photo access failed:", error);
-      setCompletedSteps((prev) => [...prev, "photos"]);
+      // Even on error, mark as completed to allow progression
+      timeoutAwareOnboarding.handleStepComplete("photos");
     } finally {
       setIsLoading(false);
       setCurrentStep(null);
@@ -131,13 +180,18 @@ export default function OnboardingPage() {
     setIsLoading(true);
     setCurrentStep("privacy");
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setCompletedSteps((prev) => [...prev, "privacy"]);
-    track("onboarding_privacy_acknowledged", { user_id: user?.uid });
-
-    setIsLoading(false);
-    setCurrentStep(null);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      timeoutAwareOnboarding.handleStepComplete("privacy");
+      track("onboarding_privacy_acknowledged", { user_id: user?.uid });
+    } catch (error) {
+      console.error("Privacy acknowledgment failed:", error);
+      // Even on error, mark as completed to allow progression
+      timeoutAwareOnboarding.handleStepComplete("privacy");
+    } finally {
+      setIsLoading(false);
+      setCurrentStep(null);
+    }
   };
 
   const handleAction = async (stepId: string) => {
@@ -153,11 +207,13 @@ export default function OnboardingPage() {
         break;
       default:
         console.warn("Unknown step:", stepId);
+        // Handle unknown steps by marking as completed to allow progression
+        timeoutAwareOnboarding.handleStepComplete(stepId);
     }
   };
 
   const handleSkipStep = (stepId: string) => {
-    setSkippedSteps((prev) => [...prev, stepId]);
+    timeoutAwareOnboarding.handleStepSkip(stepId);
     track("onboarding_step_skipped", {
       step: stepId,
       user_id: user?.uid,
@@ -165,41 +221,41 @@ export default function OnboardingPage() {
   };
 
   const handleSkipAll = () => {
-    const remainingSteps = steps
-      .filter((step) => !completedSteps.includes(step.id) && !skippedSteps.includes(step.id))
-      .map((step) => step.id);
-
-    setSkippedSteps((prev) => [...prev, ...remainingSteps]);
+    timeoutAwareOnboarding.handleSkipAll();
     track("onboarding_skip_all", {
-      skipped_steps: remainingSteps,
       user_id: user?.uid,
     });
   };
 
-  const handleSkipNow = useCallback(() => {
-    track("onboarding_skip_now", {
-      completed_count: completedSteps.length,
-      total_steps: steps.length,
+  const handleSkipToGuestMode = useCallback(async () => {
+    track("onboarding_skipped_with_guest_mode", {
       user_id: user?.uid,
     });
 
-    // Clear saved progress and mark as complete
-    localStorage.removeItem("vibely.onboarding.progress");
-    onboarding.completeOnboarding();
-    router.push("/");
-  }, [completedSteps.length, user?.uid, onboarding, router]);
+    // Enable guest mode and skip onboarding
+    const success = await onboarding.enableGuestModeAndSkip();
+    if (success) {
+      router.push("/");
+    }
+  }, [user?.uid, onboarding, router]);
+
+  // Fast skip to app
+  const handleSkipNow = useCallback(() => {
+    timeoutAwareOnboarding.handleSkipToApp();
+    track("onboarding_skip_now", {
+      user_id: user?.uid,
+    });
+  }, [timeoutAwareOnboarding, user?.uid]);
 
   const handleGetStarted = useCallback(() => {
     track("onboarding_completed", {
-      completed_steps: completedSteps,
-      skipped_steps: skippedSteps,
       user_id: user?.uid,
     });
 
     localStorage.removeItem("vibely.onboarding.progress");
     onboarding.completeOnboarding();
     router.push("/");
-  }, [completedSteps, skippedSteps, user?.uid, onboarding, router]);
+  }, [user?.uid, onboarding, router]);
 
   // Performance-aware animations (with null check)
   const shouldUseReducedAnimations =
@@ -251,6 +307,14 @@ export default function OnboardingPage() {
 
           {showSkipOptions && (
             <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-xl border border-slate-600/30 rounded-2xl p-2">
+              <Button
+                onClick={handleSkipToGuestMode}
+                variant="ghost"
+                className="text-cyan-300 hover:text-cyan-200 text-sm px-4 py-1.5 rounded-lg hover:bg-cyan-500/10 border border-cyan-400/30 font-bold focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                aria-label="Skip onboarding and use guest mode"
+              >
+                👤 Guest Mode
+              </Button>
               <Button
                 onClick={handleSkipNow}
                 variant="ghost"
@@ -304,6 +368,31 @@ export default function OnboardingPage() {
                 Let&apos;s unlock your creative superpowers in 60 seconds
               </p>
 
+              {/* Timeout Warning */}
+              {showTimeoutWarning && (
+                <div className="bg-amber-500/20 backdrop-blur-lg border border-amber-400/30 rounded-2xl p-4 mb-4 max-w-sm mx-auto animate-pulse">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-amber-400 rounded-full animate-ping" />
+                    <span className="text-amber-200 font-semibold text-sm">Time Running Out</span>
+                  </div>
+                  <p className="text-amber-100 text-sm mb-3">
+                    Hurry up! This step will auto-skip in {timeRemaining} seconds.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const activeStep = timeoutAwareOnboarding.status.activeStepId;
+                      if (activeStep) {
+                        timeoutAwareOnboarding.handleStepSkip(activeStep);
+                      }
+                    }}
+                    className="bg-amber-500 hover:bg-amber-400 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-all duration-200"
+                  >
+                    Skip Now
+                  </Button>
+                </div>
+              )}
+
               {/* Flexible Setup Section with Skip Options */}
               <div className="bg-slate-800/40 backdrop-blur-lg border border-emerald-400/20 rounded-2xl p-4 mb-6 max-w-sm mx-auto">
                 <div className="flex items-center gap-2 mb-3">
@@ -325,6 +414,14 @@ export default function OnboardingPage() {
                         aria-label="Skip all onboarding steps"
                       >
                         Skip All Steps
+                      </Button>
+                      <Button
+                        onClick={handleSkipToGuestMode}
+                        size="sm"
+                        className="flex-1 bg-gradient-to-r from-cyan-500/80 to-blue-500/80 hover:from-cyan-400 hover:to-blue-400 text-white font-medium text-xs px-3 py-2 rounded-lg border-0 shadow-lg transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                        aria-label="Skip onboarding and continue as guest"
+                      >
+                        👤 Guest Mode
                       </Button>
                       <Button
                         onClick={handleSkipNow}
@@ -366,9 +463,12 @@ export default function OnboardingPage() {
             {/* Step Cards */}
             <div className="space-y-4 mb-12">
               {steps.map((step) => {
-                const isCompleted = completedSteps.includes(step.id);
-                const isSkipped = skippedSteps.includes(step.id);
-                const isCurrent = !isCompleted && !isSkipped;
+                const stepStatus = timeoutAwareOnboarding.status.steps.find(s => s.id === step.id);
+                const isCompleted = stepStatus?.isCompleted || false;
+                const isSkipped = stepStatus?.isSkipped || false;
+                const isTimedOut = stepStatus?.isTimedOut || false;
+                const isCurrent = !isCompleted && !isSkipped && !isTimedOut;
+                const timeRemaining = stepStatus?.timeRemaining || 0;
 
                 return (
                   <Card
@@ -377,7 +477,7 @@ export default function OnboardingPage() {
                       "group relative overflow-hidden transition-all duration-500 ease-out border-2",
                       isCompleted
                         ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-400/50 backdrop-blur-xl shadow-lg shadow-emerald-500/20"
-                        : isSkipped
+                        : isSkipped || isTimedOut
                           ? "bg-slate-800/40 border-slate-600/30 backdrop-blur-xl"
                           : "bg-slate-800/60 border-slate-600/50 backdrop-blur-xl hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02]",
                     )}
@@ -422,7 +522,7 @@ export default function OnboardingPage() {
                                 "font-bold text-lg leading-tight",
                                 isCompleted
                                   ? "text-emerald-200"
-                                  : isSkipped
+                                  : isSkipped || isTimedOut
                                     ? "text-slate-400 line-through"
                                     : "text-white",
                               )}
@@ -435,6 +535,12 @@ export default function OnboardingPage() {
                                 NEXT
                               </div>
                             )}
+                            {isTimedOut && (
+                              <div className="flex items-center gap-1 text-xs text-amber-300 font-medium bg-amber-500/10 px-2 py-1 rounded-full border border-amber-400/30">
+                                <Clock className="w-3 h-3" />
+                                TIMED OUT
+                              </div>
+                            )}
                           </div>
 
                           <p
@@ -442,13 +548,29 @@ export default function OnboardingPage() {
                               "text-sm mb-3 leading-relaxed",
                               isCompleted
                                 ? "text-emerald-100/80"
-                                : isSkipped
+                                : isSkipped || isTimedOut
                                   ? "text-slate-500"
                                   : "text-white/70",
                             )}
                           >
                             {step.description}
                           </p>
+
+                          {/* Time remaining indicator */}
+                          {isCurrent && timeRemaining > 0 && (
+                            <div className="mb-3">
+                              <div className="flex items-center gap-2 text-xs text-amber-200">
+                                <Clock className="w-3 h-3" />
+                                <span>Auto-skip in {Math.ceil(timeRemaining / 1000)}s</span>
+                              </div>
+                              <div className="w-full bg-slate-700/50 rounded-full h-1 mt-1">
+                                <div 
+                                  className="bg-gradient-to-r from-amber-400 to-amber-500 h-1 rounded-full transition-all duration-1000"
+                                  style={{ width: `${(timeRemaining / (stepStatus?.timeoutMs || 10000)) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
 
                           {/* Benefit Badge */}
                           <div className="flex items-center gap-2 text-xs">
@@ -468,7 +590,7 @@ export default function OnboardingPage() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-col gap-2">
-                          {!isCompleted && !isSkipped && (
+                          {!isCompleted && !isSkipped && !isTimedOut && (
                             <>
                               <Button
                                 size="sm"
@@ -512,22 +634,22 @@ export default function OnboardingPage() {
               <Button
                 size="lg"
                 onClick={handleGetStarted}
-                disabled={completedSteps.length === 0 && skippedSteps.length === 0}
+                disabled={!timeoutAwareOnboarding.status.canSkipToApp}
                 className={cn(
                   "w-full rounded-2xl font-black text-lg py-6 transition-all duration-300 border-2 shadow-xl",
-                  allStepsCompleted
+                  timeoutAwareOnboarding.status.isComplete
                     ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-emerald-400 shadow-emerald-500/30 hover:scale-105"
-                    : completedSteps.length > 0 || skippedSteps.length > 0
+                    : timeoutAwareOnboarding.status.canSkipToApp
                       ? "bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white border-slate-500"
                       : "bg-slate-800/50 text-slate-400 border-slate-700 cursor-not-allowed",
                 )}
               >
-                {allStepsCompleted ? (
+                {timeoutAwareOnboarding.status.isComplete ? (
                   <>
                     🚀 Launch Vibely
                     <Sparkles className="w-5 h-5 ml-2" />
                   </>
-                ) : completedSteps.length > 0 || skippedSteps.length > 0 ? (
+                ) : timeoutAwareOnboarding.status.canSkipToApp ? (
                   "Continue to Vibely"
                 ) : (
                   "Complete steps above"
@@ -535,7 +657,7 @@ export default function OnboardingPage() {
               </Button>
 
               {/* Skip All Option */}
-              {showSkipOptions && completedSteps.length === 0 && skippedSteps.length === 0 && (
+              {showSkipOptions && !timeoutAwareOnboarding.status.canSkipToApp && (
                 <div className="pt-4 border-t border-slate-700/50">
                   <Button
                     variant="ghost"

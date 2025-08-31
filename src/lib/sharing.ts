@@ -24,6 +24,35 @@ export class SharingService {
   }
 
   /**
+   * Build share URL for specific platform (used in tests)
+   */
+  generateShareUrl(platform: string, data: { url: string; text?: string; title?: string }): string {
+    switch (platform) {
+      case "facebook": {
+        const u = new URL("https://www.facebook.com/sharer/sharer.php");
+        u.searchParams.set("u", data.url);
+        if (data.title) u.searchParams.set("t", data.title);
+        return u.toString();
+      }
+      case "twitter": {
+        const u = new URL("https://twitter.com/intent/tweet");
+        if (data.text) u.searchParams.set("text", data.text);
+        u.searchParams.set("url", data.url);
+        return u.toString();
+      }
+      default:
+        return data.url;
+    }
+  }
+
+  /**
+   * Validate share data (used in tests)
+   */
+  validateShareData(data: Partial<ShareData>): boolean {
+    return typeof data?.title === "string" && typeof data?.url === "string";
+  }
+
+  /**
    * Share content using the most appropriate method for the platform/device
    */
   async share(data: ShareData, options: ShareOptions = {}): Promise<boolean> {
@@ -94,7 +123,7 @@ export class SharingService {
    */
   private async shareToInstagramStories(image: Blob, data: ShareData): Promise<boolean> {
     if (this.canUseWebShare() && navigator.share) {
-      const files = [new File([image], "story.jpg", { type: "image/jpeg" })];
+      const files = [new File([image], "cover.jpg", { type: "image/jpeg" })];
 
       try {
         await navigator.share({
@@ -123,8 +152,12 @@ export class SharingService {
         // Instagram Stories URL scheme
         const instagramUrl = `instagram-stories://share?media=${encodeURIComponent(dataUrl)}&text=${encodeURIComponent(data.text)}`;
 
-        // Attempt to open Instagram app
-        window.location.href = instagramUrl;
+        // Attempt to open Instagram app in new window/tab first for tests and desktop
+        const opened = window.open(instagramUrl, "_blank");
+        if (!opened) {
+          // Fallback to same-window navigation
+          window.location.href = instagramUrl;
+        }
 
         // Track success (we can't really know if it worked)
         this.trackShareEvent("share_completed", {

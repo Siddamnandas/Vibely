@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
-    const { refresh_token } = await request.json();
+    // Get refresh token from cookies
+    const cookieStore = await cookies();
+    const refreshToken = cookieStore.get("sp_refresh")?.value;
 
-    if (!refresh_token) {
+    if (!refreshToken) {
       return NextResponse.json({ error: "Refresh token is required" }, { status: 400 });
     }
 
@@ -14,12 +17,12 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(
-          `${process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
+          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
         ).toString("base64")}`,
       },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token,
+        refresh_token: refreshToken,
       }),
     });
 
@@ -31,12 +34,42 @@ export async function POST(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
 
+    // Update httpOnly cookies with new tokens
+    const expiresIn = tokenData.expires_in; // seconds
+    const expirationTime = Date.now() + expiresIn * 1000;
+
+    cookieStore.set("sp_access", tokenData.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: expiresIn,
+      path: "/",
+      sameSite: "lax",
+    });
+
+    // Spotify may or may not return a new refresh token
+    if (tokenData.refresh_token) {
+      cookieStore.set("sp_refresh", tokenData.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+        sameSite: "lax",
+      });
+    }
+
+    cookieStore.set("sp_exp", expirationTime.toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/",
+      sameSite: "lax",
+    });
+
     return NextResponse.json({
       access_token: tokenData.access_token,
       token_type: tokenData.token_type,
       expires_in: tokenData.expires_in,
-      // Spotify may or may not return a new refresh token
-      refresh_token: tokenData.refresh_token || refresh_token,
+      refresh_token: tokenData.refresh_token || refreshToken,
       scope: tokenData.scope,
     });
   } catch (error) {

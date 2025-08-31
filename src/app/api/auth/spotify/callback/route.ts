@@ -42,14 +42,15 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(
-          `${process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
+          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
         ).toString("base64")}`,
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
         redirect_uri:
-          process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || "http://localhost:3000/auth/callback",
+          process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+          "http://localhost:3002/auth/success?provider=spotify",
       }),
     });
 

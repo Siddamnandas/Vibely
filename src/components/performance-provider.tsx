@@ -87,6 +87,7 @@ export function PerformanceProvider({ children }: { children: React.ReactNode })
         }, 100);
 
         // Cleanup function
+        // Return a cleanup function
         return () => {
           clearInterval(metricsInterval);
           if (customObserver) {
@@ -99,18 +100,15 @@ export function PerformanceProvider({ children }: { children: React.ReactNode })
       }
     };
 
-    const cleanup = initializePerformance();
+    let cleanupFn: (() => void) | null = null;
+    (async () => {
+      cleanupFn = ((await initializePerformance()) as unknown as (() => void) | void) || null;
+    })();
 
     return () => {
-      if (cleanup instanceof Promise) {
-        cleanup.then((cleanupFn) => {
-          if (typeof cleanupFn === "function") {
-            cleanupFn();
-          }
-        });
-      } else if (typeof cleanup === "function") {
-        cleanup();
-      }
+      try {
+        cleanupFn?.();
+      } catch {}
     };
   }, []);
 

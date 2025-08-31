@@ -8,6 +8,8 @@ export interface DevicePerformanceProfile {
   cores: number;
   connectionType: "fast" | "slow" | "offline";
   batteryLevel?: number;
+  batteryCharging?: boolean;
+  thermalState?: "nominal" | "fair" | "serious" | "critical";
   isLowEndDevice: boolean;
   supportsWebGL: boolean;
   maxImageQuality: "high" | "medium" | "low";
@@ -15,6 +17,10 @@ export interface DevicePerformanceProfile {
   shouldPreloadImages: boolean;
   shouldUseAnimations: boolean;
   shouldUseLazyLoading: boolean;
+  networkLatency?: number;
+  devicePixelRatio: number;
+  screenSize: "small" | "medium" | "large";
+  isReducedMotion: boolean;
 }
 
 interface NavigatorWithMemory extends Omit<Navigator, "hardwareConcurrency"> {
@@ -23,7 +29,15 @@ interface NavigatorWithMemory extends Omit<Navigator, "hardwareConcurrency"> {
   getBattery?: () => Promise<{
     level: number;
     charging: boolean;
+    chargingTime: number;
+    dischargingTime: number;
   }>;
+  connection?: {
+    effectiveType?: "slow-2g" | "2g" | "3g" | "4g";
+    downlink?: number;
+    rtt?: number;
+    saveData?: boolean;
+  };
 }
 
 interface ConnectionInfo {
@@ -46,12 +60,15 @@ export function useDevicePerformance(): DevicePerformanceProfile {
     shouldPreloadImages: true,
     shouldUseAnimations: true,
     shouldUseLazyLoading: false,
+    devicePixelRatio: 1,
+    screenSize: "medium",
+    isReducedMotion: false,
   });
 
   useEffect(() => {
     const detectDevicePerformance = async () => {
       const nav = navigator as NavigatorWithMemory;
-      const connection = (nav as any).connection as ConnectionInfo | undefined;
+      const connection = nav.connection;
 
       // Memory detection
       const memoryGB = nav.deviceMemory || estimateMemoryFromUserAgent();
@@ -61,26 +78,54 @@ export function useDevicePerformance(): DevicePerformanceProfile {
 
       // Connection speed detection
       const connectionType = getConnectionType(connection);
+      const networkLatency = connection?.rtt || 0;
 
       // WebGL support detection
       const supportsWebGL = detectWebGLSupport();
 
       // Battery level detection (if available)
       let batteryLevel: number | undefined;
+      let batteryCharging: boolean | undefined;
+      let thermalState: "nominal" | "fair" | "serious" | "critical" = "nominal";
+      
       try {
         if (nav.getBattery) {
           const battery = await nav.getBattery();
           batteryLevel = battery.level * 100;
+          batteryCharging = battery.charging;
         }
       } catch (error) {
         // Battery API not supported or blocked
       }
 
+      // Thermal state detection (experimental)
+      try {
+        if ('connection' in navigator && 'effectiveType' in (navigator as any).connection) {
+          const effective = (navigator as any).connection.effectiveType;
+          if (effective === 'slow-2g' && cores < 4) {
+            thermalState = 'serious';
+          }
+        }
+      } catch (error) {
+        // Thermal detection not available
+      }
+
+      // Screen and display detection
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const screenWidth = window.screen.width;
+      const screenSize: "small" | "medium" | "large" = 
+        screenWidth < 768 ? "small" : 
+        screenWidth < 1200 ? "medium" : "large";
+
+      // Reduced motion preference
+      const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
       // Performance tier calculation
-      const tier = calculatePerformanceTier(memoryGB, cores, connectionType);
+      const tier = calculatePerformanceTier(memoryGB, cores, connectionType, batteryLevel);
 
       // Low-end device detection
-      const isLowEndDevice = memoryGB < 3 || cores < 4 || connectionType === "slow";
+      const isLowEndDevice = memoryGB < 3 || cores < 4 || connectionType === "slow" || 
+                             (batteryLevel !== undefined && batteryLevel < 20 && !batteryCharging);
 
       // Adaptive settings based on performance
       const adaptiveSettings = calculateAdaptiveSettings(
@@ -88,6 +133,8 @@ export function useDevicePerformance(): DevicePerformanceProfile {
         isLowEndDevice,
         connectionType,
         supportsWebGL,
+        batteryLevel,
+        isReducedMotion
       );
 
       setProfile({
@@ -96,13 +143,40 @@ export function useDevicePerformance(): DevicePerformanceProfile {
         cores,
         connectionType,
         batteryLevel,
+        batteryCharging,
+        thermalState,
         isLowEndDevice,
         supportsWebGL,
+        networkLatency,
+        devicePixelRatio,
+        screenSize,
+        isReducedMotion,
         ...adaptiveSettings,
       });
     };
 
     detectDevicePerformance();
+
+    // Re-run detection when battery or connection changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        detectDevicePerformance();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Monitor connection changes
+    if ('connection' in navigator) {
+      (navigator as any).connection?.addEventListener('change', detectDevicePerformance);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if ('connection' in navigator) {
+        (navigator as any).connection?.removeEventListener('change', detectDevicePerformance);
+      }
+    };
   }, []);
 
   return profile;
@@ -158,9 +232,13 @@ function calculatePerformanceTier(
   memoryGB: number,
   cores: number,
   connectionType: "fast" | "slow" | "offline",
+  batteryLevel?: number
 ): "high" | "medium" | "low" {
-  if (memoryGB >= 6 && cores >= 6 && connectionType === "fast") return "high";
-  if (memoryGB >= 3 && cores >= 4 && connectionType !== "slow") return "medium";
+  // Factor in battery level for performance tier
+  const batteryPenalty = (batteryLevel !== undefined && batteryLevel < 15) ? 1 : 0;
+  
+  if (memoryGB >= 6 && cores >= 6 && connectionType === "fast" && batteryPenalty === 0) return "high";
+  if (memoryGB >= 3 && cores >= 4 && connectionType !== "slow" && batteryPenalty === 0) return "medium";
   return "low";
 }
 
@@ -169,6 +247,8 @@ function calculateAdaptiveSettings(
   isLowEndDevice: boolean,
   connectionType: "fast" | "slow" | "offline",
   supportsWebGL: boolean,
+  batteryLevel?: number,
+  isReducedMotion?: boolean
 ) {
   const settings = {
     maxImageQuality: "high" as "high" | "medium" | "low",
@@ -178,18 +258,28 @@ function calculateAdaptiveSettings(
     shouldUseLazyLoading: false,
   };
 
+  // Battery-aware adjustments
+  const lowBattery = batteryLevel !== undefined && batteryLevel < 20;
+  const criticalBattery = batteryLevel !== undefined && batteryLevel < 10;
+
+  // Respect user's motion preferences
+  if (isReducedMotion) {
+    settings.shouldUseAnimations = false;
+  }
+
   // Adjust based on performance tier
-  if (tier === "low" || isLowEndDevice) {
+  if (tier === "low" || isLowEndDevice || criticalBattery) {
     settings.maxImageQuality = "low";
     settings.maxConcurrentImages = 3;
     settings.shouldPreloadImages = false;
     settings.shouldUseAnimations = false;
     settings.shouldUseLazyLoading = true;
-  } else if (tier === "medium") {
+  } else if (tier === "medium" || lowBattery) {
     settings.maxImageQuality = "medium";
     settings.maxConcurrentImages = 6;
-    settings.shouldPreloadImages = connectionType === "fast";
+    settings.shouldPreloadImages = connectionType === "fast" && !lowBattery;
     settings.shouldUseLazyLoading = connectionType === "slow";
+    if (lowBattery) settings.shouldUseAnimations = false;
   }
 
   // Adjust based on connection

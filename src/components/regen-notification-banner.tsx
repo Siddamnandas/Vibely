@@ -45,11 +45,11 @@ export function RegenNotificationBanner() {
 
   // Track completed jobs
   useEffect(() => {
-    const completed = Object.values(jobs)
-      .filter((job) => job.status === "completed")
+    const completed = Object.values(jobs || {})
+      .filter((job) => job && job.status === "completed")
       .map((job) => ({
         playlistId: job.playlistId,
-        playlistName: playlistNames[job.playlistId] || `Playlist ${job.playlistId.slice(0, 8)}`,
+        playlistName: playlistNames?.[job.playlistId] || `Playlist ${job.playlistId.slice(0, 8)}`,
         totalSongs: job.total,
         completedAt: Date.now(),
       }))
@@ -131,7 +131,7 @@ export function useRegenNotificationAutoDismiss() {
   const [dismissTimer, setDismissTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const hasCompleted = Object.values(jobs).some((job) => job.status === "completed");
+    const hasCompleted = Object.values(jobs || {}).some((job) => job && job.status === "completed");
 
     if (hasCompleted && !dismissTimer) {
       const timer = setTimeout(() => {

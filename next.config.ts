@@ -43,12 +43,6 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: [
-      "picsum.photos",
-      "images.unsplash.com",
-      "i.scdn.co", // Spotify images
-      "is1-ssl.mzstatic.com", // Apple Music images
-    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -79,6 +73,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.mzstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "generativelanguage.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
       },
     ],
   },
@@ -168,16 +170,54 @@ const nextConfig: NextConfig = {
           // In development, allow trusted ancestors via CSP instead.
           ...(isProd
             ? [
-                {
-                  key: "X-Frame-Options",
-                  value: "DENY",
-                },
+                // In production, keep DENY by default.
+                // Set ALLOW_IFRAME_PROD=true to relax for trusted preview environments.
+                ...(process.env.ALLOW_IFRAME_PROD === "true"
+                  ? [
+                      {
+                        key: "Content-Security-Policy",
+                        value:
+                          process.env.ALLOW_IFRAME_PROD === "true"
+                            ? "frame-ancestors *;"
+                            : "frame-ancestors 'self';",
+                      },
+                    ]
+                  : [
+                      {
+                        key: "X-Frame-Options",
+                        value: "DENY",
+                      },
+                    ]),
               ]
             : [
                 {
                   key: "Content-Security-Policy",
+                  // Broaden frame-ancestors during development so mobile preview extensions/webviews can render
+                  // Set ALLOW_IFRAME_DEV=true to allow any ancestor (most permissive) for troubleshooting
                   value:
-                    "frame-ancestors 'self' vscode-webview://* http://localhost:* https://localhost:*;",
+                    process.env.ALLOW_IFRAME_DEV === "true"
+                      ? "frame-ancestors *;"
+                      : [
+                          "frame-ancestors",
+                          "'self'",
+                          // VS Code webview schemes/domains used by extensions
+                          "vscode-webview://*",
+                          "https://*.vscode-webview.net",
+                          "https://*.vscode-cdn.net",
+                          // Local dev hosts
+                          "http://localhost:*",
+                          "https://localhost:*",
+                          "http://127.0.0.1:*",
+                          "https://127.0.0.1:*",
+                          // Network IPs for mobile testing
+                          "http://172.20.10.*:*",
+                          // Common preview/webview schemes
+                          "chrome-extension://*",
+                          "moz-extension://*",
+                          "capacitor://*",
+                          "ionic://*",
+                          "file:",
+                        ].join(" ") + ";",
                 },
               ]),
           {
@@ -271,12 +311,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
 
-  // Analyze bundle size
-  ...(process.env.ANALYZE === "true" && {
-    experimental: {
-      bundlePagesRouterDependencies: true,
-    },
-  }),
+  // Analyze bundle size (plugin configured below when ANALYZE=true)
 };
 
 // Bundle analyzer

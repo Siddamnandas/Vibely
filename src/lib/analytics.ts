@@ -78,8 +78,13 @@ export type AnalyticsEvent =
   | "onboarding_photos_granted"
   | "onboarding_privacy_acknowledged"
   | "onboarding_step_skipped"
+  | "onboarding_step_completed"
+  | "onboarding_step_timeout"
   | "onboarding_skip_all"
   | "onboarding_skip_now"
+  | "onboarding_skip_to_app"
+  | "onboarding_reset"
+  | "onboarding_skipped_with_guest_mode"
   | "onboarding_completed"
   | "playlist_notification_sent"
   | "playlist_notification_failed"
@@ -124,6 +129,24 @@ export type AnalyticsEvent =
   | "webhook_event_failed"
   | "client_payment_succeeded"
   | "client_payment_failed"
+  | "accessibility_preferences_detected"
+  | "accessibility_violation_touch_target"
+  | "accessibility_scan_completed"
+  | "accessibility_config_updated"
+  | "accessibility_mode_toggled"
+  | "gesture_enabled"
+  | "gesture_disabled"
+  | "mobile_gesture_performed"
+  | "audio_optimization_applied"
+  | "emergency_buffering_triggered"
+  | "automatic_performance_optimization_applied"
+  | "automatic_performance_optimization_reset"
+  | "guest_mode_enabled"
+  | "guest_mode_disabled"
+  | "guest_session_extended"
+  | "audio_buffer_low"
+  | "performance_metrics_report"
+  | "thermal_state_change"
   | "client_subscription_created"
   | "client_subscription_updated"
   | "client_subscription_cancelled"
@@ -211,6 +234,7 @@ export class AnalyticsService {
   private providers: Map<AnalyticsProvider, any> = new Map();
   private userId: string | null = null;
   private sessionId: string;
+  private provider: "spotify" | "apple" | null = null;
 
   constructor(config?: AnalyticsConfig) {
     this.config = config || ({ providers: [], debug: false } as AnalyticsConfig);
@@ -244,6 +268,13 @@ export class AnalyticsService {
       providers: this.config.providers,
       session_id: this.sessionId,
     });
+  }
+
+  /**
+   * Set the current provider (spotify/apple)
+   */
+  setProvider(provider: "spotify" | "apple" | null) {
+    this.provider = provider;
   }
 
   /**
@@ -326,6 +357,7 @@ export class AnalyticsService {
   reset(): void {
     this.userId = null;
     this.sessionId = this.generateSessionId();
+    this.provider = null;
 
     for (const [providerName, provider] of this.providers.entries()) {
       try {
@@ -511,6 +543,7 @@ export class AnalyticsService {
       timestamp: new Date().toISOString(),
       session_id: this.sessionId,
       user_id: this.userId,
+      provider: this.provider,
       page_url: typeof window !== "undefined" ? window.location.href : undefined,
       page_title: typeof window !== "undefined" ? document.title : undefined,
       referrer: typeof window !== "undefined" ? document.referrer : undefined,
@@ -665,19 +698,19 @@ export class AnalyticsService {
 // Create analytics instance
 const analyticsConfig: AnalyticsConfig = {
   providers: [
-    ...(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY ? ["amplitude" as AnalyticsProvider] : []),
-    ...(process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY ? ["segment" as AnalyticsProvider] : []),
+    ...(process.env.SEGMENT_WRITE_KEY ? ["segment" as AnalyticsProvider] : []),
+    ...(process.env.AMPLITUDE_API_KEY ? ["amplitude" as AnalyticsProvider] : []),
     ...(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? ["google-analytics" as AnalyticsProvider] : []),
     ...(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ? ["mixpanel" as AnalyticsProvider] : []),
   ],
-  amplitude: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY
+  amplitude: process.env.AMPLITUDE_API_KEY
     ? {
-        apiKey: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY,
+        apiKey: process.env.AMPLITUDE_API_KEY,
       }
     : undefined,
-  segment: process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY
+  segment: process.env.SEGMENT_WRITE_KEY
     ? {
-        writeKey: process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY,
+        writeKey: process.env.SEGMENT_WRITE_KEY,
       }
     : undefined,
   googleAnalytics: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID

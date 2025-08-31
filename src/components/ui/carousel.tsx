@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
+import useEmblaCarousel, {
+  type UseEmblaCarouselType,
+} from "embla-carousel-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -53,9 +55,10 @@ const Carousel = React.forwardRef<
   );
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
+  const isUnmounting = React.useRef(false);
 
   const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) {
+    if (!api || isUnmounting.current) {
       return;
     }
 
@@ -64,15 +67,21 @@ const Carousel = React.forwardRef<
   }, []);
 
   const scrollPrev = React.useCallback(() => {
-    api?.scrollPrev();
+    if (api && !isUnmounting.current) {
+      api.scrollPrev();
+    }
   }, [api]);
 
   const scrollNext = React.useCallback(() => {
-    api?.scrollNext();
+    if (api && !isUnmounting.current) {
+      api.scrollNext();
+    }
   }, [api]);
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (isUnmounting.current) return;
+      
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         scrollPrev();
@@ -85,7 +94,7 @@ const Carousel = React.forwardRef<
   );
 
   React.useEffect(() => {
-    if (!api || !setApi) {
+    if (!api || !setApi || isUnmounting.current) {
       return;
     }
 
@@ -93,18 +102,28 @@ const Carousel = React.forwardRef<
   }, [api, setApi]);
 
   React.useEffect(() => {
-    if (!api) {
+    if (!api || isUnmounting.current) {
       return;
     }
 
     onSelect(api);
-    api.on("reInit", onSelect);
     api.on("select", onSelect);
+    api.on("reInit", onSelect);
 
     return () => {
-      api?.off("select", onSelect);
+      if (api) {
+        api.off("select", onSelect);
+        api.off("reInit", onSelect);
+      }
     };
   }, [api, onSelect]);
+
+  // Cleanup function to prevent state updates after unmount
+  React.useEffect(() => {
+    return () => {
+      isUnmounting.current = true;
+    };
+  }, []);
 
   return (
     <CarouselContext.Provider

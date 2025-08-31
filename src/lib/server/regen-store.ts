@@ -1,6 +1,9 @@
 // Simple in-memory regen job store for development
 // NOTE: In production, replace with a persistent queue + DB
 
+import { generateCover } from "@/lib/ai-provider";
+import { songs } from "@/lib/data";
+
 export type RegenStatus = "idle" | "running" | "paused" | "canceled" | "completed" | "queued";
 
 export type RegenRowState = {
@@ -19,6 +22,7 @@ export type RegenJob = {
   startedAt?: number;
   lastPctEmitted?: number;
   rows: Record<string, RegenRowState>;
+  photoDataUri?: string;
 };
 
 type Store = {
@@ -30,6 +34,7 @@ type Store = {
 
 import fs from "fs";
 import path from "path";
+import { sendRegenCompleteNotification } from "@/lib/server/push-notifications";
 
 const g = globalThis as any;
 if (!g.__REGEN_STORE__) {
@@ -56,7 +61,33 @@ function loadFromDisk() {
       store.queue = parsed.queue || [];
       store.active = parsed.active || null;
     }
-  } catch {}
+  } catch (error) {
+    console.error("Failed to load regen store from disk:", error);
+  }
+}
+
+// Load persisted state on module load
+loadFromDisk();
+
+// Handle process shutdown gracefully
+if (typeof process !== "undefined") {
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received, persisting regen store...");
+    persistSoon();
+    // Give some time for persistence to complete
+    setTimeout(() => {
+      process.exit(0);
+    }, 100);
+  });
+
+  process.on("SIGINT", () => {
+    console.log("SIGINT received, persisting regen store...");
+    persistSoon();
+    // Give some time for persistence to complete
+    setTimeout(() => {
+      process.exit(0);
+    }, 100);
+  });
 }
 
 let persistTimer: NodeJS.Timeout | null = null;
@@ -71,18 +102,16 @@ function persistSoon() {
           JSON.stringify({ jobs: store.jobs, queue: store.queue, active: store.active }, null, 2),
           "utf8",
         );
-      } catch {}
+      } catch (error) {
+        console.error("Failed to persist regen store:", error);
+      }
     }, 150);
-  } catch {}
+  } catch (error) {
+    console.error("Error in persistSoon:", error);
+  }
 }
 
-// Load persisted state on module load
-loadFromDisk();
-
 const MAX_CONCURRENT = 1;
-
-const randomCover = (seed: string) =>
-  `https://picsum.photos/seed/cover-${seed}-${Math.floor(Math.random() * 10000)}/500/500`;
 
 export function getJob(playlistId: string): RegenJob | undefined {
   return store.jobs[playlistId];
@@ -96,7 +125,19 @@ export function startJob(
   playlistId: string,
   trackIds: string[],
   currentCovers: Record<string, string>,
+  photoDataUri?: string,
+  idempotencyKey?: string,
 ): RegenJob {
+  // If idempotency key is provided, check if job already exists
+  if (idempotencyKey) {
+    const existingJob = Object.values(store.jobs).find(
+      (job) => job.rows[idempotencyKey as any], // Using idempotencyKey as a placeholder
+    );
+    if (existingJob && (existingJob.status === "running" || existingJob.status === "queued")) {
+      return existingJob;
+    }
+  }
+
   // If already exists and running/queued, return current job
   const existing = store.jobs[playlistId];
   if (
@@ -105,6 +146,7 @@ export function startJob(
   ) {
     return existing;
   }
+
   const rows: Record<string, RegenRowState> = Object.fromEntries(
     trackIds.map((id) => [id, { trackId: id, status: "pending", prevCoverUrl: currentCovers[id] }]),
   );
@@ -117,6 +159,7 @@ export function startJob(
     status,
     startedAt: status === "running" ? Date.now() : undefined,
     rows,
+    photoDataUri,
   };
   store.jobs[playlistId] = job;
   if (status === "queued") {
@@ -199,7 +242,7 @@ function runTimer(playlistId: string, trackIds: string[], currentCovers: Record<
     clearInterval(store.timers[playlistId] as any);
     store.timers[playlistId] = null;
   }
-  const interval = setInterval(() => {
+  const interval = setInterval(async () => {
     const j = store.jobs[playlistId];
     if (!j) {
       clearInterval(interval);
@@ -216,14 +259,53 @@ function runTimer(playlistId: string, trackIds: string[], currentCovers: Record<
         startNextFromQueue();
       }
       persistSoon();
+
+      // Send push notification when job is completed
+      // In a real implementation, you would get the user's FCM token from a database
+      // For now, we'll just log that we should send a notification
+      console.log("Regen job completed for playlist:", playlistId);
+      // Example of how to send notification:
+      // await sendRegenCompleteNotification(userFcmToken, playlistName, playlistId);
+
       return;
     }
+
     const nextTrackId = trackIds[j.completed];
+
+    // Generate AI cover if photoDataUri is available, otherwise use random cover
+    let newCoverUrl = `https://picsum.photos/seed/cover-${nextTrackId}-${Math.floor(Math.random() * 10000)}/500/500`;
+    let variantId = `cv_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+
+    if (j.photoDataUri) {
+      try {
+        // Find the song data
+        const song = songs.find((s) => s.id === nextTrackId);
+        if (song) {
+          // Call the AI to generate the cover
+          const result = await generateCover({
+            trackMeta: {
+              id: song.id,
+              title: song.title,
+              artist: song.artist,
+              originalCoverUrl: song.originalCoverUrl,
+            },
+            userGalleryHint: j.photoDataUri,
+          });
+
+          newCoverUrl = result.imageUrl;
+          variantId = result.variantId;
+        }
+      } catch (error) {
+        console.error("AI cover generation failed for track", nextTrackId, error);
+        // Fall back to random cover on error
+      }
+    }
+
     const updatedRow: RegenRowState = {
       trackId: nextTrackId,
       status: "updated",
       prevCoverUrl: currentCovers[nextTrackId],
-      newCoverUrl: randomCover(nextTrackId),
+      newCoverUrl: newCoverUrl,
       updatedAt: Date.now(),
     };
     j.completed += 1;

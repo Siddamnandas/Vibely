@@ -11,25 +11,6 @@ type State = {
   error?: string;
 };
 
-const STORAGE_KEY = "vibely.streamingAuth";
-
-function readStorage(): { provider: Provider; token?: string } {
-  if (typeof window === "undefined") return { provider: null };
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { provider: "spotify", token: undefined };
-  } catch {
-    return { provider: "spotify", token: undefined };
-  }
-}
-
-function writeStorage(data: { provider: Provider; token?: string }) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
-}
-
 export function useStreamingAuth() {
   const [state, setState] = useState<State>({
     isAuthenticated: false,
@@ -38,28 +19,99 @@ export function useStreamingAuth() {
   });
 
   useEffect(() => {
-    const { provider, token } = readStorage();
-    setState({ isAuthenticated: Boolean(token), provider, checking: false });
+    // Check if Spotify tokens exist in cookies
+    const checkSpotifyAuth = async () => {
+      try {
+        // Check if we have Spotify access token cookie
+        const hasSpotifyAccess = document.cookie.includes("sp_access=");
+        setState({
+          isAuthenticated: hasSpotifyAccess,
+          provider: hasSpotifyAccess ? "spotify" : null,
+          checking: false,
+        });
+      } catch (error) {
+        setState({
+          isAuthenticated: false,
+          provider: null,
+          checking: false,
+          error: "Failed to check authentication status",
+        });
+      }
+    };
+
+    checkSpotifyAuth();
   }, []);
 
   const reconnect = useCallback(async () => {
     setState((s) => ({ ...s, checking: true, error: undefined }));
-    await new Promise((r) => setTimeout(r, 800));
-    const current = readStorage();
-    // Simulate obtaining a token
-    writeStorage({ provider: current.provider ?? "spotify", token: `tok_${Date.now()}` });
-    const next = readStorage();
-    setState({ isAuthenticated: Boolean(next.token), provider: next.provider, checking: false });
+
+    try {
+      // Redirect to Spotify authorize URL
+      const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+      const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
+      const scopes = [
+        "user-read-playback-state",
+        "user-modify-playback-state",
+        "user-read-currently-playing",
+        "streaming",
+      ].join(" ");
+
+      if (clientId && redirectUri) {
+        const authUrl =
+          `https://accounts.spotify.com/authorize?` +
+          `client_id=${clientId}&` +
+          `response_type=code&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `scope=${encodeURIComponent(scopes)}`;
+
+        window.location.href = authUrl;
+      } else {
+        setState((s) => ({
+          ...s,
+          checking: false,
+          error: "Spotify client ID or redirect URI not configured",
+        }));
+      }
+    } catch (error) {
+      setState((s) => ({
+        ...s,
+        checking: false,
+        error: error instanceof Error ? error.message : "Failed to reconnect to Spotify",
+      }));
+    }
   }, []);
 
   const refresh = useCallback(async () => {
     setState((s) => ({ ...s, checking: true, error: undefined }));
-    await new Promise((r) => setTimeout(r, 400));
-    const current = readStorage();
-    // Simulate refresh by updating token timestamp
-    if (current.token) writeStorage({ provider: current.provider, token: `tok_${Date.now()}` });
-    const next = readStorage();
-    setState({ isAuthenticated: Boolean(next.token), provider: next.provider, checking: false });
+
+    try {
+      // Call the refresh endpoint
+      const response = await fetch("/api/auth/spotify/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to refresh token");
+      }
+
+      const data = await response.json();
+      setState({
+        isAuthenticated: true,
+        provider: "spotify",
+        checking: false,
+      });
+    } catch (error) {
+      setState({
+        isAuthenticated: false,
+        provider: null,
+        checking: false,
+        error: error instanceof Error ? error.message : "Failed to refresh authentication",
+      });
+    }
   }, []);
 
   return { ...state, reconnect, refresh };
