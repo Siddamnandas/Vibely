@@ -51,7 +51,7 @@ export function useSpotifyAuth() {
       setState({
         isAuthenticated: false,
         isLoading: false,
-        error: null, // Don't show errors for timeouts to improve UX
+        error: error instanceof Error ? error.message : "Authentication failed",
         userProfile: null,
       });
     }
@@ -62,18 +62,32 @@ export function useSpotifyAuth() {
   }, [checkAuthStatus]);
 
   const login = useCallback(() => {
-    const authUrl = spotifyAPI.getAuthUrl();
-    window.location.href = authUrl;
+    try {
+      const authUrl = spotifyAPI.getAuthUrl();
+      window.location.href = authUrl;
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Failed to initiate Spotify login",
+      }));
+    }
   }, []);
 
   const logout = useCallback(() => {
-    spotifyAPI.logout();
-    setState({
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-      userProfile: null,
-    });
+    try {
+      spotifyAPI.logout();
+      setState({
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+        userProfile: null,
+      });
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Failed to logout from Spotify",
+      }));
+    }
   }, []);
 
   const handleAuthCallback = useCallback(

@@ -250,6 +250,93 @@
           "prevCoverUrl": "https://picsum.photos/seed/nr/500/500"
         }
       }
+    },
+    "demo-123": {
+      "playlistId": "demo-123",
+      "total": 2,
+      "completed": 2,
+      "status": "completed",
+      "startedAt": 1756563807207,
+      "rows": {
+        "track-1": {
+          "trackId": "track-1",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-1-5603/500/500",
+          "updatedAt": 1756563808009
+        },
+        "track-2": {
+          "trackId": "track-2",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-2-4297/500/500",
+          "updatedAt": 1756563808809
+        }
+      }
+    },
+    "test-playlist-2": {
+      "playlistId": "test-playlist-2",
+      "total": 3,
+      "completed": 3,
+      "status": "paused",
+      "startedAt": 1756564206168,
+      "rows": {
+        "track-3": {
+          "trackId": "track-3",
+          "status": "restored",
+          "updatedAt": 1756564206970
+        },
+        "track-4": {
+          "trackId": "track-4",
+          "status": "restored",
+          "updatedAt": 1756564207770
+        },
+        "track-5": {
+          "trackId": "track-5",
+          "status": "restored",
+          "updatedAt": 1756564208572
+        }
+      }
+    },
+    "final-test": {
+      "playlistId": "final-test",
+      "total": 2,
+      "completed": 2,
+      "status": "completed",
+      "startedAt": 1756564464979,
+      "rows": {
+        "track-6": {
+          "trackId": "track-6",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-6-2277/500/500",
+          "updatedAt": 1756564465780
+        },
+        "track-7": {
+          "trackId": "track-7",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-7-587/500/500",
+          "updatedAt": 1756564466582
+        }
+      }
+    },
+    "verification-test": {
+      "playlistId": "verification-test",
+      "total": 2,
+      "completed": 2,
+      "status": "completed",
+      "startedAt": 1756564838580,
+      "rows": {
+        "track-a": {
+          "trackId": "track-a",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-a-8695/500/500",
+          "updatedAt": 1756564839381
+        },
+        "track-b": {
+          "trackId": "track-b",
+          "status": "updated",
+          "newCoverUrl": "https://picsum.photos/seed/cover-track-b-1548/500/500",
+          "updatedAt": 1756564840182
+        }
+      }
     }
   },
   "queue": [],

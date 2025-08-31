@@ -14,6 +14,7 @@ Next.js app with a mobile‑first UI for AI‑generated album art and playlist p
 - Streaming auth hook for reconnect/refresh flows
 - Analytics event logging for key actions
 - A11y: all controls ≥44pt with descriptive labels
+- Photo selection for personalized AI cover generation
 
 ## Changelog – Refinements
 
@@ -69,6 +70,42 @@ Set these in `.env.local` (no values shown):
 - Apple Music: `APPLE_MUSIC_CLIENT_ID`, `APPLE_MUSIC_CLIENT_SECRET`, `APPLE_MUSIC_DEVELOPER_TOKEN`, `NEXT_PUBLIC_APPLE_MUSIC_CLIENT_ID`, `NEXT_PUBLIC_APPLE_MUSIC_DEVELOPER_TOKEN`
 - Analytics: `NEXT_PUBLIC_AMPLITUDE_API_KEY`, `NEXT_PUBLIC_SEGMENT_WRITE_KEY`, `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_MIXPANEL_TOKEN`
 - Payments: `STRIPE_SECRET_KEY`
+
+## Spotify Setup
+
+To set up Spotify integration:
+
+1. Create a Spotify Developer account at https://developer.spotify.com/
+2. Create a new application in the Spotify Developer Dashboard
+3. Set the redirect URI to: `https://<your-domain>/auth/success?provider=spotify`
+4. Add the following scopes to your application:
+   - `user-read-playback-state`
+   - `user-modify-playback-state`
+   - `user-read-currently-playing`
+   - `streaming`
+5. Copy the Client ID and Client Secret to your environment variables
+
+## AI Provider Setup
+
+To set up the AI provider for cover generation:
+
+1. Obtain a Gemini API key from Google AI Studio
+2. Set the `GEMINI_API_KEY` environment variable
+3. The AI provider is implemented in `src/lib/ai-provider.ts` and uses the Gemini 2.0 Flash model for image generation
+
+## Push/Analytics Setup
+
+To set up push notifications and analytics:
+
+1. For Push Notifications (FCM):
+   - Create a Firebase project at https://console.firebase.google.com/
+   - Generate a VAPID key in the Firebase project settings
+   - Set the Firebase configuration variables in your environment
+
+2. For Analytics:
+   - For Segment: Create a Segment account and set `SEGMENT_WRITE_KEY`
+   - For Amplitude: Create an Amplitude account and set `AMPLITUDE_API_KEY`
+   - The analytics service will automatically use the configured provider
 
 ## CI/CD
 

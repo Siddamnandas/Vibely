@@ -15,6 +15,7 @@ import {
   List,
   X,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import { usePlayback } from "@/context/playback-context";
 import { useRegen } from "@/context/regen-context";
 import { track as trackEvent } from "@/lib/analytics";
+import { SpotifyPremiumGate } from "@/components/spotify-premium-gate";
 
 export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisible: boolean }) {
   const {
@@ -37,6 +39,8 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
     currentIndex,
     queue,
     currentPlaylistId,
+    isSpotifyReady,
+    isSpotifyPremium,
   } = usePlayback();
   const { jobs } = useRegen();
   const prefersReduced = useReducedMotion();
@@ -141,7 +145,15 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
         playlist_id: currentPlaylistId,
       });
     }
-  }, [current, pendingCoverUpdate, currentPlaylistId, isPlaying, displayCover, jobs, trackStartTime]);
+  }, [
+    current,
+    pendingCoverUpdate,
+    currentPlaylistId,
+    isPlaying,
+    displayCover,
+    jobs,
+    trackStartTime,
+  ]);
   const [isShuffleOn, setIsShuffleOn] = useState(false);
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
   const [isLiked, setIsLiked] = useState(false);
@@ -304,8 +316,21 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
           share_type: "current_cover",
         });
       } else {
-        // Fallback to copying cover image or link
-        await handleFallbackShare(coverToShare, shareData);
+        // Try Instagram Stories sharing
+        const instagramUrl = `instagram://story-camera?source_url=${encodeURIComponent(coverToShare)}`;
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          // Try to open Instagram Stories
+          window.open(instagramUrl, "_blank");
+          trackEvent("share_completed", {
+            track_id: current?.id,
+            playlist_id: currentPlaylistId,
+            destination: "instagram_stories",
+            share_type: "current_cover",
+          });
+        } else {
+          // Fallback to copying cover image or link
+          await handleFallbackShare(coverToShare, shareData);
+        }
       }
     } catch (error) {
       if (error instanceof Error && error.name !== "AbortError") {
@@ -354,12 +379,6 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
     }
   };
 
-  const handleProgressChange = (value: number[]) => {
-    seek(value[0]);
-    // Light haptic feedback for seek interactions
-    hapticFeedback("light");
-  };
-
   const handleDownloadCover = async () => {
     if (!current) return;
 
@@ -394,6 +413,12 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
     }
   };
 
+  // Handle progress slider change
+  const handleProgressChange = (value: number[]) => {
+    const newProgress = value[0];
+    seek(newProgress);
+  };
+
   useEffect(() => {
     if (!isVisible) return;
     const onKey = (e: KeyboardEvent) => {
@@ -412,6 +437,9 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
   }, [isVisible, onClose, showQueue, showShareMenu]);
 
   if (!current || !isVisible) return null;
+
+  // Show premium message if Spotify is ready but user is not premium
+  const showPremiumMessage = isSpotifyReady && !isSpotifyPremium;
 
   const sheetMotion = prefersReduced
     ? {
@@ -489,6 +517,16 @@ export function FullPlayer({ onClose, isVisible }: { onClose: () => void; isVisi
             </Button>
           </div>
         </div>
+
+        {/* Premium Message */}
+        {showPremiumMessage && (
+          <div className="mx-4 my-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+            <p className="text-yellow-200 text-sm">
+              Spotify Premium required for full playback. Preview mode enabled.
+            </p>
+          </div>
+        )}
 
         {/* Main Content - Swipeable */}
         <motion.div

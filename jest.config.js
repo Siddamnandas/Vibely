@@ -29,7 +29,10 @@ const customJestConfig = {
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": ["babel-jest", { presets: ["next/babel"] }],
   },
-  transformIgnorePatterns: ["node_modules/(?!(.*\\.mjs$|@firebase|firebase))"],
+  transformIgnorePatterns: [
+    "node_modules/(?!(.*\\.mjs$|@firebase|firebase|yaml|dotprompt|@genkit-ai|genkit))",
+    "node_modules/(?!(yaml|dotprompt|@genkit-ai|genkit)/)",
+  ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx"],
   // Run tests in a single worker to avoid global mock interference
   maxWorkers: 1,

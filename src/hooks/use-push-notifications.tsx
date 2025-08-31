@@ -8,6 +8,7 @@ interface NotificationState {
   permission: NotificationPermission;
   isEnabled: boolean;
   token: string | null;
+  error: string | null;
 }
 
 export function usePushNotifications() {
@@ -16,6 +17,7 @@ export function usePushNotifications() {
     permission: "default",
     isEnabled: false,
     token: null,
+    error: null,
   });
 
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
@@ -28,6 +30,7 @@ export function usePushNotifications() {
         permission: pushNotificationService.getPermissionStatus(),
         isEnabled: pushNotificationService.isEnabled(),
         token: pushNotificationService.getCurrentToken(),
+        error: null,
       });
     };
 
@@ -42,6 +45,7 @@ export function usePushNotifications() {
     if (isRequestingPermission) return false;
 
     setIsRequestingPermission(true);
+    setState((prev) => ({ ...prev, error: null }));
 
     try {
       const granted = await pushNotificationService.requestPermission();
@@ -51,26 +55,50 @@ export function usePushNotifications() {
         permission: pushNotificationService.getPermissionStatus(),
         isEnabled: pushNotificationService.isEnabled(),
         token: pushNotificationService.getCurrentToken(),
+        error: granted ? null : "Permission denied for push notifications",
       }));
 
       return granted;
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error:
+          error instanceof Error ? error.message : "Failed to request push notification permission",
+      }));
+      return false;
     } finally {
       setIsRequestingPermission(false);
     }
   }, [isRequestingPermission]);
 
   const unsubscribe = useCallback(async () => {
-    const success = await pushNotificationService.unsubscribe();
+    setState((prev) => ({ ...prev, error: null }));
 
-    if (success) {
+    try {
+      const success = await pushNotificationService.unsubscribe();
+
+      if (success) {
+        setState((prev) => ({
+          ...prev,
+          isEnabled: false,
+          token: null,
+        }));
+      } else {
+        setState((prev) => ({
+          ...prev,
+          error: "Failed to unsubscribe from push notifications",
+        }));
+      }
+
+      return success;
+    } catch (error) {
       setState((prev) => ({
         ...prev,
-        isEnabled: false,
-        token: null,
+        error:
+          error instanceof Error ? error.message : "Failed to unsubscribe from push notifications",
       }));
+      return false;
     }
-
-    return success;
   }, []);
 
   return {
@@ -94,18 +122,23 @@ export function useNotifications() {
         requireInteraction?: boolean;
       },
     ) => {
-      return pushNotificationService.showNotification(
-        {
-          title,
-          body,
-          icon: options?.icon,
-          image: options?.image,
-          data: options?.data,
-        },
-        {
-          requireInteraction: options?.requireInteraction,
-        },
-      );
+      try {
+        return pushNotificationService.showNotification(
+          {
+            title,
+            body,
+            icon: options?.icon,
+            image: options?.image,
+            data: options?.data,
+          },
+          {
+            requireInteraction: options?.requireInteraction,
+          },
+        );
+      } catch (error) {
+        console.error("Failed to show notification:", error);
+        return false;
+      }
     },
     [],
   );

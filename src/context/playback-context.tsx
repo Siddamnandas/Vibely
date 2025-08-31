@@ -1,10 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { track as trackEvent } from "@/lib/analytics";
 import { songs as baseSongs } from "@/lib/data";
 import { getAudioEngine, AudioEngineTrack, AudioEngineState } from "@/lib/audio-engine";
 import { useAuth } from "@/hooks/use-auth";
+import { useStreamingAuth } from "@/hooks/use-streaming-auth";
+import { spotifyPlayer } from "@/lib/spotify-player";
+import { spotifyAPI } from "@/lib/spotify";
 import {
   useBatteryAwareAudio,
   type BatteryAwareAudioSettings,
@@ -39,6 +50,11 @@ type PlaybackContextType = {
   repeat: RepeatMode;
   volume: number;
   isReady: boolean;
+  isSpotifyReady: boolean;
+  isSpotifyPremium: boolean;
+  checkSpotifyPremium: () => Promise<boolean>;
+  error: string | null;
+  clearError: () => void;
   // Battery-aware audio properties
   batteryStatus: BatteryStatus;
   audioSettings: BatteryAwareAudioSettings;
@@ -86,20 +102,21 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [repeat, setRepeat] = useState<RepeatMode>("off");
   const [volume, setVolumeState] = useState<number>(0.8);
   const [isReady, setIsReady] = useState<boolean>(false);
+  const [isSpotifyReady, setIsSpotifyReady] = useState<boolean>(false);
+  const [isSpotifyPremium, setIsSpotifyPremium] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
+  const { isAuthenticated: isSpotifyAuthenticated } = useStreamingAuth();
 
   // Battery-aware audio integration
   const { batteryStatus, audioSettings, enableBatterySaveMode, disableBatterySaveMode } =
     useBatteryAwareAudio();
 
   // Audio optimization integration
-  const { 
-    optimizationProfile,
-    applyOptimizations,
-    getEngineOptimizationStatus 
-  } = useAudioOptimization();
+  const { optimizationProfile, applyOptimizations, getEngineOptimizationStatus } =
+    useAudioOptimization();
 
   const isBatterySaveMode = audioSettings.autoSaveMode;
 
@@ -151,6 +168,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
     const handleError = (error: Error) => {
       console.error("Audio engine error:", error);
+      setError(`Playback error: ${error.message}`);
       // Fallback to next track on error
       handleNextInternal();
     };
@@ -178,6 +196,68 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       engine.removeEventListener("error", handleError);
     };
   }, [handleNextInternal]);
+
+  // Initialize Spotify player when authenticated
+  useEffect(() => {
+    if (isSpotifyAuthenticated) {
+      // Get access token from cookies
+      const accessToken =
+        typeof window !== "undefined"
+          ? document.cookie
+              .split("; ")
+              .find((row) => row.startsWith("sp_access="))
+              ?.split("=")[1]
+          : null;
+
+      if (accessToken) {
+        // Check if user has Spotify Premium
+        spotifyAPI
+          .isUserPremium()
+          .then((isPremium) => {
+            setIsSpotifyPremium(isPremium);
+
+            if (isPremium) {
+              spotifyPlayer
+                .initializePlayer(accessToken, (state: any) => {
+                  if (state) {
+                    setIsPlaying(!state.paused);
+                    setProgress(state.position / 1000); // Convert to seconds
+                    setDuration(state.duration / 1000);
+
+                    if (state.track_window?.current_track) {
+                      const track = state.track_window.current_track;
+                      // Update current track if needed
+                    }
+                  }
+                })
+                .then((connected) => {
+                  if (connected) {
+                    setIsSpotifyReady(true);
+                    spotifyPlayer.transferPlayback();
+                  } else {
+                    setError("Failed to connect to Spotify. Please try again.");
+                  }
+                })
+                .catch((error) => {
+                  console.error("Spotify player initialization error:", error);
+                  setError("Failed to initialize Spotify player. Please try again.");
+                });
+            } else {
+              // User is not Premium, but we still want to show the player
+              setIsSpotifyReady(true);
+            }
+          })
+          .catch((error) => {
+            console.error("Error checking Spotify Premium status:", error);
+            setError("Failed to verify Spotify account status. Please try again.");
+          });
+      }
+    }
+
+    return () => {
+      spotifyPlayer.disconnect();
+    };
+  }, [isSpotifyAuthenticated]);
 
   // Update audio engine when current track changes
   useEffect(() => {
@@ -246,6 +326,15 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (!isReady) return;
 
     if (current) {
+      // If Spotify is ready and track has Spotify URI, use Spotify player
+      if (isSpotifyReady && isSpotifyPremium && current.provider === "spotify" && current.uri) {
+        const success = await spotifyPlayer.playTrack(current.uri);
+        if (success) {
+          setIsPlaying(true);
+          return;
+        }
+      }
+
       const engineTrack: AudioEngineTrack = {
         id: current.id,
         title: current.title,
@@ -261,14 +350,25 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(true);
       }
     } else {
-      await getAudioEngine().play();
+      // If Spotify is ready and user has Premium, use Spotify player
+      if (isSpotifyReady && isSpotifyPremium) {
+        await spotifyPlayer.resume();
+      } else {
+        await getAudioEngine().play();
+      }
       setIsPlaying(true);
     }
   };
 
   const pause = async () => {
     if (!isReady) return;
-    await getAudioEngine().pause();
+
+    // If Spotify is ready and user has Premium, use Spotify player
+    if (isSpotifyReady && isSpotifyPremium) {
+      await spotifyPlayer.pause();
+    } else {
+      await getAudioEngine().pause();
+    }
     setIsPlaying(false);
   };
 
@@ -297,10 +397,23 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
   // handleNextInternal is defined above with useCallback
 
-  const next = () => handleNextInternal();
+  const next = async () => {
+    // If Spotify is ready and user has Premium, use Spotify player
+    if (isSpotifyReady && isSpotifyPremium) {
+      await spotifyPlayer.nextTrack();
+    }
 
-  const previous = () => {
+    handleNextInternal();
+  };
+
+  const previous = async () => {
     setProgress(0);
+
+    // If Spotify is ready and user has Premium, use Spotify player
+    if (isSpotifyReady && isSpotifyPremium) {
+      await spotifyPlayer.previousTrack();
+    }
+
     setCurrentIndex((idx) => {
       const fromId = queue[idx]?.id;
       const toIndex = idx > 0 ? idx - 1 : queue.length - 1;
@@ -318,7 +431,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (!isReady) return;
 
     const clamped = Math.max(0, Math.min(duration, to));
-    await getAudioEngine().seek(clamped);
+
+    // If Spotify is ready and user has Premium, use Spotify player
+    if (isSpotifyReady && isSpotifyPremium) {
+      await spotifyPlayer.seek(clamped * 1000); // Convert to milliseconds
+    } else {
+      await getAudioEngine().seek(clamped);
+    }
+
     setProgress(clamped);
 
     trackEvent("seek", {
@@ -332,7 +452,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (!isReady) return;
 
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    await getAudioEngine().setVolume(clampedVolume);
+
+    // If Spotify is ready, use Spotify player
+    if (isSpotifyReady) {
+      await spotifyPlayer.setVolume(clampedVolume);
+    } else {
+      await getAudioEngine().setVolume(clampedVolume);
+    }
+
     setVolumeState(clampedVolume);
   };
 
@@ -343,6 +470,20 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
 
     const targetTrack = (tracks ?? queue)[index];
     if (targetTrack && isReady) {
+      // If Spotify is ready and user has Premium and track has Spotify URI, use Spotify player
+      if (
+        isSpotifyReady &&
+        isSpotifyPremium &&
+        targetTrack.provider === "spotify" &&
+        targetTrack.uri
+      ) {
+        const success = await spotifyPlayer.playTrack(targetTrack.uri);
+        if (success) {
+          setIsPlaying(true);
+          return;
+        }
+      }
+
       const engineTrack: AudioEngineTrack = {
         id: targetTrack.id,
         title: targetTrack.title,
@@ -366,6 +507,21 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const checkSpotifyPremium = async (): Promise<boolean> => {
+    try {
+      const isPremium = await spotifyAPI.isUserPremium();
+      setIsSpotifyPremium(isPremium);
+      return isPremium;
+    } catch (error) {
+      console.error("Error checking Spotify Premium status:", error);
+      return false;
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
   const value: PlaybackContextType = {
     queue,
     currentIndex,
@@ -378,6 +534,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     repeat,
     volume,
     isReady,
+    isSpotifyReady,
+    isSpotifyPremium,
+    checkSpotifyPremium,
+    error,
+    clearError,
     // Battery-aware audio properties
     batteryStatus,
     audioSettings,

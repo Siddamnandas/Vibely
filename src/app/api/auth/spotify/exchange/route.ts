@@ -3,15 +3,13 @@ import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
-    // Get refresh token from cookies
-    const cookieStore = await cookies();
-    const refreshToken = cookieStore.get("sp_refresh")?.value;
+    const { code } = await request.json();
 
-    if (!refreshToken) {
-      return NextResponse.json({ error: "Refresh token is required" }, { status: 400 });
+    if (!code) {
+      return NextResponse.json({ error: "Authorization code is required" }, { status: 400 });
     }
 
-    // Refresh tokens with Spotify
+    // Exchange code for tokens with Spotify
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: {
@@ -21,20 +19,24 @@ export async function POST(request: NextRequest) {
         ).toString("base64")}`,
       },
       body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri:
+          process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+          "http://localhost:3002/auth/success?provider=spotify",
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error("Spotify token refresh failed:", errorText);
-      return NextResponse.json({ error: "Failed to refresh tokens" }, { status: 400 });
+      console.error("Spotify token exchange failed:", errorText);
+      return NextResponse.json({ error: "Failed to exchange code for tokens" }, { status: 400 });
     }
 
     const tokenData = await tokenResponse.json();
 
-    // Update httpOnly cookies with new tokens
+    // Set httpOnly cookies for secure token storage
+    const cookieStore = await cookies();
     const expiresIn = tokenData.expires_in; // seconds
     const expirationTime = Date.now() + expiresIn * 1000;
 
@@ -46,16 +48,13 @@ export async function POST(request: NextRequest) {
       sameSite: "lax",
     });
 
-    // Spotify may or may not return a new refresh token
-    if (tokenData.refresh_token) {
-      cookieStore.set("sp_refresh", tokenData.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: "/",
-        sameSite: "lax",
-      });
-    }
+    cookieStore.set("sp_refresh", tokenData.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/",
+      sameSite: "lax",
+    });
 
     cookieStore.set("sp_exp", expirationTime.toString(), {
       httpOnly: true,
@@ -69,11 +68,11 @@ export async function POST(request: NextRequest) {
       access_token: tokenData.access_token,
       token_type: tokenData.token_type,
       expires_in: tokenData.expires_in,
-      refresh_token: tokenData.refresh_token || refreshToken,
+      refresh_token: tokenData.refresh_token,
       scope: tokenData.scope,
     });
   } catch (error) {
-    console.error("Spotify token refresh error:", error);
+    console.error("Spotify auth error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,5 +1,4 @@
 // Analytics providers
-// Updated to include onboarding_skipped_with_guest_mode event
 type AnalyticsProvider = "amplitude" | "segment" | "google-analytics" | "mixpanel";
 
 interface AnalyticsConfig {
@@ -235,6 +234,7 @@ export class AnalyticsService {
   private providers: Map<AnalyticsProvider, any> = new Map();
   private userId: string | null = null;
   private sessionId: string;
+  private provider: "spotify" | "apple" | null = null;
 
   constructor(config?: AnalyticsConfig) {
     this.config = config || ({ providers: [], debug: false } as AnalyticsConfig);
@@ -268,6 +268,13 @@ export class AnalyticsService {
       providers: this.config.providers,
       session_id: this.sessionId,
     });
+  }
+
+  /**
+   * Set the current provider (spotify/apple)
+   */
+  setProvider(provider: "spotify" | "apple" | null) {
+    this.provider = provider;
   }
 
   /**
@@ -350,6 +357,7 @@ export class AnalyticsService {
   reset(): void {
     this.userId = null;
     this.sessionId = this.generateSessionId();
+    this.provider = null;
 
     for (const [providerName, provider] of this.providers.entries()) {
       try {
@@ -535,6 +543,7 @@ export class AnalyticsService {
       timestamp: new Date().toISOString(),
       session_id: this.sessionId,
       user_id: this.userId,
+      provider: this.provider,
       page_url: typeof window !== "undefined" ? window.location.href : undefined,
       page_title: typeof window !== "undefined" ? document.title : undefined,
       referrer: typeof window !== "undefined" ? document.referrer : undefined,
@@ -689,19 +698,19 @@ export class AnalyticsService {
 // Create analytics instance
 const analyticsConfig: AnalyticsConfig = {
   providers: [
-    ...(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY ? ["amplitude" as AnalyticsProvider] : []),
-    ...(process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY ? ["segment" as AnalyticsProvider] : []),
+    ...(process.env.SEGMENT_WRITE_KEY ? ["segment" as AnalyticsProvider] : []),
+    ...(process.env.AMPLITUDE_API_KEY ? ["amplitude" as AnalyticsProvider] : []),
     ...(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? ["google-analytics" as AnalyticsProvider] : []),
     ...(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ? ["mixpanel" as AnalyticsProvider] : []),
   ],
-  amplitude: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY
+  amplitude: process.env.AMPLITUDE_API_KEY
     ? {
-        apiKey: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY,
+        apiKey: process.env.AMPLITUDE_API_KEY,
       }
     : undefined,
-  segment: process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY
+  segment: process.env.SEGMENT_WRITE_KEY
     ? {
-        writeKey: process.env.NEXT_PUBLIC_SEGMENT_WRITE_KEY,
+        writeKey: process.env.SEGMENT_WRITE_KEY,
       }
     : undefined,
   googleAnalytics: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID

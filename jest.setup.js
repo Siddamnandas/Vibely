@@ -187,3 +187,57 @@ if (typeof global.MediaStream === "undefined") {
     constructor() {}
   };
 }
+
+// Mock yaml module
+jest.mock("yaml", () => ({
+  parse: jest.fn(),
+  stringify: jest.fn(),
+}));
+
+// Mock dotprompt module
+jest.mock("dotprompt", () => ({
+  Dotprompt: jest.fn().mockImplementation(() => ({
+    render: jest.fn(),
+  })),
+}));
+
+// Mock @genkit-ai modules
+jest.mock("@genkit-ai/core", () => ({
+  configureGenkit: jest.fn(),
+  defineFlow: jest.fn(),
+}));
+
+jest.mock("@genkit-ai/ai", () => ({
+  generate: jest.fn().mockResolvedValue({
+    text: () => "mocked response",
+    candidates: () => [{ finishReason: "STOP" }],
+  }),
+  defineFlow: jest.fn(),
+  z: {
+    object: jest.fn().mockReturnValue({
+      describe: jest.fn(),
+    }),
+  },
+}));
+
+jest.mock("@genkit-ai/googleai", () => ({
+  googleAI: jest.fn(),
+  gemini15Flash: jest.fn(),
+}));
+
+// Mock genkit module
+jest.mock("genkit", () => ({
+  defineFlow: jest.fn(),
+  z: {
+    object: jest.fn().mockReturnValue({
+      describe: jest.fn(),
+    }),
+  },
+}));
+
+// Mock the generateAlbumCover function specifically
+jest.mock("@/ai/flows/generate-album-cover", () => ({
+  generateAlbumCover: jest.fn().mockResolvedValue({
+    generatedCoverUris: ["data:image/jpeg;base64,mockedImageData"],
+  }),
+}));

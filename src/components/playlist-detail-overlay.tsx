@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStreamingAuth } from "@/hooks/use-streaming-auth";
 import { track as trackEvent } from "@/lib/analytics";
 import { motion } from "framer-motion";
+import PhotoGallery from "@/components/photo-gallery";
 
 export default function PlaylistDetailOverlay({
   playlistId,
@@ -50,6 +51,7 @@ export default function PlaylistDetailOverlay({
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const { isAuthenticated, checking, provider, reconnect } = useStreamingAuth();
+  const [selectedPhotoDataUri, setSelectedPhotoDataUri] = useState<string>("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -114,6 +116,7 @@ export default function PlaylistDetailOverlay({
       playlist.id,
       tracks.map((t) => t.id),
       coversMap,
+      selectedPhotoDataUri || undefined,
     );
   };
 
@@ -241,20 +244,28 @@ export default function PlaylistDetailOverlay({
                   <Sparkles className="mr-2 h-4 w-4" /> Regenerate Covers
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-3xl">
+              <DialogContent className="rounded-3xl max-w-md">
                 <DialogHeader>
                   <DialogTitle>Regenerate Covers</DialogTitle>
                   <DialogDescription>
-                    We’ll queue {playlist.count} songs. This may take a few minutes. You can keep
-                    listening.
+                    We&apos;ll queue {playlist.count} songs. This may take a few minutes. You can
+                    keep listening.
                   </DialogDescription>
                 </DialogHeader>
+                <div className="py-4">
+                  <PhotoGallery
+                    onPhotoSelect={setSelectedPhotoDataUri}
+                    maxPhotos={1}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
                 <DialogFooter>
                   <Button variant="secondary" onClick={() => setShowModal(false)}>
                     Cancel
                   </Button>
                   <Button
                     onClick={startRegen}
+                    disabled={!selectedPhotoDataUri}
                     className="bg-gradient-to-r from-[#9FFFA2] to-[#8FD3FF] text-black font-semibold"
                   >
                     Start

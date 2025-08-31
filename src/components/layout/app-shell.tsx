@@ -14,6 +14,8 @@ import { ResourcePreloader, PerformanceOptimizer } from "@/components/resource-p
 import { useParallelAuth } from "@/hooks/use-parallel-auth";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import ErrorBoundary from "@/components/error-boundary";
+import { ErrorHandler } from "@/components/error-handler";
+import { initSentry } from "@/lib/sentry";
 
 // Skeleton loading component for immediate visual feedback
 function AppShellSkeleton() {
@@ -21,7 +23,7 @@ function AppShellSkeleton() {
     <div className="min-h-screen bg-[#0E0F12] flex flex-col">
       {/* Top skeleton bar */}
       <div className="h-16 bg-white/5 border-b border-white/10 animate-pulse" />
-      
+
       {/* Main content skeleton */}
       <div className="flex-1 p-6 space-y-4">
         <div className="h-8 bg-white/5 rounded animate-pulse" />
@@ -31,7 +33,7 @@ function AppShellSkeleton() {
           <div className="h-24 bg-white/5 rounded animate-pulse" />
         </div>
       </div>
-      
+
       {/* Bottom navigation skeleton */}
       <div className="h-24 bg-white/5 border-t border-white/10 flex items-center justify-around animate-pulse">
         {[1, 2, 3, 4].map((i) => (
@@ -53,13 +55,18 @@ export default function AppShell({ children }: AppShellProps) {
   const deviceProfile = useDevicePerformance();
   const [appShellReady, setAppShellReady] = useState(false);
 
+  // Initialize Sentry
+  useEffect(() => {
+    initSentry();
+  }, []);
+
   // Mark app shell as ready immediately for instant loading
   useEffect(() => {
     // Use a small timeout to ensure the app shell is ready
     const timer = setTimeout(() => {
       setAppShellReady(true);
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -94,6 +101,8 @@ export default function AppShell({ children }: AppShellProps) {
                 <RegenNotifications />
                 {/* Global banner notification for regeneration completions */}
                 <RegenNotificationBanner />
+                {/* Error handler for displaying error banners */}
+                <ErrorHandler />
                 <main className="pb-24">
                   {showSkeleton ? (
                     <AppShellSkeleton />
@@ -101,12 +110,18 @@ export default function AppShell({ children }: AppShellProps) {
                     <>
                       {/* Auto-open full player when playback starts anywhere */}
                       <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
-                      
+
                       {/* Progressive content loading */}
-                      <Suspense fallback={<div className="p-6"><div className="h-32 bg-white/5 rounded animate-pulse" /></div>}>
+                      <Suspense
+                        fallback={
+                          <div className="p-6">
+                            <div className="h-32 bg-white/5 rounded animate-pulse" />
+                          </div>
+                        }
+                      >
                         {children}
                       </Suspense>
-                      
+
                       {/* Mini Player — persists across pages, above nav, below modals */}
                       <MiniPlayer onExpand={() => setShowFullPlayer(true)} />
                       <BottomNav />

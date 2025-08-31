@@ -33,34 +33,28 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => {
-  const contentRef = React.useRef<HTMLDivElement>(null);
   const isUnmounting = React.useRef(false);
-  
+
   // Use the ref passed to the component or create a new one
   const composedRef = React.useCallback(
     (node: HTMLDivElement) => {
       if (isUnmounting.current) return;
-      
+
       if (ref) {
-        if (typeof ref === 'function') {
+        if (typeof ref === "function") {
           ref(node);
         } else {
           ref.current = node;
         }
       }
-      contentRef.current = node;
     },
-    [ref]
+    [ref],
   );
 
   // Cleanup function to prevent errors when component unmounts
   React.useEffect(() => {
     return () => {
       isUnmounting.current = true;
-      // Ensure any references are cleaned up
-      if (contentRef.current) {
-        contentRef.current = null;
-      }
     };
   }, []);
 

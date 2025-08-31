@@ -1,4 +1,4 @@
-  import type { NextConfig } from "next";
+import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -73,6 +73,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.mzstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "generativelanguage.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
       },
     ],
   },
