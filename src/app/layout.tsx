@@ -4,8 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/hooks/use-auth";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { Toaster } from "@/components/ui/toaster";
-// import { PerformanceProvider } from "@/components/performance-provider";
-// import { ServiceWorkerProvider } from "@/components/service-worker-provider";
+import { PerformanceProvider } from "@/components/performance-provider";
+import { ServiceWorkerProvider } from "@/components/service-worker-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -14,19 +14,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Vibely - AI Album Art Generator",
+  title: "Vibely - Personalize Your Music Stories",
   description:
-    "Transform your music with personalized AI-generated album covers using your photos and mood analysis. Create stunning visuals that match your vibe.",
+    "Vibely plays your Spotify/Apple Music and automatically turns every song into a personalized cover using your own photos—perfect for sharing to Stories. 2-3 smart variants per track based on mood/tempo/energy. Free: 3 covers/month • Premium: unlimited.",
   keywords: [
-    "AI",
-    "album cover",
-    "music",
-    "photo",
-    "generator",
-    "artwork",
-    "design",
-    "spotify",
+    "music covers",
+    "AI album art",
+    "spotify personalization",
+    "music stories",
+    "instagram stories",
     "apple music",
+    "personalized playlist covers",
+    "music art",
+    "stories sharing",
+    "mood-based covers",
   ],
   authors: [{ name: "Vibely Team" }],
   creator: "Vibely",
@@ -44,24 +45,24 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "Vibely - AI Album Art Generator",
+    title: "Vibely - Personalize Your Music Stories",
     description:
-      "Transform your music with personalized AI-generated album covers using your photos and mood analysis.",
+      "Vibely plays your Spotify/Apple Music and automatically turns every song into a personalized cover using your own photos—perfect for sharing to Stories. 2-3 smart variants per track based on mood/tempo/energy.",
     siteName: "Vibely",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Vibely - AI Album Art Generator",
+        alt: "Vibely - Personalize Your Music Stories",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vibely - AI Album Art Generator",
+    title: "Vibely - Personalize Your Music Stories",
     description:
-      "Transform your music with personalized AI-generated album covers using your photos and mood analysis.",
+      "Vibely plays your Spotify/Apple Music and automatically turns every song into a personalized cover using your own photos—perfect for sharing to Stories. 2-3 smart variants per track.",
     images: ["/og-image.png"],
     creator: "@vibely_app",
   },
@@ -108,6 +109,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        {/* Preload critical resources */}
+        <link rel="preload" href="/_next/static/css/app/layout.css" as="style" />
+        <link rel="preload" href="/_next/static/chunks/webpack.js" as="script" />
+
         {/* Preconnect to external domains for faster loading */}
         <link rel="preconnect" href="https://accounts.spotify.com" />
         <link rel="preconnect" href="https://api.spotify.com" />
@@ -146,16 +151,16 @@ export default function RootLayout({
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
       </head>
       <body className={inter.className}>
-        {/* <ServiceWorkerProvider>
-          <PerformanceProvider> */}
-        <AuthProvider>
-          <AnalyticsProvider>
-            {children}
-            <Toaster />
-          </AnalyticsProvider>
-        </AuthProvider>
-        {/* </PerformanceProvider>
-        </ServiceWorkerProvider> */}
+        <ServiceWorkerProvider>
+          <PerformanceProvider>
+            <AuthProvider>
+              <AnalyticsProvider>
+                {children}
+                <Toaster />
+              </AnalyticsProvider>
+            </AuthProvider>
+          </PerformanceProvider>
+        </ServiceWorkerProvider>
 
         {/* Inline critical JavaScript for performance */}
         <script

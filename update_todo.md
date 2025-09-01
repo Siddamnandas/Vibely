@@ -1,0 +1,15 @@
+- [ ] Analyze current Home screen implementation
+- [ ] Verify and update Library screen (swipeable stack of playlists/albums/songs)
+- [ ] Check and update Playlist Detail screen (large cover, Play All/Shuffle controls, song list with AI thumbnails)
+- [ ] Verify Mini Player (small, always-there play/pause)
+- [ ] Verify Full Player screen (big artwork, swipe left/right for tracks)
+- [x] Update Your Stories screen (clean grid of shared content)
+- [ ] Ensure AI cover generation matches spec (2-3 variants, mood/tempo/energy analysis)
+- [ ] Verify music service integration (Spotify/Apple Music, in-app playback)
+- [ ] Implement sharing to Stories feature
+- [ ] Update UI styling to ensure bold, dark theme with glass navigation and smooth swipes
+- [ ] Ensure photo analysis and mood matching works as described
+- [ ] Add privacy features (on-device photo analysis, opt-in data sharing)
+- [ ] Update app metadata, titles, and descriptions to match specification
+- [ ] Test all key user flows: connect music, play track, regenerate covers, share to stories
+- [ ] Add guardrails and quality safeguards (NSFW filters, fallbacks for unmatching photos)
