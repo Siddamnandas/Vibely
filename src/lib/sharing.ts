@@ -11,6 +11,9 @@ interface ShareOptions {
   imageBlob?: Blob;
   trackId?: string;
   coverUrl?: string;
+  hashtags?: string[];
+  storyTemplate?: "square" | "story" | "post";
+  autoHashtags?: boolean;
 }
 
 export class SharingService {
@@ -105,9 +108,9 @@ export class SharingService {
         const image = options.imageBlob || (await this.urlToBlob(options.imageUrl!));
 
         if (options.platform === "instagram-stories") {
-          return await this.shareToInstagramStories(image, data);
+          return await this.shareToInstagramStories(image, data, options);
         } else {
-          return await this.shareToInstagramFeed(image, data);
+          return await this.shareToInstagramFeed(image, data, options);
         }
       } catch (error) {
         console.warn("Native Instagram sharing failed, falling back to web:", error);
@@ -119,16 +122,28 @@ export class SharingService {
   }
 
   /**
-   * Share to Instagram Stories using app schemes
+   * Share to Instagram Stories using app schemes with enhanced features
    */
-  private async shareToInstagramStories(image: Blob, data: ShareData): Promise<boolean> {
+  private async shareToInstagramStories(
+    image: Blob,
+    data: ShareData,
+    options: ShareOptions = {},
+  ): Promise<boolean> {
+    // Generate hashtags for Instagram
+    const hashtags = options.hashtags || this.generateAutoHashtags(data.title, data.text);
+    const hashtagText = hashtags
+      .slice(0, 5)
+      .map((tag) => `#${tag}`)
+      .join(" "); // Instagram Stories limit
+    const enhancedText = `${data.text} ${hashtagText} \n\nMade with Vibely ✨`;
+
     if (this.canUseWebShare() && navigator.share) {
       const files = [new File([image], "cover.jpg", { type: "image/jpeg" })];
 
       try {
         await navigator.share({
           title: data.title,
-          text: data.text,
+          text: enhancedText,
           files,
         });
 
@@ -149,8 +164,8 @@ export class SharingService {
         // Convert blob to data URL for app schemes
         const dataUrl = await this.blobToDataUrl(image);
 
-        // Instagram Stories URL scheme
-        const instagramUrl = `instagram-stories://share?media=${encodeURIComponent(dataUrl)}&text=${encodeURIComponent(data.text)}`;
+        // Instagram Stories URL scheme with enhanced parameters
+        const instagramUrl = `instagram-stories://share?media=${encodeURIComponent(dataUrl)}&text=${encodeURIComponent(enhancedText)}`;
 
         // Attempt to open Instagram app in new window/tab first for tests and desktop
         const opened = window.open(instagramUrl, "_blank");
@@ -171,22 +186,41 @@ export class SharingService {
     }
 
     // Final fallback: download image and show instructions
-    this.downloadImage(image, `${data.title}.jpg`);
+    this.downloadImage(image, `${data.title}-story.jpg`);
+
+    // Copy the enhanced text to clipboard for easy pasting
+    await this.copyToClipboard(enhancedText);
+
     this.showShareInstructions("instagram-stories", data);
+
+    this.showNotification("Caption with hashtags copied to clipboard! 📋", 5000);
+
     return true;
   }
 
   /**
    * Share to Instagram Feed
    */
-  private async shareToInstagramFeed(image: Blob, data: ShareData): Promise<boolean> {
+  private async shareToInstagramFeed(
+    image: Blob,
+    data: ShareData,
+    options: ShareOptions = {},
+  ): Promise<boolean> {
+    // Generate hashtags for Instagram
+    const hashtags = options.hashtags || this.generateAutoHashtags(data.title, data.text);
+    const hashtagText = hashtags
+      .slice(0, 10)
+      .map((tag) => `#${tag}`)
+      .join(" "); // Instagram allows more hashtags in posts
+    const enhancedText = `${data.text}\n\n${hashtagText}\n\nGenerated with Vibely ✨`;
+
     if (this.canUseWebShare() && navigator.share) {
       const files = [new File([image], "cover.jpg", { type: "image/jpeg" })];
 
       try {
         await navigator.share({
           title: data.title,
-          text: data.text,
+          text: enhancedText,
           files,
         });
 
@@ -201,8 +235,15 @@ export class SharingService {
     }
 
     // Fallback: download and show instructions
-    this.downloadImage(image, `${data.title}.jpg`);
+    this.downloadImage(image, `${data.title}-post.jpg`);
+
+    // Copy the enhanced text to clipboard
+    await this.copyToClipboard(enhancedText);
+
     this.showShareInstructions("instagram", data);
+
+    this.showNotification("Caption with hashtags copied to clipboard! 📋", 5000);
+
     return true;
   }
 
@@ -266,16 +307,71 @@ export class SharingService {
   }
 
   /**
-   * Share to TikTok
+   * Share to TikTok with enhanced features
    */
   private async shareToTikTok(data: ShareData, options: ShareOptions): Promise<boolean> {
-    // TikTok doesn't have a direct web share API, so we copy the link
-    await this.copyToClipboard(data.url);
+    // Generate hashtags if not provided
+    const hashtags = options.hashtags || this.generateAutoHashtags(data.title, data.text);
+    const hashtagText = hashtags.map((tag) => `#${tag}`).join(" ");
+
+    // Create TikTok-optimized content
+    const tiktokText = `🎵 ${data.text} ${hashtagText} \n\nGenerated with Vibely ✨`;
+
+    // If we have an image, try TikTok's direct sharing (mobile)
+    if (this.isMobile() && (options.imageBlob || options.imageUrl)) {
+      try {
+        // TikTok app scheme for video creation with image
+        const tiktokUrl = `tiktok://camera`;
+        const opened = window.open(tiktokUrl, "_blank");
+
+        if (opened) {
+          // Also download the image for manual upload
+          if (options.imageBlob) {
+            this.downloadImage(options.imageBlob, `${data.title}-tiktok-cover.jpg`);
+          } else if (options.imageUrl) {
+            const blob = await this.urlToBlob(options.imageUrl);
+            this.downloadImage(blob, `${data.title}-tiktok-cover.jpg`);
+          }
+
+          // Copy the optimized text
+          await this.copyToClipboard(tiktokText);
+
+          this.trackShareEvent("share_completed", {
+            platform: "tiktok",
+            method: "app_scheme_with_image",
+          });
+
+          this.showNotification(
+            "🎬 TikTok opened! Cover image downloaded and caption copied. Create your video and add the image!",
+            10000,
+          );
+          return true;
+        }
+      } catch (error) {
+        console.warn("TikTok app scheme failed:", error);
+      }
+    }
+
+    // Fallback: copy optimized content and download image
+    await this.copyToClipboard(tiktokText);
+
+    // Download image if available
+    if (options.imageBlob) {
+      this.downloadImage(options.imageBlob, `${data.title}-tiktok-cover.jpg`);
+    } else if (options.imageUrl) {
+      try {
+        const blob = await this.urlToBlob(options.imageUrl);
+        this.downloadImage(blob, `${data.title}-tiktok-cover.jpg`);
+      } catch (error) {
+        console.warn("Failed to download image for TikTok:", error);
+      }
+    }
+
     this.showShareInstructions("tiktok", data);
 
     this.trackShareEvent("share_completed", {
       platform: "tiktok",
-      method: "copy_link",
+      method: "copy_with_image",
     });
 
     return true;
@@ -349,11 +445,11 @@ export class SharingService {
   private getShareInstructions(platform: string): string {
     switch (platform) {
       case "instagram-stories":
-        return "📱 Image downloaded! Open Instagram, create a story, and add the downloaded image.";
+        return "📱 Story-ready image downloaded! Open Instagram, create a story, and add the downloaded image. Perfect for 9:16 aspect ratio! ✨";
       case "instagram":
-        return "📱 Image downloaded! Open Instagram, create a post, and add the downloaded image.";
+        return "📱 Image downloaded! Open Instagram, create a post, and add the downloaded image. Don't forget to use the suggested hashtags! 🎵";
       case "tiktok":
-        return "📱 Link copied! Open TikTok, create a video, and paste the link in your bio or description.";
+        return "📱 Ready for TikTok! Image downloaded and link copied. Create a video and use the image as your cover. Paste the link in your bio! 🎬";
       default:
         return "📋 Link copied to clipboard! Share it on your favorite platform.";
     }
@@ -438,6 +534,60 @@ export class SharingService {
   }
 
   /**
+   * Generate automatic hashtags based on song title and artist
+   */
+  private generateAutoHashtags(title: string, text: string): string[] {
+    const baseHashtags = ["Vibely", "AIArt", "MusicCover", "AlbumArt", "PersonalizedMusic"];
+
+    // Extract potential genre/mood keywords from title and text
+    const keywords = `${title} ${text}`.toLowerCase();
+    const genreHashtags: string[] = [];
+
+    // Genre detection
+    if (keywords.includes("indie") || keywords.includes("alternative"))
+      genreHashtags.push("Indie", "Alternative");
+    if (keywords.includes("pop")) genreHashtags.push("Pop", "PopMusic");
+    if (keywords.includes("rock")) genreHashtags.push("Rock", "RockMusic");
+    if (keywords.includes("hip hop") || keywords.includes("rap"))
+      genreHashtags.push("HipHop", "Rap");
+    if (keywords.includes("electronic") || keywords.includes("edm"))
+      genreHashtags.push("Electronic", "EDM");
+    if (keywords.includes("jazz")) genreHashtags.push("Jazz", "JazzMusic");
+    if (keywords.includes("classical")) genreHashtags.push("Classical", "ClassicalMusic");
+    if (keywords.includes("country")) genreHashtags.push("Country", "CountryMusic");
+    if (keywords.includes("folk")) genreHashtags.push("Folk", "FolkMusic");
+    if (keywords.includes("r&b") || keywords.includes("soul")) genreHashtags.push("RnB", "Soul");
+
+    // Mood detection
+    if (keywords.includes("chill") || keywords.includes("calm"))
+      genreHashtags.push("Chill", "ChillVibes");
+    if (keywords.includes("workout") || keywords.includes("gym"))
+      genreHashtags.push("Workout", "GymMusic");
+    if (keywords.includes("party") || keywords.includes("dance"))
+      genreHashtags.push("Party", "DanceMusic");
+    if (keywords.includes("sad") || keywords.includes("melancholy"))
+      genreHashtags.push("Melancholy", "EmotionalMusic");
+    if (keywords.includes("happy") || keywords.includes("upbeat"))
+      genreHashtags.push("Happy", "UpbeatMusic");
+    if (keywords.includes("romantic") || keywords.includes("love"))
+      genreHashtags.push("Romantic", "LoveMusic");
+    if (keywords.includes("night") || keywords.includes("midnight"))
+      genreHashtags.push("NightVibes", "MidnightMusic");
+    if (keywords.includes("summer")) genreHashtags.push("Summer", "SummerVibes");
+    if (keywords.includes("winter")) genreHashtags.push("Winter", "WinterVibes");
+
+    // Time-based hashtags
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) genreHashtags.push("MorningMusic");
+    else if (hour >= 12 && hour < 17) genreHashtags.push("AfternoonVibes");
+    else if (hour >= 17 && hour < 22) genreHashtags.push("EveningMusic");
+    else genreHashtags.push("LateNightVibes");
+
+    // Combine and limit hashtags
+    const allHashtags = [...baseHashtags, ...genreHashtags];
+    return [...new Set(allHashtags)]; // Remove duplicates
+  }
+  /**
    * Track sharing events
    */
   private trackShareEvent(event: string, properties: Record<string, any>): void {
@@ -471,6 +621,29 @@ export async function shareToInstagramStories(
       platform: "instagram-stories",
       imageUrl,
       trackId,
+    },
+  );
+}
+
+export async function shareToTikTok(
+  title: string,
+  imageUrl: string,
+  text: string,
+  trackId?: string,
+  hashtags?: string[],
+): Promise<boolean> {
+  return sharingService.share(
+    {
+      title,
+      text,
+      url: window.location.href,
+    },
+    {
+      platform: "tiktok",
+      imageUrl,
+      trackId,
+      hashtags,
+      autoHashtags: !hashtags, // Auto-generate if no hashtags provided
     },
   );
 }

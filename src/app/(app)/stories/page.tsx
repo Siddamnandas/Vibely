@@ -42,39 +42,42 @@ export default function StoriesPage() {
       const batchSize = 3; // Load 3 images at a time
       for (let i = 0; i < savedStories.length; i += batchSize) {
         const batch = savedStories.slice(i, i + batchSize);
-        
+
         await Promise.allSettled(
           batch.map(async (story) => {
             if (isUnmounting.current) return;
             setImageLoading((prev) => ({ ...prev, [story.id]: true }));
-            
+
             try {
               await new Promise((resolve, reject) => {
                 const img = new window.Image();
                 img.onload = resolve;
-                img.onerror = () => reject(new Error('Image load error'));
+                img.onerror = () => reject(new Error("Image load error"));
                 img.src = story.generatedCoverUrl;
-                
+
                 // Add timeout for individual images
-                setTimeout(() => reject(new Error('Image load timeout')), 3000);
+                setTimeout(() => reject(new Error("Image load timeout")), 3000);
               });
-              
+
               if (!isUnmounting.current) {
                 setImageLoading((prev) => ({ ...prev, [story.id]: false }));
               }
             } catch (error) {
               if (!isUnmounting.current) {
-                console.warn(`Failed to load image for story ${story.id}:`, story.generatedCoverUrl);
+                console.warn(
+                  `Failed to load image for story ${story.id}:`,
+                  story.generatedCoverUrl,
+                );
                 setImageErrors((prev) => ({ ...prev, [story.id]: true }));
                 setImageLoading((prev) => ({ ...prev, [story.id]: false }));
               }
             }
-          })
+          }),
         );
-        
+
         // Small delay between batches to prevent browser hanging
         if (i + batchSize < savedStories.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
     };
@@ -186,6 +189,25 @@ export default function StoriesPage() {
               <div className="text-2xl font-black text-[#8FD3FF]">3.2K</div>
               <div className="text-white/60 text-sm font-medium">Total Views</div>
             </div>
+            <div className="w-px bg-white/20"></div>
+            <div>
+              <div className="text-2xl font-black text-[#FFD36E]">89%</div>
+              <div className="text-white/60 text-sm font-medium">Shared</div>
+            </div>
+          </div>
+
+          {/* Social Sharing Tips */}
+          <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-400/20 rounded-2xl">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <span className="text-white text-sm font-bold">✨</span>
+              </div>
+              <h3 className="text-white font-bold">Pro Tip</h3>
+            </div>
+            <p className="text-white/80 text-sm">
+              Use the hashtag button when sharing to automatically copy trending hashtags for
+              maximum reach!
+            </p>
           </div>
         </header>
 
@@ -219,7 +241,10 @@ export default function StoriesPage() {
             </motion.div>
           </div>
         ) : (
-          <Dialog open={isDialogOpen} onOpenChange={(open) => !isUnmounting.current && setIsDialogOpen(open)}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => !isUnmounting.current && setIsDialogOpen(open)}
+          >
             <motion.div
               className="grid grid-cols-2 gap-4 md:gap-6"
               initial={{ opacity: 0 }}
@@ -296,9 +321,9 @@ export default function StoriesPage() {
             </motion.div>
 
             <DialogContent className="p-0 border-0 bg-transparent w-full max-w-md h-auto shadow-none">
-              <StoryViewer 
-                stories={savedStories} 
-                initialIndex={selectedStoryIndex} 
+              <StoryViewer
+                stories={savedStories}
+                initialIndex={selectedStoryIndex}
                 onClose={handleCloseStoryViewer}
               />
             </DialogContent>

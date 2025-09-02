@@ -33,6 +33,7 @@ class MobileOrientationService {
   private currentState: OrientationState;
   private config: OrientationConfig;
   private debounceTimer: NodeJS.Timeout | null = null;
+  private isHydrated = false;
 
   private defaultConfig: OrientationConfig = {
     enableLayoutOptimization: true,
@@ -100,6 +101,14 @@ class MobileOrientationService {
   }
 
   private setupListeners() {
+    if (typeof window === "undefined") return;
+
+    // Mark as hydrated after a small delay to ensure React hydration is complete
+    setTimeout(() => {
+      this.isHydrated = true;
+      this.applyLayoutOptimizations();
+    }, 100);
+
     // Modern orientation API
     if ("screen" in window && "orientation" in window.screen) {
       window.screen.orientation.addEventListener("change", this.handleOrientationChange.bind(this));
@@ -219,7 +228,9 @@ class MobileOrientationService {
   }
 
   private applyLayoutOptimizations() {
-    if (!this.config.enableLayoutOptimization || typeof window === "undefined") return;
+    // Only apply layout optimizations on the client side after hydration
+    if (!this.isHydrated || !this.config.enableLayoutOptimization || typeof window === "undefined")
+      return;
 
     const root = document.documentElement;
     const { orientation, availableWidth, availableHeight, safeAreaInsets } = this.currentState;
@@ -270,6 +281,8 @@ class MobileOrientationService {
   }
 
   private updateResponsiveSpacing() {
+    if (!this.isHydrated || typeof window === "undefined") return;
+
     const root = document.documentElement;
     const { orientation, availableWidth } = this.currentState;
 

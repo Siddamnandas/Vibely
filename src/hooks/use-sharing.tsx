@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { sharingService } from "@/lib/sharing";
+import { SharingService } from "@/lib/sharing";
 import { useToast } from "@/hooks/use-toast";
+
+const sharingService = SharingService.getInstance();
 
 export function useSharing() {
   const [isSharing, setIsSharing] = useState(false);
@@ -13,6 +15,7 @@ export function useSharing() {
     artist: string,
     coverUrl?: string,
     platform?: string,
+    options?: { hashtags?: string[]; autoHashtags?: boolean },
   ) => {
     setIsSharing(true);
 
@@ -20,7 +23,12 @@ export function useSharing() {
       const text = `Check out "${title}" by ${artist}! 🎵`;
       const success = await sharingService.share(
         { title, text, url: window.location.href },
-        { platform: platform as any, imageUrl: coverUrl },
+        {
+          platform: platform as any,
+          imageUrl: coverUrl,
+          hashtags: options?.hashtags,
+          autoHashtags: options?.autoHashtags,
+        },
       );
 
       if (!success) {

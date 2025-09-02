@@ -1,0 +1,37 @@
+{
+  "localhostUrl": "http://localhost:3002/auth/success?provider=spotify",
+  "commonTunnelDomains": [
+    "gentle-boxes-try.loca.lt",
+    "easy-toes-train.loca.lt",
+    "four-webs-sit.loca.lt",
+    "kind-trees-develop.loca.lt",
+    "powerful-rivers-try.loca.lt",
+    "bright-morning-light.loca.lt",
+    "cool-paper-hold.loca.lt",
+    "metal-paper-look.loca.lt",
+    "running-morning-bird.loca.lt",
+    "cyan-circles-play.loca.lt",
+    "0e864e4ffae1.ngrok-free.app",
+    "cbaed261d4fc.ngrok-free.app",
+    "8f3da4200d4b.ngrok-free.app"
+  ],
+  "recommendedRedirects": [
+    "http://localhost:3002/auth/success?provider=spotify",
+    "http://localhost:3000/auth/success?provider=spotify",
+    "https://gentle-boxes-try.loca.lt/auth/success?provider=spotify",
+    "https://easy-toes-train.loca.lt/auth/success?provider=spotify",
+    "https://four-webs-sit.loca.lt/auth/success?provider=spotify",
+    "https://kind-trees-develop.loca.lt/auth/success?provider=spotify",
+    "https://powerful-rivers-try.loca.lt/auth/success?provider=spotify",
+    "https://bright-morning-light.loca.lt/auth/success?provider=spotify",
+    "https://cool-paper-hold.loca.lt/auth/success?provider=spotify",
+    "https://metal-paper-look.loca.lt/auth/success?provider=spotify",
+    "https://running-morning-bird.loca.lt/auth/success?provider=spotify",
+    "https://cyan-circles-play.loca.lt/auth/success?provider=spotify",
+    "https://0e864e4ffae1.ngrok-free.app/auth/success?provider=spotify",
+    "https://cbaed261d4fc.ngrok-free.app/auth/success?provider=spotify",
+    "https://8f3da4200d4b.ngrok-free.app/auth/success?provider=spotify"
+  ],
+  "setupDate": "2025-09-01T15:55:49.594Z",
+  "instructions": "Add all recommended redirect URIs to Spotify Developer Dashboard"
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { mobileOrientationService } from "@/lib/mobile-orientation-service";
 
 interface OrientationProviderProps {
@@ -13,7 +13,16 @@ interface OrientationProviderProps {
 }
 
 export function OrientationProvider({ children, config = {} }: OrientationProviderProps) {
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Only initialize on the client side after hydration
+    if (!isClient) return;
+
     // Update service configuration
     mobileOrientationService.updateConfig({
       enableLayoutOptimization: config.enableLayoutOptimization ?? true,
@@ -28,6 +37,7 @@ export function OrientationProvider({ children, config = {} }: OrientationProvid
     // Log initialization
     console.log("📱 Orientation Provider initialized");
   }, [
+    isClient,
     config.enableLayoutOptimization,
     config.enableResponsiveSpacing,
     config.trackOrientationChanges,

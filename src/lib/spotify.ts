@@ -6,7 +6,7 @@ const SPOTIFY_CONFIG = {
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
   redirectUri:
     process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
-    "http://localhost:3002/auth/success?provider=spotify",
+    "http://127.0.0.1:3002/auth/success?provider=spotify",
   scopes: [
     "user-read-private",
     "user-read-email",
@@ -25,6 +25,8 @@ export interface SpotifyTrack {
   album: {
     name: string;
     images: Array<{ url: string; height: number; width: number }>;
+    release_date?: string;
+    genres?: string[];
   };
   preview_url: string | null;
   duration_ms: number;
@@ -66,6 +68,8 @@ export interface SpotifyAudioFeatures {
   instrumentalness: number; // 0.0 to 1.0 (instrumental)
   liveness: number; // 0.0 to 1.0 (live performance)
   speechiness: number; // 0.0 to 1.0 (speech content)
+  loudness: number; // dB (-60 to 0)
+  mode: number; // 0 = minor, 1 = major
 }
 
 class SpotifyAPIService {
@@ -113,7 +117,20 @@ class SpotifyAPIService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        // Try to get detailed error from response
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          // If response isn't JSON, use response text
+          const errorText = await response.text();
+          errorData = {
+            error: "Token exchange failed",
+            status: response.status,
+            statusText: response.statusText,
+            rawError: errorText,
+          };
+        }
         console.error("Token exchange failed:", errorData);
         return false;
       }

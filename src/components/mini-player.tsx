@@ -12,7 +12,7 @@ import { SpotifyPremiumGate } from "@/components/spotify-premium-gate";
 export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
   const { current, isPlaying, togglePlay, isSpotifyReady, isSpotifyPremium } = usePlayback();
   const { jobs } = useRegen();
-  const hasActiveRegen = Object.values(jobs || {}).some((j) => j.status === "running");
+  const [isClient, setIsClient] = useState(false);
 
   // Initialize with default state to prevent hydration mismatch
   const [orientationState, setOrientationState] = useState<OrientationState>({
@@ -25,7 +25,6 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
     availableHeight: 812,
     safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
   });
-  const [isClient, setIsClient] = useState(false);
 
   // Set client-side flag
   useEffect(() => {
@@ -33,6 +32,10 @@ export function MiniPlayer({ onExpand }: { onExpand: () => void }) {
     // Only set real orientation state on client
     setOrientationState(mobileOrientationService.getState());
   }, []);
+
+  // Fix: Add proper null check for jobs object
+  const hasActiveRegen =
+    isClient && jobs && Object.values(jobs).some((j) => j && j.status === "running");
 
   // Subscribe to orientation changes only on client
   useEffect(() => {

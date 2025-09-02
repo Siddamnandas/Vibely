@@ -42,6 +42,11 @@ export function useRegenNotifications() {
     if (!isEnabled || permission !== "granted") return;
 
     Object.values(jobs).forEach(async (job) => {
+      // Skip null/undefined jobs
+      if (!job || !job.playlistId) {
+        return;
+      }
+
       const playlistId = job.playlistId;
       const prevJob = previousJobs.current[playlistId];
       const playlistName = await getPlaylistName(playlistId);

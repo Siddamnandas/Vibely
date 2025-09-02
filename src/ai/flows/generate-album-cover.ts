@@ -35,6 +35,14 @@ export type GenerateAlbumCoverOutput = z.infer<typeof GenerateAlbumCoverOutputSc
 export async function generateAlbumCover(
   input: GenerateAlbumCoverInput,
 ): Promise<GenerateAlbumCoverOutput> {
+  // Enhanced input validation and processing
+  if (!input.originalCoverDataUri?.includes("data:image/")) {
+    throw new Error("Original cover must be a valid data URI image");
+  }
+  if (!input.photoDataUri?.includes("data:image/")) {
+    throw new Error("User photo must be a valid data URI image");
+  }
+
   return generateAlbumCoverFlow(input);
 }
 
@@ -56,7 +64,7 @@ const generateAlbumCoverFlow = ai.defineFlow(
         model: "googleai/gemini-2.0-flash-preview-image-generation",
         prompt: [
           {
-            text: `You are an expert album cover designer. Your task is to seamlessly integrate the user\'s photo into the original album cover.\n\n- **Main Objective**: Replace the central artwork of the original cover with the user\'s photo.\n- **Preserve Elements**: You MUST keep the original album\'s text (title, artist name), logos, and overall layout exactly as they are. Do not change fonts, text placement, or colors.\n- **Blend**: The final image should look like a cohesive, professional album cover.\n\nSong Title: ${input.songTitle}\nArtist: ${input.artistName}`,
+            text: `You are an expert album cover designer. Your task is to seamlessly integrate the user\'s photo into the original album cover.\n\n- **Main Objective**: Replace the central artwork of the original cover with the user\'s photo.\n- **Preserve Elements**: You MUST keep the original album\'s text (title, artist name), logos, and overall layout exactly as they are. Do not change fonts, text placement, or colors.\n- **Enhanced Quality**: Apply advanced photo editing techniques including:\n  * Facial inpainting with seamless boundary blending\n  * Hair and accessory preservation with natural texture matching\n  * Lighting adjustment to match the original scene\'s key, fill, and rim lighting\n  * Shadows/reflection preservation with occluder geometry preservation\n  * Film grain texture re-application for visual consistency\n  * Color palette adaptation to match the original color grading\n  * Edge refinement around hair, hats, and accessories\n- **Blend**: The final image should look like a cohesive, professional album cover that appears unchanged except for the person being replaced.\n\nSong Title: ${input.songTitle}\nArtist: ${input.artistName}\n\nNote: If the original cover contains multiple people, replace ONLY the primary subject while keeping other people\'s positions and appearance unchanged. Maintain exact spatial relationships between all subjects.`,
           },
           { media: { url: input.originalCoverDataUri } },
           { media: { url: input.photoDataUri } },

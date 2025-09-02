@@ -12,7 +12,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, Trash2, Play, X, Instagram } from "lucide-react";
+import { Download, Share2, Trash2, Play, X, Instagram, Hash, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSharing } from "@/hooks/use-sharing";
 import { cn } from "@/lib/utils";
@@ -46,13 +46,13 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
   // Hide actions after 3 seconds, show on tap
   useEffect(() => {
     if (isUnmounting.current) return;
-    
+
     const timer = setTimeout(() => {
       if (!isUnmounting.current) {
         setIsActionsVisible(false);
       }
     }, 3000);
-    
+
     return () => {
       clearTimeout(timer);
     };
@@ -86,7 +86,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
 
   const handleImageError = (storyId: string) => {
     if (isUnmounting.current) return;
-    
+
     console.error(`StoryViewer image load error for story ${storyId}`);
     setImageErrors((prev) => ({ ...prev, [storyId]: true }));
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
@@ -94,13 +94,13 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
 
   const handleImageLoad = (storyId: string) => {
     if (isUnmounting.current) return;
-    
+
     setImageLoading((prev) => ({ ...prev, [storyId]: false }));
   };
 
   const handleDownload = async () => {
     if (isUnmounting.current || !currentStory) return;
-    
+
     try {
       const response = await fetch(currentStory.generatedCoverUrl);
       const blob = await response.blob();
@@ -131,7 +131,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
 
   const handleShare = async () => {
     if (isUnmounting.current || !currentStory) return;
-    
+
     await shareTrack(
       currentStory.title,
       currentStory.artist,
@@ -142,18 +142,65 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
 
   const handleInstagramShare = async () => {
     if (isUnmounting.current || !currentStory) return;
-    
+
     await shareTrack(
       currentStory.title,
       currentStory.artist,
       currentStory.generatedCoverUrl,
       "instagram-stories",
+      { autoHashtags: true },
     );
+  };
+
+  const handleTikTokShare = async () => {
+    if (isUnmounting.current || !currentStory) return;
+
+    await shareTrack(
+      currentStory.title,
+      currentStory.artist,
+      currentStory.generatedCoverUrl,
+      "tiktok",
+      { autoHashtags: true },
+    );
+  };
+
+  const handleHashtagCopy = async () => {
+    if (isUnmounting.current || !currentStory) return;
+
+    // Generate hashtags based on the story
+    const hashtags = [
+      "#Vibely",
+      "#AIArt",
+      "#MusicCover",
+      "#AlbumArt",
+      "#PersonalizedMusic",
+      "#MusicVibes",
+      "#AICover",
+      currentStory.title.toLowerCase().includes("chill") ? "#ChillVibes" : "#Music",
+      "#IndieMusic",
+      "#MusicLovers",
+    ];
+
+    const hashtagText = hashtags.join(" ");
+
+    try {
+      await navigator.clipboard.writeText(hashtagText);
+      toast({
+        title: "Hashtags copied!",
+        description: "Ready to paste in your social media posts.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Copy failed",
+        description: "Could not copy hashtags to clipboard.",
+      });
+    }
   };
 
   const handleDelete = () => {
     if (isUnmounting.current) return;
-    
+
     // This would need to be implemented with proper state management
     toast({
       title: "Delete feature",
@@ -297,49 +344,71 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }: Stor
             exit={{ opacity: 0, y: 40 }}
             className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40"
           >
-            <div className="flex items-center gap-4 px-6 py-4 bg-black/50 backdrop-blur-lg border border-white/20 rounded-full">
+            <div className="flex items-center gap-3 px-4 py-3 bg-black/50 backdrop-blur-lg border border-white/20 rounded-full">
               {/* Download */}
               <Button
                 size="icon"
-                className="rounded-full w-14 h-14 bg-[#9FFFA2]/20 border border-[#9FFFA2]/30 text-[#9FFFA2] hover:bg-[#9FFFA2]/30 transition-all"
+                className="rounded-full w-12 h-12 bg-[#9FFFA2]/20 border border-[#9FFFA2]/30 text-[#9FFFA2] hover:bg-[#9FFFA2]/30 transition-all"
                 onClick={handleDownload}
                 aria-label="Download cover"
                 disabled={isUnmounting.current}
               >
-                <Download className="w-6 h-6" />
+                <Download className="w-5 h-5" />
               </Button>
 
-              {/* Share */}
+              {/* Hashtags */}
               <Button
                 size="icon"
-                className="rounded-full w-14 h-14 bg-[#8FD3FF]/20 border border-[#8FD3FF]/30 text-[#8FD3FF] hover:bg-[#8FD3FF]/30 transition-all"
-                onClick={handleShare}
-                aria-label="Share cover"
-                disabled={isUnmounting.current || isSharing}
+                className="rounded-full w-12 h-12 bg-[#FFD36E]/20 border border-[#FFD36E]/30 text-[#FFD36E] hover:bg-[#FFD36E]/30 transition-all"
+                onClick={handleHashtagCopy}
+                aria-label="Copy hashtags"
+                disabled={isUnmounting.current}
               >
-                <Share2 className="w-6 h-6" />
+                <Hash className="w-5 h-5" />
               </Button>
 
               {/* Instagram Share */}
               <Button
                 size="icon"
-                className="rounded-full w-14 h-14 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
+                className="rounded-full w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
                 onClick={handleInstagramShare}
-                aria-label="Share to Instagram"
+                aria-label="Share to Instagram Stories"
                 disabled={isUnmounting.current || isSharing}
               >
-                <Instagram className="w-6 h-6" />
+                <Instagram className="w-5 h-5" />
+              </Button>
+
+              {/* TikTok Share */}
+              <Button
+                size="icon"
+                className="rounded-full w-12 h-12 bg-gradient-to-br from-black/20 to-red-500/20 border border-red-400/30 text-red-300 hover:from-black/30 hover:to-red-500/30 transition-all"
+                onClick={handleTikTokShare}
+                aria-label="Share to TikTok"
+                disabled={isUnmounting.current || isSharing}
+              >
+                <Music className="w-5 h-5" />
+              </Button>
+
+              {/* Generic Share */}
+              <Button
+                size="icon"
+                className="rounded-full w-12 h-12 bg-[#8FD3FF]/20 border border-[#8FD3FF]/30 text-[#8FD3FF] hover:bg-[#8FD3FF]/30 transition-all"
+                onClick={handleShare}
+                aria-label="Share cover"
+                disabled={isUnmounting.current || isSharing}
+              >
+                <Share2 className="w-5 h-5" />
               </Button>
 
               {/* Delete */}
               <Button
                 size="icon"
-                className="rounded-full w-14 h-14 bg-[#FF6F91]/20 border border-[#FF6F91]/30 text-[#FF6F91] hover:bg-[#FF6F91]/30 transition-all"
+                className="rounded-full w-12 h-12 bg-[#FF6F91]/20 border border-[#FF6F91]/30 text-[#FF6F91] hover:bg-[#FF6F91]/30 transition-all"
                 onClick={handleDelete}
                 aria-label="Delete cover"
                 disabled={isUnmounting.current}
               >
-                <Trash2 className="w-6 h-6" />
+                <Trash2 className="w-5 h-5" />
               </Button>
             </div>
           </motion.div>

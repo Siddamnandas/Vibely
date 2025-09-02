@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Play, Sparkles, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,13 +12,22 @@ import { usePlayback } from "@/context/playback-context";
 import { songs as demoSongs } from "@/lib/data";
 import { useAuth } from "@/hooks/use-auth";
 import { useMusicData } from "@/hooks/use-music-data";
-import { PageSkeleton, TrackSkeleton, PlaylistSkeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { useUserStats } from "@/hooks/use-user-stats";
-import { ProgressiveGrid, ProgressiveSection } from "@/components/progressive-loading";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
-import { SpotifyAuth } from "@/components/spotify-auth";
-import { useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect, useCallback, lazy, Suspense } from "react";
 import type { VibelyTrack } from "@/lib/data";
+
+// Lazy load heavy components
+const LazySpotifyAuth = lazy(() =>
+  import("@/components/spotify-auth").then((m) => ({ default: m.SpotifyAuth })),
+);
+const LazyProgressiveGrid = lazy(() =>
+  import("@/components/progressive-loading").then((m) => ({ default: m.ProgressiveGrid })),
+);
+const LazyProgressiveSection = lazy(() =>
+  import("@/components/progressive-loading").then((m) => ({ default: m.ProgressiveSection })),
+);
 
 type HeroProps = {
   nameTop: string;
@@ -422,7 +430,18 @@ export default function Home() {
       {/* Optional Spotify connect prompt */}
       {!provider && (
         <div className="mt-6">
-          <SpotifyAuth />
+          <Suspense
+            fallback={
+              <div className="w-full rounded-3xl bg-white/8 backdrop-blur-xl border border-white/10 p-6 text-center">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-white/20 rounded w-48 mx-auto mb-2"></div>
+                  <div className="h-4 bg-white/10 rounded w-32 mx-auto"></div>
+                </div>
+              </div>
+            }
+          >
+            <LazySpotifyAuth />
+          </Suspense>
         </div>
       )}
 

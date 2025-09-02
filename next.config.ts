@@ -28,10 +28,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       // Custom loader rules for better performance
-      "*.svg": {
-        loaders: ["@svgr/webpack"],
-        as: "*.js",
-      },
+      // Temporarily disabled SVG rule to fix webpack conflicts
+      // "*.svg": {
+      //   loaders: ["@svgr/webpack"],
+      //   as: "*.js",
+      // },
     },
   },
 
@@ -114,29 +115,48 @@ const nextConfig: NextConfig = {
         ...config.optimization,
         splitChunks: {
           chunks: "all",
+          minSize: 20000,
+          maxSize: 244000,
           cacheGroups: {
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: "vendors",
               chunks: "all",
               maxSize: 244000, // 244KB
+              priority: 10,
             },
             common: {
               name: "common",
               minChunks: 2,
               chunks: "all",
               enforce: true,
+              priority: 5,
             },
             // Separate chunks for large libraries
             framerMotion: {
               test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
               name: "framer-motion",
               chunks: "all",
+              priority: 20,
             },
             radixUI: {
               test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
               name: "radix-ui",
               chunks: "all",
+              priority: 15,
+            },
+            // AI and analytics separate chunks
+            aiLibs: {
+              test: /[\\/]node_modules[\\/](@genkit-ai|genkit)[\\/]/,
+              name: "ai-libs",
+              chunks: "all",
+              priority: 25,
+            },
+            analytics: {
+              test: /[\\/]node_modules[\\/](@amplitude|mixpanel|@sentry)[\\/]/,
+              name: "analytics",
+              chunks: "all",
+              priority: 8,
             },
           },
         },

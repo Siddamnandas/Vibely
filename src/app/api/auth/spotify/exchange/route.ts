@@ -9,13 +9,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Authorization code is required" }, { status: 400 });
     }
 
+    // Debug: Log environment variables
+    console.log("🧪 Spotify auth - Environment check:", {
+      client_id_present: !!process.env.SPOTIFY_CLIENT_ID,
+      client_secret_present: !!process.env.SPOTIFY_CLIENT_SECRET,
+      redirect_uri_set: !!process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI,
+      client_id_partial: process.env.SPOTIFY_CLIENT_ID?.substring(0, 4) + "*...*",
+      client_secret_partial: process.env.SPOTIFY_CLIENT_SECRET?.substring(0, 4) + "*...*",
+      redirect_uri: process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI,
+    });
+
     // Exchange code for tokens with Spotify
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(
-          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
+          `${process.env.SPOTIFY_CLIENT_ID || ""}:${process.env.SPOTIFY_CLIENT_SECRET || ""}`,
         ).toString("base64")}`,
       },
       body: new URLSearchParams({
@@ -29,8 +39,37 @@ export async function POST(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error("Spotify token exchange failed:", errorText);
-      return NextResponse.json({ error: "Failed to exchange code for tokens" }, { status: 400 });
+      console.error("Spotify token exchange failed:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorText,
+        sentData: {
+          code: code ? code.substring(0, 20) + "..." : "MISSING",
+          redirect_uri: process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI,
+          grant_type: "authorization_code",
+        },
+      });
+      // Try to parse JSON, but handle non-JSON responses
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+      } catch (parseError) {
+        errorDetails = { raw_error: errorText };
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to exchange code for tokens",
+          details: errorDetails,
+          sent: {
+            code: code ? "PRESENT" : "MISSING",
+            redirect_uri: process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI,
+            client_id: process.env.SPOTIFY_CLIENT_ID?.substring(0, 10) + "...",
+          },
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 },
+      );
     }
 
     const tokenData = await tokenResponse.json();
