@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { songs } from "@/lib/data";
@@ -8,6 +8,8 @@ import { playlists } from "@/lib/playlists";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
+import { AdaptiveImage } from "@/components/ui/adaptive-image";
+import { usePerformanceMonitor } from "@/lib/performance";
 import PlaylistDetailOverlay from "@/components/playlist-detail-overlay";
 
 // Using shared playlists data
@@ -103,13 +105,14 @@ function PlaylistSwipeCards({ onOpenDetail }: { onOpenDetail: (id: string) => vo
           >
             {/* Cover image filling the entire card */}
             <div className="relative w-full h-full">
-              <Image
+              <AdaptiveImage
                 src={playlist.coverImage}
                 alt={playlist.name}
                 fill
                 className="object-cover"
                 priority={stackPosition === 0 && currentIndex === 0} // Priority for first visible image
                 sizes="(max-width: 768px) 320px, 320px"
+                placeholder="empty"
               />
 
               {/* Gradient overlay for text readability */}
@@ -172,7 +175,14 @@ function PlaylistSwipeCards({ onOpenDetail }: { onOpenDetail: (id: string) => vo
 }
 
 export default function LibraryPage() {
+  // Performance monitoring
+  usePerformanceMonitor("LibraryPage");
+
   const [openPlaylistId, setOpenPlaylistId] = useState<string | null>(null);
+
+  // Memoize songs to avoid recomputing on every render
+  const displayedSongs = useMemo(() => songs.slice(0, 9), []); // Limit to 9 songs initially
+
   return (
     <div className="min-h-screen bg-[#0E0F12] text-white">
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -195,20 +205,20 @@ export default function LibraryPage() {
               Top Songs
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {songs.map((song) => (
+              {displayedSongs.map((song) => (
                 <Card
                   key={song.id}
                   className="overflow-hidden bg-white/5 border border-white/10 shadow-lg hover:bg-white/10 transition-colors duration-300 rounded-3xl"
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      <Image
+                      <AdaptiveImage
                         src={song.originalCoverUrl}
                         alt={`${song.title} cover`}
                         width={80}
                         height={80}
                         className="rounded-2xl aspect-square object-cover"
-                        data-ai-hint="album cover"
+                        placeholder="blur"
                       />
                       <div className="flex-grow overflow-hidden">
                         <p className="font-bold truncate text-lg text-white">{song.title}</p>

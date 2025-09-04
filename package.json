@@ -54,6 +54,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@segment/analytics-node": "^2.3.0",
     "@sentry/nextjs": "^10.8.0",
+    "@types/recharts": "^1.8.29",
     "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
@@ -66,6 +67,8 @@
     "framer-motion": "^12.23.12",
     "genkit": "^1.14.1",
     "gtag": "^1.0.1",
+    "ioredis": "^5.7.0",
+    "lodash-es": "^4.17.21",
     "lucide-react": "^0.475.0",
     "mixpanel-browser": "^2.58.0",
     "next": "^15.5.2",
@@ -73,7 +76,10 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
-    "recharts": "^2.15.1",
+    "recharts": "^2.15.4",
+    "redis": "^5.8.2",
+    "replicate": "^1.1.0",
+    "socket.io-client": "^4.8.1",
     "stripe": "^18.4.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
@@ -102,6 +108,9 @@
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "axios": "^1.11.0"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,css,md,json}": [

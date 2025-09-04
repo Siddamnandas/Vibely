@@ -1,138 +1,42 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useMusicService } from "./use-music-service";
-import { VibelyTrack, songs as fallbackSongs } from "@/lib/data";
+import { useState, useEffect } from "react";
+import type { VibelyTrack } from "@/lib/data";
 
-interface MusicDataState {
+interface UseMusicDataResult {
   tracks: VibelyTrack[];
+  provider: string | null;
   isLoading: boolean;
   error: string | null;
-  source: "spotify" | "apple-music" | "fallback";
 }
 
-export function useMusicData() {
-  const musicService = useMusicService();
+export function useMusicData(): UseMusicDataResult {
+  const [tracks, setTracks] = useState<VibelyTrack[]>([]);
+  const [provider, setProvider] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [state, setState] = useState<MusicDataState>({
-    tracks: fallbackSongs,
-    isLoading: false,
-    error: null,
-    source: "fallback",
-  });
+  useEffect(() => {
+    // Check for stored provider preference
+    if (typeof window !== "undefined") {
+      const storedProvider = localStorage.getItem("vibely.musicProvider");
+      if (storedProvider) {
+        setProvider(storedProvider);
 
-  const loadMusicData = useCallback(async () => {
-    if (!musicService.provider) {
-      setState({
-        tracks: fallbackSongs,
-        isLoading: false,
-        error: null,
-        source: "fallback",
-      });
-      return;
-    }
-
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      // Load music data with timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Music loading timeout")), 5000)
-      );
-      
-      const musicPromise = musicService.loadUserTracks(20);
-      const tracks = await Promise.race([musicPromise, timeoutPromise]) as any[];
-
-      if (tracks.length > 0) {
-        setState({
-          tracks: tracks.slice(0, 10), // Limit to top 10 for swipeable cards
-          isLoading: false,
-          error: null,
-          source: musicService.provider as "spotify" | "apple-music",
-        });
-      } else {
-        // Fallback to demo data if no tracks found
-        setState({
-          tracks: fallbackSongs,
-          isLoading: false,
-          error: null,
-          source: "fallback",
-        });
+        // Simulate loading tracks from the provider
+        setIsLoading(true);
+        setTimeout(() => {
+          setTracks([]); // Start with empty array, will be populated by real data
+          setIsLoading(false);
+        }, 1000);
       }
-    } catch (error) {
-      setState({
-        tracks: fallbackSongs, // Fallback on error
-        isLoading: false,
-        error: error instanceof Error ? error.message : "Failed to load music data",
-        source: "fallback",
-      });
     }
-  }, [musicService.provider, musicService.loadUserTracks]);
-
-  // Update tracks when music service state changes
-  useEffect(() => {
-    if (musicService.tracks.length > 0) {
-      setState({
-        tracks: musicService.tracks.slice(0, 10),
-        isLoading: musicService.isLoading,
-        error: musicService.error,
-        source: (musicService.provider as "spotify" | "apple-music") || "fallback",
-      });
-    } else if (!musicService.provider) {
-      setState({
-        tracks: fallbackSongs,
-        isLoading: false,
-        error: null,
-        source: "fallback",
-      });
-    }
-  }, [musicService.tracks, musicService.isLoading, musicService.error, musicService.provider]);
-
-  // Load data when provider changes
-  useEffect(() => {
-    if (musicService.provider) {
-      loadMusicData();
-    }
-  }, [musicService.provider, loadMusicData]);
-
-  const refreshData = useCallback(() => {
-    loadMusicData();
-  }, [loadMusicData]);
-
-  // Get playlists from the music service
-  const getPlaylists = useCallback(async () => {
-    return await musicService.loadUserPlaylists();
-  }, [musicService.loadUserPlaylists]);
-
-  // Get tracks from a specific playlist
-  const getPlaylistTracks = useCallback(
-    async (playlistId: string) => {
-      return await musicService.getPlaylistTracks(playlistId);
-    },
-    [musicService.getPlaylistTracks],
-  );
-
-  // Search for tracks
-  const searchTracks = useCallback(
-    async (query: string) => {
-      return await musicService.searchTracks(query);
-    },
-    [musicService.searchTracks],
-  );
+  }, []);
 
   return {
-    ...state,
-    // Music service state
-    provider: musicService.provider,
-    spotify: musicService.spotify,
-    appleMusic: musicService.appleMusic,
-    // Methods
-    refreshData,
-    getPlaylists,
-    getPlaylistTracks,
-    searchTracks,
-    connectProvider: musicService.connectProvider,
-    disconnectProvider: musicService.disconnectProvider,
-    clearError: musicService.clearError,
+    tracks,
+    provider,
+    isLoading,
+    error,
   };
 }

@@ -16,6 +16,7 @@ import { useDevicePerformance } from "@/hooks/use-device-performance";
 import ErrorBoundary from "@/components/error-boundary";
 import { ErrorHandler } from "@/components/error-handler";
 import { initSentry } from "@/lib/sentry";
+import NavigationGuard from "./navigation-guard";
 
 // Skeleton loading component for immediate visual feedback
 function AppShellSkeleton() {
@@ -111,7 +112,7 @@ export default function AppShell({ children }: AppShellProps) {
                       {/* Auto-open full player when playback starts anywhere */}
                       <AutoOpenFullPlayer onOpen={() => setShowFullPlayer(true)} />
 
-                      {/* Progressive content loading */}
+                      {/* Progressive content loading with navigation protection */}
                       <Suspense
                         fallback={
                           <div className="p-6">
@@ -119,7 +120,13 @@ export default function AppShell({ children }: AppShellProps) {
                           </div>
                         }
                       >
-                        {children}
+                        <NavigationGuard
+                          onNavigationStart={() => console.log('Navigation started')}
+                          onNavigationComplete={() => console.log('Navigation completed')}
+                          onNavigationError={(error) => console.error('Navigation error:', error)}
+                        >
+                          {children}
+                        </NavigationGuard>
                       </Suspense>
 
                       {/* Mini Player — persists across pages, above nav, below modals */}

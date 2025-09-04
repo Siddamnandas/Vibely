@@ -37,30 +37,30 @@ export const playlists: Playlist[] = [
   {
     id: "1",
     name: "Late Night Vibes",
-    count: 42,
+    count: 12,
     coverImage: "https://picsum.photos/seed/playlist1/1200/800",
-    songs: buildSongs(42, 1),
+    songs: buildSongs(12, 1),
   },
   {
     id: "2",
     name: "Workout Hits",
-    count: 88,
+    count: 24,
     coverImage: "https://picsum.photos/seed/playlist2/1200/800",
-    songs: buildSongs(88, 2),
+    songs: buildSongs(24, 2),
   },
   {
     id: "3",
     name: "Road Trip",
-    count: 120,
+    count: 30,
     coverImage: "https://picsum.photos/seed/playlist3/1200/800",
-    songs: buildSongs(120, 3),
+    songs: buildSongs(30, 3),
   },
   {
     id: "4",
     name: "Focus Flow",
-    count: 65,
+    count: 20,
     coverImage: "https://picsum.photos/seed/playlist4/1200/800",
-    songs: buildSongs(65, 4),
+    songs: buildSongs(20, 4),
   },
 ];
 

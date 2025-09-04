@@ -1,88 +1,48 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
-// Define the shape of the authentication context
-interface AuthContextType {
+interface User {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+}
+
+interface UseAuthResult {
   user: User | null;
-  loading: boolean;
-  isGuestMode: boolean;
-  signInAsGuest: () => Promise<void>;
+  isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
-// Create the context with a default value
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: false, // Default to false to prevent blocking
-  isGuestMode: false,
-  signInAsGuest: async () => {},
-});
-
-// Create a provider component
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function useAuth(): UseAuthResult {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("🔐 Auth provider initializing...");
-
-    // Set aggressive timeout for Firebase auth check
-    const timeoutId = setTimeout(() => {
-      console.log("⏰ Firebase auth timeout - enabling guest mode");
-      setLoading(false);
-      setIsGuestMode(true);
-    }, 500); // 500ms timeout for immediate app access
-
-    // Subscribe to the Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        clearTimeout(timeoutId);
-        console.log("🔐 Auth state changed:", user ? "User found" : "No user");
-        setUser(user);
-        setLoading(false);
-        setIsGuestMode(false); // Clear guest mode when auth succeeds
-      },
-      (error) => {
-        console.warn("🔐 Auth error:", error);
-        clearTimeout(timeoutId);
-        setLoading(false);
-        setIsGuestMode(true); // Enable guest mode on auth error
+    // Check for stored auth state
+    if (typeof window !== "undefined") {
+      try {
+        const storedUser = localStorage.getItem("vibely.user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser) as User;
+          setUser(userData);
+        }
+      } catch (error) {
+        console.warn("Error loading stored user data:", error);
+      } finally {
+        setIsLoading(false);
       }
-    );
-
-    // Unsubscribe from the listener when the component unmounts
-    return () => {
-      clearTimeout(timeoutId);
-      unsubscribe();
-    };
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const signInAsGuest = async () => {
-    // Minimal guest sign-in: mark guest mode and clear user
-    setIsGuestMode(true);
-    setUser(null);
+  const isAuthenticated = user !== null && isLoading === false;
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
   };
-
-  const value = { user, loading, isGuestMode, signInAsGuest };
-
-  // Render app shell immediately instead of loading screen
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
 }
-
-// Create a custom hook to use the auth context
-export const useAuth = () => {
-  return useContext(AuthContext);
-};

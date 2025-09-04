@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AdaptiveImage } from "@/components/ui/adaptive-image";
 import { AdaptiveMotion } from "@/components/ui/adaptive-motion";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
-import { usePerformanceMonitor, usePerformanceObserver } from "@/hooks/use-performance-monitor";
+import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { usePlayback } from "@/context/playback-context";
 import { songs as demoSongs } from "@/lib/data";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,16 +18,16 @@ import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { useMemo, useEffect, useCallback, lazy, Suspense } from "react";
 import type { VibelyTrack } from "@/lib/data";
 
-// Lazy load heavy components
-const LazySpotifyAuth = lazy(() =>
-  import("@/components/spotify-auth").then((m) => ({ default: m.SpotifyAuth })),
+// Temporarily disabled lazy loading to prevent import crashes
+// TODO: Re-enable once components are fully implemented
+const LazySpotifyAuth = () => (
+  <div className="w-full rounded-3xl bg-white/8 backdrop-blur-xl border border-white/10 p-6 text-center">
+    <div className="text-white/70 text-sm">Connect Music Service</div>
+    <div className="text-white/50 text-xs mt-1">Integrations coming soon</div>
+  </div>
 );
-const LazyProgressiveGrid = lazy(() =>
-  import("@/components/progressive-loading").then((m) => ({ default: m.ProgressiveGrid })),
-);
-const LazyProgressiveSection = lazy(() =>
-  import("@/components/progressive-loading").then((m) => ({ default: m.ProgressiveSection })),
-);
+
+const LazyProgressiveGrid = () => null;
 
 type HeroProps = {
   nameTop: string;
@@ -356,8 +356,7 @@ export default function Home() {
     onboardingLoading,
   });
 
-  // Enable performance observation
-  usePerformanceObserver();
+
 
   // Always call useMemo to maintain consistent hook order
   const displayName = user?.displayName || "Music Lover";

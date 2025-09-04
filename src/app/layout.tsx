@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/hooks/use-auth";
-import { AnalyticsProvider } from "@/components/analytics-provider";
-import { Toaster } from "@/components/ui/toaster";
 import { PerformanceProvider } from "@/components/performance-provider";
-import { ServiceWorkerProvider } from "@/components/service-worker-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -151,16 +147,9 @@ export default function RootLayout({
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
       </head>
       <body className={inter.className}>
-        <ServiceWorkerProvider>
-          <PerformanceProvider>
-            <AuthProvider>
-              <AnalyticsProvider>
-                {children}
-                <Toaster />
-              </AnalyticsProvider>
-            </AuthProvider>
-          </PerformanceProvider>
-        </ServiceWorkerProvider>
+        <PerformanceProvider>
+          {children}
+        </PerformanceProvider>
 
         {/* Inline critical JavaScript for performance */}
         <script
